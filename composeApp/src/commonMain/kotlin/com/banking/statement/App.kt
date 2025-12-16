@@ -1,7 +1,6 @@
 package com.banking.statement
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,58 +12,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.banking.statement.pdf.FilePickerResult
-import com.banking.statement.pdf.PdfProcessor
-import com.banking.statement.validation.BankStatementValidator
-import com.banking.statement.validation.ValidationResult
+import com.banking.statement.parser.ImportFileType
+import com.banking.statement.parser.ParseResult
 import org.jetbrains.compose.ui.tooling.preview.Preview
+
+data class ImportState(
+    val isProcessing: Boolean = false,
+    val parseResult: ParseResult? = null,
+    val savedToDatabase: Boolean = false,
+    val transactionCount: Int = 0,
+    val errorMessage: String? = null
+)
+
+data class DatabaseStats(
+    val totalStatements: Int = 0,
+    val totalTransactions: Int = 0
+)
 
 @Composable
 @Preview
 fun App(
-    onPickFile: (() -> Unit)? = null,
-    selectedFile: FilePickerResult? = null,
-    onFileProcessed: () -> Unit = {}
+    onPickFile: ((List<String>) -> Unit)? = null,
+    importState: ImportState = ImportState(),
+    stats: DatabaseStats = DatabaseStats()
 ) {
     MaterialTheme {
-        var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
-        var isProcessing by remember { mutableStateOf(false) }
-        var errorMessage by remember { mutableStateOf<String?>(null) }
-
-        // Process file when selected
-        LaunchedEffect(selectedFile) {
-            selectedFile?.let { file ->
-                isProcessing = true
-                errorMessage = null
-                validationResult = null
-
-                try {
-                    val pdfProcessor = PdfProcessor()
-
-                    // Check if it's a PDF file
-                    if (!pdfProcessor.isPdfFile(file.bytes)) {
-                        errorMessage = "Selected file is not a PDF"
-                        isProcessing = false
-                        onFileProcessed()
-                        return@LaunchedEffect
-                    }
-
-                    // Extract text from PDF
-                    val text = pdfProcessor.extractText(file.bytes)
-
-                    // Validate as bank statement
-                    val validator = BankStatementValidator()
-                    validationResult = validator.validate(text)
-
-                } catch (e: Exception) {
-                    errorMessage = "Error processing PDF: ${e.message}"
-                }
-
-                isProcessing = false
-                onFileProcessed()
-            }
-        }
-
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
@@ -76,7 +48,7 @@ fun App(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 // Title
                 Text(
@@ -89,24 +61,30 @@ fun App(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Upload your bank statement PDF to validate",
+                    text = "Import your bank statements to analyze",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Upload Button
+                // Stats Card
+                if (stats.totalStatements > 0 || stats.totalTransactions > 0) {
+                    StatsCard(stats)
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                // Import Button
                 Button(
-                    onClick = { onPickFile?.invoke() },
+                    onClick = { onPickFile?.invoke(ImportFileType.allMimeTypes()) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = !isProcessing && onPickFile != null,
+                    enabled = !importState.isProcessing && onPickFile != null,
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (isProcessing) {
+                    if (importState.isProcessing) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = MaterialTheme.colorScheme.onPrimary,
@@ -116,53 +94,46 @@ fun App(
                         Text("Processing...")
                     } else {
                         Text(
-                            text = "Upload Bank Statement",
+                            text = "Import Statement",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Supported format: PDF",
+                    text = "Supported formats: PDF, CSV, Excel (.xlsx)",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Error Message
-                AnimatedVisibility(visible = errorMessage != null) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "✗",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
+                AnimatedVisibility(visible = importState.errorMessage != null) {
+                    ErrorCard(message = importState.errorMessage ?: "")
+                }
+
+                // Success Result
+                AnimatedVisibility(visible = importState.savedToDatabase && importState.parseResult != null) {
+                    importState.parseResult?.let { result ->
+                        SuccessCard(
+                            result = result,
+                            transactionCount = importState.transactionCount
+                        )
                     }
                 }
 
-                // Validation Result
-                AnimatedVisibility(visible = validationResult != null) {
-                    validationResult?.let { result ->
-                        ValidationResultCard(result = result)
+                // Parse Failed Result
+                AnimatedVisibility(
+                    visible = importState.parseResult != null &&
+                              !importState.parseResult!!.success &&
+                              importState.errorMessage == null &&
+                              !importState.isProcessing
+                ) {
+                    importState.parseResult?.let { result ->
+                        ValidationFailedCard(result = result)
                     }
                 }
             }
@@ -171,86 +142,191 @@ fun App(
 }
 
 @Composable
-fun ValidationResultCard(result: ValidationResult) {
-    val containerColor = if (result.isValid) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.errorContainer
-    }
-
-    val contentColor = if (result.isValid) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onErrorContainer
-    }
-
-    val icon = if (result.isValid) "✓" else "✗"
-
+fun StatsCard(stats: DatabaseStats) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatItem(
+                label = "Statements",
+                value = stats.totalStatements.toString()
+            )
+            StatItem(
+                label = "Transactions",
+                value = stats.totalTransactions.toString()
+            )
+        }
+    }
+}
+
+@Composable
+fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+        )
+    }
+}
+
+@Composable
+fun ErrorCard(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "!",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
+    }
+}
+
+@Composable
+fun SuccessCard(result: ParseResult, transactionCount: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = icon,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = contentColor
+                    text = "OK",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = if (result.isValid) "Valid Bank Statement" else "Not a Bank Statement",
+                        text = "Import Successful",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = contentColor
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "Score: ${result.score}/100",
+                        text = "$transactionCount transactions imported",
                         style = MaterialTheme.typography.bodySmall,
-                        color = contentColor.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
                 }
             }
 
-            if (result.details.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = contentColor.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                // Details
-                Text(
-                    text = "Detection Details:",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = contentColor
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                result.details.forEach { detail ->
-                    Text(
-                        text = detail,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contentColor.copy(alpha = 0.9f),
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    )
-                }
+            DetailRow("Bank", result.bankName)
+            result.statementPeriod?.let {
+                DetailRow("Period", it)
             }
-
-            if (!result.isValid) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Tip: Make sure the PDF contains readable text (not a scanned image) and is an actual bank statement.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.7f)
-                )
+            result.accountIban?.let {
+                DetailRow("Account", it.take(12) + "...")
             }
         }
+    }
+}
+
+@Composable
+fun ValidationFailedCard(result: ParseResult) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "X",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Import Failed",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Text(
+                        text = result.errorMessage ?: "Could not parse file",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Tip: Make sure the file contains valid bank statement data with dates and amounts.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+fun DetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }

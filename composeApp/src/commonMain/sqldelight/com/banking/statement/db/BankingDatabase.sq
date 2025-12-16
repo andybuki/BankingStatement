@@ -1,0 +1,130 @@
+-- Imported statement files metadata
+CREATE TABLE statements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_name TEXT NOT NULL,
+    file_path TEXT,
+    source_type TEXT NOT NULL,
+    bank_name TEXT NOT NULL,
+    account_iban TEXT,
+    import_date INTEGER NOT NULL,
+    statement_period TEXT,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+-- Transaction categories for grouping
+CREATE TABLE categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    icon TEXT,
+    color TEXT,
+    parent_id INTEGER REFERENCES categories(id)
+);
+
+-- Main transaction data
+CREATE TABLE transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    statement_id INTEGER NOT NULL REFERENCES statements(id) ON DELETE CASCADE,
+    transaction_id TEXT,
+    booking_date INTEGER NOT NULL,
+    value_date INTEGER,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'EUR',
+    balance REAL,
+    description TEXT NOT NULL,
+    counterparty_name TEXT,
+    counterparty_iban TEXT,
+    remittance_info TEXT,
+    transaction_type TEXT,
+    bank_transaction_code TEXT,
+    category_id INTEGER REFERENCES categories(id),
+    raw_text TEXT,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+-- Indexes for faster queries
+CREATE INDEX idx_transactions_statement ON transactions(statement_id);
+CREATE INDEX idx_transactions_date ON transactions(booking_date);
+CREATE INDEX idx_transactions_category ON transactions(category_id);
+CREATE INDEX idx_transactions_amount ON transactions(amount);
+
+-- Queries for statements
+getAllStatements:
+SELECT * FROM statements ORDER BY import_date DESC;
+
+getStatementById:
+SELECT * FROM statements WHERE id = ?;
+
+insertStatement:
+INSERT INTO statements(file_name, file_path, source_type, bank_name, account_iban, import_date, statement_period)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getLastInsertedStatementId:
+SELECT last_insert_rowid();
+
+deleteStatement:
+DELETE FROM statements WHERE id = ?;
+
+-- Queries for transactions
+getAllTransactions:
+SELECT * FROM transactions ORDER BY booking_date DESC;
+
+getTransactionsByStatement:
+SELECT * FROM transactions WHERE statement_id = ? ORDER BY booking_date DESC;
+
+getTransactionsByDateRange:
+SELECT * FROM transactions WHERE booking_date BETWEEN ? AND ? ORDER BY booking_date DESC;
+
+getTransactionsByCategory:
+SELECT * FROM transactions WHERE category_id = ? ORDER BY booking_date DESC;
+
+getUncategorizedTransactions:
+SELECT * FROM transactions WHERE category_id IS NULL ORDER BY booking_date DESC;
+
+insertTransaction:
+INSERT INTO transactions(
+    statement_id, transaction_id, booking_date, value_date, amount, currency,
+    balance, description, counterparty_name, counterparty_iban, remittance_info,
+    transaction_type, bank_transaction_code, category_id, raw_text
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateTransactionCategory:
+UPDATE transactions SET category_id = ? WHERE id = ?;
+
+deleteTransactionsByStatement:
+DELETE FROM transactions WHERE statement_id = ?;
+
+-- Queries for categories
+getAllCategories:
+SELECT * FROM categories ORDER BY name;
+
+getCategoryById:
+SELECT * FROM categories WHERE id = ?;
+
+insertCategory:
+INSERT INTO categories(name, icon, color, parent_id) VALUES (?, ?, ?, ?);
+
+updateCategory:
+UPDATE categories SET name = ?, icon = ?, color = ? WHERE id = ?;
+
+deleteCategory:
+DELETE FROM categories WHERE id = ?;
+
+-- Summary queries
+getTransactionSummaryByCategory:
+SELECT c.name, c.color, COUNT(t.id) AS count, SUM(t.amount) AS total
+FROM transactions t
+LEFT JOIN categories c ON t.category_id = c.id
+GROUP BY t.category_id
+ORDER BY total;
+
+getMonthlySpending:
+SELECT strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+       SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS expenses,
+       SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS income
+FROM transactions
+GROUP BY month
+ORDER BY month DESC;
+
+getTotalBalance:
+SELECT SUM(amount) AS total FROM transactions;
