@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
+import com.banking.statement.ui.*
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 data class ImportState(
@@ -29,120 +30,171 @@ data class DatabaseStats(
     val totalTransactions: Int = 0
 )
 
+enum class Screen {
+    HOME,
+    TRANSACTIONS,
+    SPENDING
+}
+
 @Composable
 @Preview
 fun App(
     onPickFile: ((List<String>) -> Unit)? = null,
     importState: ImportState = ImportState(),
-    stats: DatabaseStats = DatabaseStats()
+    stats: DatabaseStats = DatabaseStats(),
+    transactions: List<TransactionDisplay> = emptyList(),
+    categorySpending: List<CategorySpending> = emptyList(),
+    monthlySummary: List<MonthlySummary> = emptyList(),
+    totalIncome: Double = 0.0,
+    totalExpenses: Double = 0.0
 ) {
+    var currentScreen by remember { mutableStateOf(Screen.HOME) }
+
     MaterialTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Title
-                Text(
-                    text = "Bank Statement Analyzer",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+            when (currentScreen) {
+                Screen.HOME -> HomeScreen(
+                    onPickFile = onPickFile,
+                    importState = importState,
+                    stats = stats,
+                    onViewTransactions = { currentScreen = Screen.TRANSACTIONS },
+                    onViewSpending = { currentScreen = Screen.SPENDING }
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Import your bank statements to analyze",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                Screen.TRANSACTIONS -> TransactionListScreen(
+                    transactions = transactions,
+                    onBackClick = { currentScreen = Screen.HOME }
                 )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Stats Card
-                if (stats.totalStatements > 0 || stats.totalTransactions > 0) {
-                    StatsCard(stats)
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                // Import Button
-                Button(
-                    onClick = { onPickFile?.invoke(ImportFileType.allMimeTypes()) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = !importState.isProcessing && onPickFile != null,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (importState.isProcessing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Processing...")
-                    } else {
-                        Text(
-                            text = "Import Statement",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Supported formats: PDF, CSV, Excel (.xlsx)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Screen.SPENDING -> SpendingOverviewScreen(
+                    totalIncome = totalIncome,
+                    totalExpenses = totalExpenses,
+                    categorySpending = categorySpending,
+                    monthlySummary = monthlySummary,
+                    onBackClick = { currentScreen = Screen.HOME }
                 )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Error Message
-                AnimatedVisibility(visible = importState.errorMessage != null) {
-                    ErrorCard(message = importState.errorMessage ?: "")
-                }
-
-                // Success Result
-                AnimatedVisibility(visible = importState.savedToDatabase && importState.parseResult != null) {
-                    importState.parseResult?.let { result ->
-                        SuccessCard(
-                            result = result,
-                            transactionCount = importState.transactionCount
-                        )
-                    }
-                }
-
-                // Parse Failed Result
-                AnimatedVisibility(
-                    visible = importState.parseResult != null &&
-                              !importState.parseResult!!.success &&
-                              importState.errorMessage == null &&
-                              !importState.isProcessing
-                ) {
-                    importState.parseResult?.let { result ->
-                        ValidationFailedCard(result = result)
-                    }
-                }
             }
         }
     }
 }
 
 @Composable
-fun StatsCard(stats: DatabaseStats) {
+fun HomeScreen(
+    onPickFile: ((List<String>) -> Unit)?,
+    importState: ImportState,
+    stats: DatabaseStats,
+    onViewTransactions: () -> Unit,
+    onViewSpending: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Title
+        Text(
+            text = "Bank Statement Analyzer",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Import your bank statements to analyze",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Stats Card with navigation
+        if (stats.totalStatements > 0 || stats.totalTransactions > 0) {
+            StatsCard(
+                stats = stats,
+                onViewTransactions = onViewTransactions,
+                onViewSpending = onViewSpending
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Import Button
+        Button(
+            onClick = { onPickFile?.invoke(ImportFileType.allMimeTypes()) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            enabled = !importState.isProcessing && onPickFile != null,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            if (importState.isProcessing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Processing...")
+            } else {
+                Text(
+                    text = "Import Statement",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Supported formats: PDF (ING DiBa), CSV, Excel",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Error Message
+        AnimatedVisibility(visible = importState.errorMessage != null) {
+            ErrorCard(message = importState.errorMessage ?: "")
+        }
+
+        // Success Result
+        AnimatedVisibility(visible = importState.savedToDatabase && importState.parseResult != null) {
+            importState.parseResult?.let { result ->
+                SuccessCard(
+                    result = result,
+                    transactionCount = importState.transactionCount
+                )
+            }
+        }
+
+        // Parse Failed Result
+        AnimatedVisibility(
+            visible = importState.parseResult != null &&
+                      !importState.parseResult!!.success &&
+                      importState.errorMessage == null &&
+                      !importState.isProcessing
+        ) {
+            importState.parseResult?.let { result ->
+                ValidationFailedCard(result = result)
+            }
+        }
+    }
+}
+
+@Composable
+fun StatsCard(
+    stats: DatabaseStats,
+    onViewTransactions: () -> Unit,
+    onViewSpending: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -150,20 +202,44 @@ fun StatsCard(stats: DatabaseStats) {
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            StatItem(
-                label = "Statements",
-                value = stats.totalStatements.toString()
-            )
-            StatItem(
-                label = "Transactions",
-                value = stats.totalTransactions.toString()
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem(
+                    label = "Statements",
+                    value = stats.totalStatements.toString()
+                )
+                StatItem(
+                    label = "Transactions",
+                    value = stats.totalTransactions.toString()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onViewTransactions,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Transactions")
+                }
+                OutlinedButton(
+                    onClick = onViewSpending,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Spending")
+                }
+            }
         }
     }
 }
