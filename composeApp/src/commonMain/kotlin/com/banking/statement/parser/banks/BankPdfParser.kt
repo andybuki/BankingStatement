@@ -40,6 +40,10 @@ object BankParserRegistry {
         register(N26Parser())
         register(C24Parser())
         register(ConsorsbankParser())
+        register(TargobankParser())
+        register(DirectBank1822Parser())
+        register(TomorrowBankParser())
+        register(BunqParser())
         register(RevolutPdfParser())
     }
 

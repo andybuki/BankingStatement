@@ -544,3 +544,98 @@ class N26Parser : GermanBankParser() {
         return parseGermanStatement(pdfText, fileName, "N26")
     }
 }
+
+// ============================================================
+// TARGOBANK Parser
+// ============================================================
+class TargobankParser : GermanBankParser() {
+    override val bankName = "TARGOBANK"
+
+    private val identifiers = listOf(
+        "targobank",
+        "targo bank",
+        "cmcidedd",
+        "targobank.de",
+        "citibank"  // Former name
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "TARGOBANK")
+    }
+}
+
+// ============================================================
+// 1822direkt Parser (Frankfurter Sparkasse subsidiary)
+// ============================================================
+class DirectBank1822Parser : GermanBankParser() {
+    override val bankName = "1822direkt"
+
+    private val identifiers = listOf(
+        "1822direkt",
+        "1822 direkt",
+        "1822direct",
+        "frankfurter sparkasse",
+        "heaborh" // BIC contains this
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "1822direkt")
+    }
+}
+
+// ============================================================
+// Tomorrow Bank Parser (Sustainable/Green Bank)
+// ============================================================
+class TomorrowBankParser : GermanBankParser() {
+    override val bankName = "Tomorrow"
+
+    private val identifiers = listOf(
+        "tomorrow",
+        "tomorrow bank",
+        "tomorrow gmbh",
+        "tomorrowbank",
+        "sobkdehhxxx"  // BIC
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "Tomorrow")
+    }
+}
+
+// ============================================================
+// bunq Parser (Dutch neobank)
+// ============================================================
+class BunqParser : GermanBankParser() {
+    override val bankName = "bunq"
+
+    private val identifiers = listOf(
+        "bunq",
+        "bunq b.v",
+        "bunq bank",
+        "bunqnl2a"  // BIC
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "bunq")
+    }
+}
