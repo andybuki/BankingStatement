@@ -315,15 +315,9 @@ class IngDiBaParser : BankPdfParser {
 
                 if (nearestAmount != null) {
                     val date = parseGermanDate(normalizeDate(dateMatch.groupValues[1]))
-                    val amount = parseGermanAmount(nearestAmount.groupValues[1].replace(".", "").replace(",", ".").let {
-                        // Handle case where amount uses . as thousands separator
-                        if (nearestAmount.groupValues[1].count { c -> c == '.' } > 1 ||
-                            (nearestAmount.groupValues[1].contains(".") && nearestAmount.groupValues[1].contains(","))) {
-                            nearestAmount.groupValues[1].replace(".", "").replace(",", ".")
-                        } else {
-                            nearestAmount.groupValues[1].replace(",", ".")
-                        }
-                    }.toDoubleOrNull())
+                    val amountStr = nearestAmount.groupValues[1]
+                    // Parse German amount format: 1.234,56 -> 1234.56
+                    val amount = parseGermanAmount(amountStr)
 
                     if (date != null && amount != null) {
                         val description = block.substring(
