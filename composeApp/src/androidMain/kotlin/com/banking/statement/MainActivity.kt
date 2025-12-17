@@ -201,11 +201,21 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Fallback: PDF validated but no parser available
+        // Fallback: PDF validated but no parser available or parsing failed
+        val detectedBank = detectBankFromText(text)
         return ParseResult(
             success = false,
-            bankName = detectBankFromText(text),
-            errorMessage = "Bank statement recognized but transaction extraction not yet supported for this bank. Supported banks: ${BankParserRegistry.supportedBanks().joinToString(", ")}. Try using CSV/Excel export."
+            bankName = detectedBank,
+            errorMessage = buildString {
+                append("Bank statement recognized ($detectedBank) but could not extract transactions. ")
+                if (bankParser != null) {
+                    append("Parser found but format may differ from expected. ")
+                } else {
+                    append("No parser available for this bank. ")
+                    append("Supported banks: ${BankParserRegistry.supportedBanks().joinToString(", ")}. ")
+                }
+                append("Try using CSV/Excel export from your bank.")
+            }
         )
     }
 

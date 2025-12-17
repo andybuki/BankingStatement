@@ -10,11 +10,9 @@ import kotlinx.datetime.LocalDate
  * Format characteristics:
  * - Header: ING-DiBa AG, Frankfurt am Main
  * - Account info: IBAN, BIC, Saldo
- * - Transaction format:
- *   DD.MM.YYYY  Lastschrift/Gutschrift CompanyName  -Amount
- *   DD.MM.YYYY  Additional details...
- *   Mandat: XXXXX
- *   Referenz: XXXXX
+ * - Transaction format varies by statement type:
+ *   Format 1: DD.MM.YYYY TransactionType Description Amount
+ *   Format 2: Date in separate column, then description, then amount
  */
 class IngDiBaParser : BankPdfParser {
 
@@ -24,16 +22,23 @@ class IngDiBaParser : BankPdfParser {
     private val identifiers = listOf(
         "ing-diba",
         "ing diba",
+        "ing.de",
         "ingddeffxxx",  // BIC
-        "de29 5001 0517", // Common ING IBAN prefix pattern
-        "girokonto nummer"
+        "ingddeff",
+        "de29 5001 0517", // Common ING IBAN prefix
+        "girokonto",
+        "extra-konto",
+        "tagesgeld"
     )
 
-    // Transaction type keywords
+    // Transaction type keywords - expanded list
     private val transactionTypes = listOf(
         "Lastschrift", "Gutschrift", "Überweisung", "Dauerauftrag",
         "Gehalt", "Lohn", "Kartenzahlung", "Bargeldauszahlung",
-        "Abschluss", "Zinsen", "Entgelt"
+        "Abschluss", "Zinsen", "Entgelt", "Einzahlung", "Auszahlung",
+        "SEPA-Lastschrift", "SEPA-Überweisung", "Kontoführung",
+        "Habenzinsen", "Sollzinsen", "Abgeltungsteuer", "Kapitalertragsteuer",
+        "Geldautomat", "Echtzeitüberweisung", "Dauerauftrag/Terminüberw."
     )
 
     override fun canParse(pdfText: String): Boolean {
@@ -43,126 +48,21 @@ class IngDiBaParser : BankPdfParser {
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
         try {
-            val transactions = mutableListOf<ParsedTransaction>()
             val lines = pdfText.lines()
 
             // Extract account info
             val accountIban = extractIban(pdfText)
             val statementPeriod = extractStatementPeriod(pdfText)
 
-            // Parse transactions
-            var i = 0
-            while (i < lines.size) {
-                val line = lines[i].trim()
+            // Try multiple parsing strategies
+            var transactions = parseWithTypePrefix(lines)
 
-                // Look for transaction start: date followed by transaction type
-                val transactionMatch = findTransactionStart(line)
-                if (transactionMatch != null) {
-                    val (bookingDate, type, initialDesc, amount) = transactionMatch
+            if (transactions.isEmpty()) {
+                transactions = parseWithDateAmountPattern(lines)
+            }
 
-                    // Collect additional description lines
-                    val descriptionParts = mutableListOf<String>()
-                    if (initialDesc.isNotBlank()) {
-                        descriptionParts.add(initialDesc)
-                    }
-
-                    var valueDate: LocalDate? = null
-                    var counterparty: String? = null
-                    var mandate: String? = null
-                    var reference: String? = null
-
-                    // Look at following lines for more details
-                    var j = i + 1
-                    while (j < lines.size) {
-                        val nextLine = lines[j].trim()
-
-                        // Stop if we hit a new transaction or empty section
-                        if (nextLine.isEmpty() && j > i + 1) {
-                            // Check if next non-empty line is a new transaction
-                            val lookAhead = lines.drop(j + 1).firstOrNull { it.isNotBlank() }
-                            if (lookAhead != null && findTransactionStart(lookAhead.trim()) != null) {
-                                break
-                            }
-                        }
-
-                        // Check if this is the value date line (second date)
-                        val valueDateMatch = extractDateFromLine(nextLine)
-                        if (valueDateMatch != null && valueDate == null) {
-                            valueDate = valueDateMatch
-                            // Rest of line after date is additional description
-                            val afterDate = nextLine.substringAfter(
-                                Regex("\\d{2}\\.\\d{2}\\.\\d{4}").find(nextLine)?.value ?: ""
-                            ).trim()
-                            if (afterDate.isNotBlank()) {
-                                descriptionParts.add(afterDate)
-                            }
-                            j++
-                            continue
-                        }
-
-                        // Check for mandate
-                        if (nextLine.startsWith("Mandat:", ignoreCase = true)) {
-                            mandate = nextLine.substringAfter(":").trim()
-                            j++
-                            continue
-                        }
-
-                        // Check for reference
-                        if (nextLine.startsWith("Referenz:", ignoreCase = true)) {
-                            reference = nextLine.substringAfter(":").trim()
-                            j++
-                            continue
-                        }
-
-                        // Check if this line starts a new transaction
-                        if (findTransactionStart(nextLine) != null) {
-                            break
-                        }
-
-                        // Check for section headers to skip
-                        if (nextLine.contains("Buchung") && nextLine.contains("Verwendungszweck")) {
-                            j++
-                            continue
-                        }
-
-                        // Add to description if not empty
-                        if (nextLine.isNotBlank() && !isPageFooter(nextLine)) {
-                            descriptionParts.add(nextLine)
-                        }
-
-                        j++
-
-                        // Safety: don't look too far ahead
-                        if (j > i + 15) break
-                    }
-
-                    // Build full description
-                    val fullDescription = buildDescription(type, descriptionParts)
-
-                    // Extract counterparty from description
-                    counterparty = extractCounterparty(type, descriptionParts.firstOrNull() ?: "")
-
-                    if (amount != null && bookingDate != null) {
-                        transactions.add(
-                            ParsedTransaction(
-                                bookingDate = bookingDate,
-                                valueDate = valueDate ?: bookingDate,
-                                amount = amount,
-                                currency = "EUR",
-                                description = fullDescription,
-                                counterpartyName = counterparty,
-                                transactionType = type,
-                                remittanceInfo = mandate?.let { "Mandat: $it" }
-                                    ?: reference?.let { "Referenz: $it" },
-                                rawText = lines.subList(i, minOf(j, lines.size)).joinToString("\n")
-                            )
-                        )
-                    }
-
-                    i = j
-                } else {
-                    i++
-                }
+            if (transactions.isEmpty()) {
+                transactions = parseGenericDatePattern(lines, pdfText)
             }
 
             return if (transactions.isNotEmpty()) {
@@ -174,10 +74,13 @@ class IngDiBaParser : BankPdfParser {
                     transactions = transactions
                 )
             } else {
+                // Return debug info to help identify the format
+                val sampleLines = lines.filter { it.isNotBlank() }.take(20).joinToString("\n")
                 ParseResult(
                     success = false,
                     bankName = bankName,
-                    errorMessage = "Could not extract transactions from ING DiBa PDF"
+                    errorMessage = "Could not extract transactions from ING DiBa PDF. " +
+                            "Format not recognized. Sample text:\n$sampleLines"
                 )
             }
 
@@ -188,6 +91,305 @@ class IngDiBaParser : BankPdfParser {
                 errorMessage = "Error parsing ING DiBa PDF: ${e.message}"
             )
         }
+    }
+
+    /**
+     * Strategy 1: Parse lines with format "DD.MM.YYYY TransactionType Description Amount"
+     */
+    private fun parseWithTypePrefix(lines: List<String>): List<ParsedTransaction> {
+        val transactions = mutableListOf<ParsedTransaction>()
+
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i].trim()
+
+            // Look for transaction start: date followed by transaction type
+            val transactionMatch = findTransactionStart(line)
+            if (transactionMatch != null) {
+                val (bookingDate, type, initialDesc, amount) = transactionMatch
+
+                // Collect additional description lines
+                val descriptionParts = mutableListOf<String>()
+                if (initialDesc.isNotBlank()) {
+                    descriptionParts.add(initialDesc)
+                }
+
+                var valueDate: LocalDate? = null
+                var mandate: String? = null
+                var reference: String? = null
+
+                // Look at following lines for more details
+                var j = i + 1
+                while (j < lines.size) {
+                    val nextLine = lines[j].trim()
+
+                    // Stop if we hit a new transaction or empty section
+                    if (nextLine.isEmpty() && j > i + 1) {
+                        val lookAhead = lines.drop(j + 1).firstOrNull { it.isNotBlank() }
+                        if (lookAhead != null && findTransactionStart(lookAhead.trim()) != null) {
+                            break
+                        }
+                    }
+
+                    // Check if this is the value date line (second date)
+                    val valueDateMatch = extractDateFromLine(nextLine)
+                    if (valueDateMatch != null && valueDate == null) {
+                        valueDate = valueDateMatch
+                        val afterDate = nextLine.substringAfter(
+                            Regex("\\d{2}\\.\\d{2}\\.\\d{4}").find(nextLine)?.value ?: ""
+                        ).trim()
+                        if (afterDate.isNotBlank()) {
+                            descriptionParts.add(afterDate)
+                        }
+                        j++
+                        continue
+                    }
+
+                    // Check for mandate/reference
+                    if (nextLine.startsWith("Mandat:", ignoreCase = true)) {
+                        mandate = nextLine.substringAfter(":").trim()
+                        j++
+                        continue
+                    }
+                    if (nextLine.startsWith("Referenz:", ignoreCase = true)) {
+                        reference = nextLine.substringAfter(":").trim()
+                        j++
+                        continue
+                    }
+
+                    // Check if this line starts a new transaction
+                    if (findTransactionStart(nextLine) != null) {
+                        break
+                    }
+
+                    // Skip section headers
+                    if (nextLine.contains("Buchung") && nextLine.contains("Verwendungszweck")) {
+                        j++
+                        continue
+                    }
+
+                    if (nextLine.isNotBlank() && !isPageFooter(nextLine)) {
+                        descriptionParts.add(nextLine)
+                    }
+
+                    j++
+                    if (j > i + 15) break
+                }
+
+                val fullDescription = buildDescription(type, descriptionParts)
+                val counterparty = extractCounterparty(type, descriptionParts.firstOrNull() ?: "")
+
+                if (amount != null && bookingDate != null) {
+                    transactions.add(
+                        ParsedTransaction(
+                            bookingDate = bookingDate,
+                            valueDate = valueDate ?: bookingDate,
+                            amount = amount,
+                            currency = "EUR",
+                            description = fullDescription,
+                            counterpartyName = counterparty,
+                            transactionType = type,
+                            remittanceInfo = mandate?.let { "Mandat: $it" }
+                                ?: reference?.let { "Referenz: $it" },
+                            rawText = lines.subList(i, minOf(j, lines.size)).joinToString("\n")
+                        )
+                    )
+                }
+
+                i = j
+            } else {
+                i++
+            }
+        }
+
+        return transactions
+    }
+
+    /**
+     * Strategy 2: Parse lines with amount pattern anywhere (more flexible)
+     * Looks for: Date ... Amount pattern
+     */
+    private fun parseWithDateAmountPattern(lines: List<String>): List<ParsedTransaction> {
+        val transactions = mutableListOf<ParsedTransaction>()
+
+        // Pattern: line starting with date and containing an amount somewhere
+        val datePattern = Regex("^(\\d{2}\\.\\d{2}\\.\\d{4})")
+        val amountPattern = Regex("(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})(?:\\s|$)")
+
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i].trim()
+
+            val dateMatch = datePattern.find(line)
+            if (dateMatch != null) {
+                val amountMatch = amountPattern.find(line)
+                if (amountMatch != null) {
+                    val date = parseGermanDate(dateMatch.groupValues[1])
+                    val amount = parseGermanAmount(amountMatch.groupValues[1])
+
+                    if (date != null && amount != null) {
+                        // Extract description between date and amount
+                        val afterDate = line.substring(dateMatch.range.last + 1)
+                        val description = afterDate.substring(0,
+                            maxOf(0, afterDate.indexOf(amountMatch.groupValues[1]))).trim()
+                            .ifEmpty { afterDate.replace(amountMatch.groupValues[1], "").trim() }
+
+                        // Collect follow-up lines
+                        val additionalDesc = mutableListOf<String>()
+                        var j = i + 1
+                        while (j < lines.size && j < i + 5) {
+                            val nextLine = lines[j].trim()
+                            if (nextLine.isEmpty() || datePattern.find(nextLine) != null) break
+                            if (!isPageFooter(nextLine) && !amountPattern.containsMatchIn(nextLine)) {
+                                additionalDesc.add(nextLine)
+                            }
+                            j++
+                        }
+
+                        val fullDescription = if (additionalDesc.isNotEmpty()) {
+                            "$description ${additionalDesc.joinToString(" ")}"
+                        } else description
+
+                        transactions.add(
+                            ParsedTransaction(
+                                bookingDate = date,
+                                valueDate = date,
+                                amount = amount,
+                                currency = "EUR",
+                                description = fullDescription.trim().ifEmpty { "Transaction" },
+                                counterpartyName = extractCounterpartyFromDesc(fullDescription),
+                                transactionType = detectTransactionType(fullDescription),
+                                rawText = line
+                            )
+                        )
+
+                        i = j
+                        continue
+                    }
+                }
+            }
+            i++
+        }
+
+        return transactions
+    }
+
+    /**
+     * Strategy 3: Generic parsing - find any dates and amounts nearby
+     */
+    private fun parseGenericDatePattern(lines: List<String>, fullText: String): List<ParsedTransaction> {
+        val transactions = mutableListOf<ParsedTransaction>()
+
+        // Look for patterns like: date followed by text, then amount on same or next line
+        val datePattern = Regex("(\\d{2}\\.\\d{2}\\.(?:\\d{4}|\\d{2}))")
+        val amountPattern = Regex("(-?\\d{1,3}(?:[.,]\\d{3})*[.,]\\d{2})\\s*€?")
+
+        // Join lines and split into potential transaction blocks
+        val transactionBlocks = mutableListOf<String>()
+        var currentBlock = StringBuilder()
+
+        for (line in lines) {
+            val trimmed = line.trim()
+            if (trimmed.isEmpty()) {
+                if (currentBlock.isNotEmpty()) {
+                    transactionBlocks.add(currentBlock.toString())
+                    currentBlock = StringBuilder()
+                }
+            } else if (!isPageFooter(trimmed)) {
+                if (currentBlock.isNotEmpty()) currentBlock.append(" ")
+                currentBlock.append(trimmed)
+            }
+        }
+        if (currentBlock.isNotEmpty()) {
+            transactionBlocks.add(currentBlock.toString())
+        }
+
+        for (block in transactionBlocks) {
+            val dateMatches = datePattern.findAll(block)
+            val amountMatches = amountPattern.findAll(block).toList()
+
+            for (dateMatch in dateMatches) {
+                // Find nearest amount after this date
+                val dateEnd = dateMatch.range.last
+                val nearestAmount = amountMatches.firstOrNull { it.range.first > dateEnd }
+
+                if (nearestAmount != null) {
+                    val date = parseGermanDate(normalizeDate(dateMatch.groupValues[1]))
+                    val amount = parseGermanAmount(nearestAmount.groupValues[1].replace(".", "").replace(",", ".").let {
+                        // Handle case where amount uses . as thousands separator
+                        if (nearestAmount.groupValues[1].count { c -> c == '.' } > 1 ||
+                            (nearestAmount.groupValues[1].contains(".") && nearestAmount.groupValues[1].contains(","))) {
+                            nearestAmount.groupValues[1].replace(".", "").replace(",", ".")
+                        } else {
+                            nearestAmount.groupValues[1].replace(",", ".")
+                        }
+                    }.toDoubleOrNull())
+
+                    if (date != null && amount != null) {
+                        val description = block.substring(
+                            minOf(dateMatch.range.last + 1, block.length),
+                            nearestAmount.range.first
+                        ).trim()
+
+                        if (description.isNotBlank() || transactions.none { it.bookingDate == date && it.amount == amount }) {
+                            transactions.add(
+                                ParsedTransaction(
+                                    bookingDate = date,
+                                    valueDate = date,
+                                    amount = amount,
+                                    currency = "EUR",
+                                    description = description.ifEmpty { "Transaction" },
+                                    counterpartyName = extractCounterpartyFromDesc(description),
+                                    transactionType = detectTransactionType(description),
+                                    rawText = block
+                                )
+                            )
+                        }
+                    }
+                    break // Only one transaction per block
+                }
+            }
+        }
+
+        return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.description.take(20)}" }
+    }
+
+    private fun normalizeDate(dateStr: String): String {
+        val parts = dateStr.split(".")
+        if (parts.size == 3 && parts[2].length == 2) {
+            // Convert YY to YYYY
+            val year = parts[2].toIntOrNull() ?: return dateStr
+            val fullYear = if (year > 50) 1900 + year else 2000 + year
+            return "${parts[0]}.${parts[1]}.$fullYear"
+        }
+        return dateStr
+    }
+
+    private fun detectTransactionType(description: String): String {
+        val lower = description.lowercase()
+        return when {
+            transactionTypes.any { lower.contains(it.lowercase()) } ->
+                transactionTypes.first { lower.contains(it.lowercase()) }
+            lower.contains("lastschrift") -> "Lastschrift"
+            lower.contains("gutschrift") -> "Gutschrift"
+            lower.contains("überweisung") -> "Überweisung"
+            lower.contains("gehalt") || lower.contains("lohn") -> "Gehalt"
+            else -> "Transaction"
+        }
+    }
+
+    private fun extractCounterpartyFromDesc(description: String): String? {
+        // Try to extract a company or person name from the description
+        val words = description.split(Regex("\\s+"))
+        if (words.isEmpty()) return null
+
+        // Take first few meaningful words as counterparty
+        val counterparty = words.take(4)
+            .filter { it.length > 2 && !it.all { c -> c.isDigit() } }
+            .joinToString(" ")
+            .trim()
+
+        return counterparty.takeIf { it.length > 2 }
     }
 
     private data class TransactionStart(
