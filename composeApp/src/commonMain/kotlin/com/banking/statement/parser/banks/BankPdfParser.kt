@@ -29,12 +29,18 @@ object BankParserRegistry {
     private val parsers = mutableListOf<BankPdfParser>()
 
     init {
-        // Register all bank parsers
+        // Register all bank parsers - German banks
         register(IngDiBaParser())
-        register(RevolutPdfParser())
-        register(DkbParser())
+        register(DeutscheBankParser())
+        register(PostbankParser())
+        register(CommerzbankParser())
         register(SparkasseParser())
-        // Add more parsers here as needed
+        register(VolksbankParser())  // Also handles VR-Bank and Raiffeisenbank
+        register(DkbParser())
+        register(N26Parser())
+        register(C24Parser())
+        register(ConsorsbankParser())
+        register(RevolutPdfParser())
     }
 
     fun register(parser: BankPdfParser) {
