@@ -192,7 +192,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Supported formats: PDF (ING DiBa), CSV, Excel",
+            text = "PDF: 15 German banks • CSV/Excel: All banks",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
