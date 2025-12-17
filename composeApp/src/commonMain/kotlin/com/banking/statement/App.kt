@@ -27,7 +27,8 @@ data class ImportState(
 
 data class DatabaseStats(
     val totalStatements: Int = 0,
-    val totalTransactions: Int = 0
+    val totalTransactions: Int = 0,
+    val totalAccounts: Int = 0
 )
 
 enum class Screen {
@@ -35,6 +36,25 @@ enum class Screen {
     TRANSACTIONS,
     SPENDING
 }
+
+/**
+ * Dialog state for imports - defined here for common access
+ * Platform-specific implementation in MainActivity
+ */
+data class AppDialogState(
+    val showAccountDialog: Boolean = false,
+    val showSuccessDialog: Boolean = false,
+    val bankName: String = "",
+    val iban: String? = null,
+    val statementPeriod: String? = null,
+    val transactionCount: Int = 0,
+    val existingAccounts: List<AccountOption> = emptyList(),
+    val suggestedAccountName: String = "",
+    val importedCount: Int = 0,
+    val duplicatesSkipped: Int = 0,
+    val isNewAccount: Boolean = false,
+    val accountName: String = ""
+)
 
 @Composable
 @Preview
@@ -46,7 +66,11 @@ fun App(
     categorySpending: List<CategorySpending> = emptyList(),
     monthlySummary: List<MonthlySummary> = emptyList(),
     totalIncome: Double = 0.0,
-    totalExpenses: Double = 0.0
+    totalExpenses: Double = 0.0,
+    // Dialog state - platform-specific handling passes these
+    dialogState: Any? = null,
+    onImportChoice: ((ImportChoice) -> Unit)? = null,
+    onDismissSuccessDialog: (() -> Unit)? = null
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
 
@@ -75,9 +99,24 @@ fun App(
                     onBackClick = { currentScreen = Screen.HOME }
                 )
             }
+
+            // Import dialogs - handled through platform-specific dialog state
+            // The dialogState is cast and handled in the platform-specific composable wrapper
+            HandleImportDialogs(
+                dialogState = dialogState,
+                onImportChoice = onImportChoice,
+                onDismissSuccessDialog = onDismissSuccessDialog
+            )
         }
     }
 }
+
+@Composable
+expect fun HandleImportDialogs(
+    dialogState: Any?,
+    onImportChoice: ((ImportChoice) -> Unit)?,
+    onDismissSuccessDialog: (() -> Unit)?
+)
 
 @Composable
 fun HomeScreen(
@@ -116,7 +155,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Stats Card with navigation
-        if (stats.totalStatements > 0 || stats.totalTransactions > 0) {
+        if (stats.totalStatements > 0 || stats.totalTransactions > 0 || stats.totalAccounts > 0) {
             StatsCard(
                 stats = stats,
                 onViewTransactions = onViewTransactions,
@@ -165,7 +204,7 @@ fun HomeScreen(
             ErrorCard(message = importState.errorMessage ?: "")
         }
 
-        // Success Result
+        // Success Result (without dialog - for backwards compatibility)
         AnimatedVisibility(visible = importState.savedToDatabase && importState.parseResult != null) {
             importState.parseResult?.let { result ->
                 SuccessCard(
@@ -209,6 +248,10 @@ fun StatsCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
+                StatItem(
+                    label = "Accounts",
+                    value = stats.totalAccounts.toString()
+                )
                 StatItem(
                     label = "Statements",
                     value = stats.totalStatements.toString()
