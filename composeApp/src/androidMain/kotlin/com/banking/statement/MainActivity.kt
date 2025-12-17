@@ -16,19 +16,33 @@ import com.banking.statement.parser.CsvParser
 import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
+import com.banking.statement.categorization.TransactionCategory
+import com.banking.statement.categorization.TransactionCategorizer
+import com.banking.statement.parser.banks.BankParserRegistry
 import com.banking.statement.pdf.PdfProcessor
+import com.banking.statement.ui.CategorySpending
+import com.banking.statement.ui.MonthlySummary
+import com.banking.statement.ui.TransactionDisplay
 import com.banking.statement.validation.BankStatementValidator
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.io.File
 
 class MainActivity : ComponentActivity() {
 
     private var importState by mutableStateOf(ImportState())
     private var stats by mutableStateOf(DatabaseStats())
+    private var transactions by mutableStateOf<List<TransactionDisplay>>(emptyList())
+    private var categorySpending by mutableStateOf<List<CategorySpending>>(emptyList())
+    private var monthlySummary by mutableStateOf<List<MonthlySummary>>(emptyList())
+    private var totalIncome by mutableStateOf(0.0)
+    private var totalExpenses by mutableStateOf(0.0)
 
     private lateinit var repository: TransactionRepository
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -50,8 +64,9 @@ class MainActivity : ComponentActivity() {
         val driverFactory = DatabaseDriverFactory(applicationContext)
         repository = TransactionRepository(driverFactory)
 
-        // Load stats
+        // Load stats and data
         updateStats()
+        loadTransactionData()
 
         setContent {
             App(
@@ -60,7 +75,12 @@ class MainActivity : ComponentActivity() {
                     filePickerLauncher.launch("*/*")
                 },
                 importState = importState,
-                stats = stats
+                stats = stats,
+                transactions = transactions,
+                categorySpending = categorySpending,
+                monthlySummary = monthlySummary,
+                totalIncome = totalIncome,
+                totalExpenses = totalExpenses
             )
         }
     }
@@ -156,7 +176,7 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        // Validate as bank statement
+        // Validate as bank statement first
         val validator = BankStatementValidator()
         val validationResult = validator.validate(text)
 
@@ -168,14 +188,34 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        // For now, PDF parsing just validates - transaction extraction will be added later
-        // TODO: Add PDF transaction extraction
+        // Try to find a bank-specific parser
+        val bankParser = BankParserRegistry.findParser(text)
+        if (bankParser != null) {
+            val result = bankParser.parse(text, fileName)
+            if (result.success && result.transactions.isNotEmpty()) {
+                return result
+            }
+            // If bank parser found but no transactions, fall through to error
+            if (result.errorMessage != null) {
+                return result
+            }
+        }
+
+        // Fallback: PDF validated but no parser available or parsing failed
+        val detectedBank = detectBankFromText(text)
         return ParseResult(
-            success = true,
-            bankName = detectBankFromText(text),
-            transactions = emptyList(), // PDF transaction extraction not implemented yet
-            statementPeriod = null,
-            errorMessage = "PDF validated but transaction extraction not yet implemented. Use CSV/Excel for now."
+            success = false,
+            bankName = detectedBank,
+            errorMessage = buildString {
+                append("Bank statement recognized ($detectedBank) but could not extract transactions. ")
+                if (bankParser != null) {
+                    append("Parser found but format may differ from expected. ")
+                } else {
+                    append("No parser available for this bank. ")
+                    append("Supported banks: ${BankParserRegistry.supportedBanks().joinToString(", ")}. ")
+                }
+                append("Try using CSV/Excel export from your bank.")
+            }
         )
     }
 
@@ -279,6 +319,94 @@ class MainActivity : ComponentActivity() {
                 totalStatements = statementsCount,
                 totalTransactions = transactionsCount
             )
+            // Also reload transaction data
+            loadTransactionData()
         }
+    }
+
+    private fun loadTransactionData() {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                val allTransactions = repository.getAllTransactions()
+                val categorizer = TransactionCategorizer()
+
+                // Convert DB transactions to display format with categorization
+                transactions = allTransactions.map { tx ->
+                    val category = TransactionCategory.categorize(
+                        tx.description,
+                        tx.counterparty_name
+                    )
+                    val date = Instant.fromEpochSeconds(tx.booking_date)
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                        .date
+
+                    TransactionDisplay(
+                        id = tx.id,
+                        date = "${date.dayOfMonth.toString().padStart(2, '0')}.${date.monthNumber.toString().padStart(2, '0')}.${date.year}",
+                        description = tx.description,
+                        amount = tx.amount,
+                        currency = tx.currency,
+                        category = category,
+                        counterparty = tx.counterparty_name
+                    )
+                }
+
+                // Calculate category spending
+                val spendingByCategory = transactions
+                    .filter { it.amount < 0 } // Only expenses
+                    .groupBy { it.category }
+                    .mapValues { (_, txs) ->
+                        txs.sumOf { it.amount }
+                    }
+
+                val totalExpensesAmount = spendingByCategory.values.sum()
+
+                categorySpending = spendingByCategory.map { (category, total) ->
+                    CategorySpending(
+                        category = category,
+                        totalAmount = total,
+                        transactionCount = transactions.count { it.category == category && it.amount < 0 },
+                        percentage = if (totalExpensesAmount != 0.0) {
+                            ((total / totalExpensesAmount) * 100).toFloat()
+                        } else 0f
+                    )
+                }.sortedBy { it.totalAmount }
+
+                // Calculate totals
+                totalExpenses = allTransactions.filter { it.amount < 0 }.sumOf { it.amount }
+                totalIncome = allTransactions.filter { it.amount > 0 }.sumOf { it.amount }
+
+                // Calculate monthly summary
+                val monthlyData = allTransactions.groupBy { tx ->
+                    val date = Instant.fromEpochSeconds(tx.booking_date)
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                        .date
+                    "${date.year}-${date.monthNumber.toString().padStart(2, '0')}"
+                }
+
+                monthlySummary = monthlyData.map { (month, txs) ->
+                    val income = txs.filter { it.amount > 0 }.sumOf { it.amount }
+                    val expenses = txs.filter { it.amount < 0 }.sumOf { it.amount }
+                    MonthlySummary(
+                        month = formatMonth(month),
+                        income = income,
+                        expenses = expenses
+                    )
+                }.sortedByDescending { it.month }
+            }
+        }
+    }
+
+    private fun formatMonth(yearMonth: String): String {
+        val parts = yearMonth.split("-")
+        if (parts.size != 2) return yearMonth
+        val monthNames = listOf(
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        )
+        val monthIndex = parts[1].toIntOrNull()?.minus(1) ?: return yearMonth
+        return if (monthIndex in 0..11) {
+            "${monthNames[monthIndex]} ${parts[0]}"
+        } else yearMonth
     }
 }
