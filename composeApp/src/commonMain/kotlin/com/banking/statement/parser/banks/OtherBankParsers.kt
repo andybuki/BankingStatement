@@ -4,66 +4,86 @@ import com.banking.statement.parser.ParseResult
 
 /**
  * Parser for Revolut PDF statements
- * Note: Revolut CSV/Excel is preferred - this is a fallback
  */
-class RevolutPdfParser : BankPdfParser {
+class RevolutPdfParser : GermanBankParser() {
     override val bankName = "Revolut"
+
+    private val identifiers = listOf(
+        "revolut",
+        "revolt21",
+        "revogb21",
+        "revolut.com"
+    )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return lower.contains("revolut") &&
-               (lower.contains("account statement") || lower.contains("transaction"))
+        return identifiers.any { lower.contains(it) }
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
-        // Revolut PDFs are complex - recommend CSV/Excel instead
-        return ParseResult(
-            success = false,
-            bankName = bankName,
-            errorMessage = "Revolut PDF parsing not fully implemented. Please use CSV or Excel export from Revolut app instead."
-        )
+        // Try generic German parsing first
+        val result = parseGermanStatement(pdfText, fileName, "Revolut")
+
+        // If no transactions found, suggest CSV/Excel
+        return if (result.success && result.transactions.isNotEmpty()) {
+            result
+        } else {
+            ParseResult(
+                success = false,
+                bankName = bankName,
+                errorMessage = "Could not parse Revolut PDF. Please use CSV or Excel export from Revolut app for better results."
+            )
+        }
     }
 }
 
 /**
  * Parser for DKB (Deutsche Kreditbank) statements
  */
-class DkbParser : BankPdfParser {
+class DkbParser : GermanBankParser() {
     override val bankName = "DKB"
+
+    private val identifiers = listOf(
+        "deutsche kreditbank",
+        "dkb",
+        "byladem1",
+        "dkb.de"
+    )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return lower.contains("deutsche kreditbank") ||
-               lower.contains("dkb") && lower.contains("kontoauszug")
+        return identifiers.any { lower.contains(it) } &&
+               (lower.contains("kontoauszug") || lower.contains("kreditkarte") || lower.contains("girokonto"))
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
-        // TODO: Implement DKB parsing
-        return ParseResult(
-            success = false,
-            bankName = bankName,
-            errorMessage = "DKB PDF parsing not yet implemented"
-        )
+        return parseGermanStatement(pdfText, fileName, "DKB")
     }
 }
 
 /**
  * Parser for Sparkasse statements
  */
-class SparkasseParser : BankPdfParser {
+class SparkasseParser : GermanBankParser() {
     override val bankName = "Sparkasse"
+
+    // Sparkassen have many local BICs, but share common patterns
+    private val identifiers = listOf(
+        "sparkasse",
+        "spk ",
+        "landesbank",
+        "lbbw",
+        "helaba",
+        "naspa"
+    )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return lower.contains("sparkasse") && lower.contains("kontoauszug")
+        return identifiers.any { lower.contains(it) } &&
+               (lower.contains("kontoauszug") || lower.contains("girokonto"))
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
-        // TODO: Implement Sparkasse parsing
-        return ParseResult(
-            success = false,
-            bankName = bankName,
-            errorMessage = "Sparkasse PDF parsing not yet implemented"
-        )
+        return parseGermanStatement(pdfText, fileName, "Sparkasse")
     }
 }
