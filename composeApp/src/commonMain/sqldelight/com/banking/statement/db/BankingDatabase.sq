@@ -1,6 +1,20 @@
+-- Bank accounts (logical grouping of statements)
+CREATE TABLE accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    bank_name TEXT NOT NULL,
+    iban TEXT,
+    currency TEXT NOT NULL DEFAULT 'EUR',
+    color TEXT,
+    icon TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
 -- Imported statement files metadata
 CREATE TABLE statements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     file_name TEXT NOT NULL,
     file_path TEXT,
     source_type TEXT NOT NULL,
@@ -24,6 +38,7 @@ CREATE TABLE categories (
 CREATE TABLE transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     statement_id INTEGER NOT NULL REFERENCES statements(id) ON DELETE CASCADE,
+    account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     transaction_id TEXT,
     booking_date INTEGER NOT NULL,
     value_date INTEGER,
@@ -38,14 +53,46 @@ CREATE TABLE transactions (
     bank_transaction_code TEXT,
     category_id INTEGER REFERENCES categories(id),
     raw_text TEXT,
+    is_duplicate INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
 
 -- Indexes for faster queries
 CREATE INDEX idx_transactions_statement ON transactions(statement_id);
+CREATE INDEX idx_transactions_account ON transactions(account_id);
 CREATE INDEX idx_transactions_date ON transactions(booking_date);
 CREATE INDEX idx_transactions_category ON transactions(category_id);
 CREATE INDEX idx_transactions_amount ON transactions(amount);
+CREATE INDEX idx_accounts_iban ON accounts(iban);
+
+-- Queries for accounts
+getAllAccounts:
+SELECT * FROM accounts WHERE is_active = 1 ORDER BY name;
+
+getAccountById:
+SELECT * FROM accounts WHERE id = ?;
+
+getAccountByIban:
+SELECT * FROM accounts WHERE iban = ? LIMIT 1;
+
+getAccountByBankName:
+SELECT * FROM accounts WHERE bank_name = ? LIMIT 1;
+
+insertAccount:
+INSERT INTO accounts(name, bank_name, iban, currency, color, icon)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getLastInsertedAccountId:
+SELECT last_insert_rowid();
+
+updateAccount:
+UPDATE accounts SET name = ?, color = ?, icon = ? WHERE id = ?;
+
+deactivateAccount:
+UPDATE accounts SET is_active = 0 WHERE id = ?;
+
+getAccountCount:
+SELECT COUNT(*) FROM accounts WHERE is_active = 1;
 
 -- Queries for statements
 getAllStatements:
@@ -54,9 +101,12 @@ SELECT * FROM statements ORDER BY import_date DESC;
 getStatementById:
 SELECT * FROM statements WHERE id = ?;
 
+getStatementsByAccount:
+SELECT * FROM statements WHERE account_id = ? ORDER BY import_date DESC;
+
 insertStatement:
-INSERT INTO statements(file_name, file_path, source_type, bank_name, account_iban, import_date, statement_period)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO statements(account_id, file_name, file_path, source_type, bank_name, account_iban, import_date, statement_period)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 getLastInsertedStatementId:
 SELECT last_insert_rowid();
@@ -64,35 +114,57 @@ SELECT last_insert_rowid();
 deleteStatement:
 DELETE FROM statements WHERE id = ?;
 
+getStatementCount:
+SELECT COUNT(*) FROM statements;
+
 -- Queries for transactions
 getAllTransactions:
-SELECT * FROM transactions ORDER BY booking_date DESC;
+SELECT * FROM transactions WHERE is_duplicate = 0 ORDER BY booking_date DESC;
 
 getTransactionsByStatement:
 SELECT * FROM transactions WHERE statement_id = ? ORDER BY booking_date DESC;
 
+getTransactionsByAccount:
+SELECT * FROM transactions WHERE account_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC;
+
 getTransactionsByDateRange:
-SELECT * FROM transactions WHERE booking_date BETWEEN ? AND ? ORDER BY booking_date DESC;
+SELECT * FROM transactions WHERE booking_date BETWEEN ? AND ? AND is_duplicate = 0 ORDER BY booking_date DESC;
 
 getTransactionsByCategory:
-SELECT * FROM transactions WHERE category_id = ? ORDER BY booking_date DESC;
+SELECT * FROM transactions WHERE category_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC;
 
 getUncategorizedTransactions:
-SELECT * FROM transactions WHERE category_id IS NULL ORDER BY booking_date DESC;
+SELECT * FROM transactions WHERE category_id IS NULL AND is_duplicate = 0 ORDER BY booking_date DESC;
 
 insertTransaction:
 INSERT INTO transactions(
-    statement_id, transaction_id, booking_date, value_date, amount, currency,
+    statement_id, account_id, transaction_id, booking_date, value_date, amount, currency,
     balance, description, counterparty_name, counterparty_iban, remittance_info,
-    transaction_type, bank_transaction_code, category_id, raw_text
+    transaction_type, bank_transaction_code, category_id, raw_text, is_duplicate
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransactionCategory:
 UPDATE transactions SET category_id = ? WHERE id = ?;
 
+markAsDuplicate:
+UPDATE transactions SET is_duplicate = 1 WHERE id = ?;
+
 deleteTransactionsByStatement:
 DELETE FROM transactions WHERE statement_id = ?;
+
+getTransactionCount:
+SELECT COUNT(*) FROM transactions WHERE is_duplicate = 0;
+
+-- Check for duplicate transactions
+findDuplicateTransaction:
+SELECT id FROM transactions
+WHERE account_id = ?
+  AND booking_date = ?
+  AND amount = ?
+  AND description = ?
+  AND is_duplicate = 0
+LIMIT 1;
 
 -- Queries for categories
 getAllCategories:
@@ -115,6 +187,7 @@ getTransactionSummaryByCategory:
 SELECT c.name, c.color, COUNT(t.id) AS count, SUM(t.amount) AS total
 FROM transactions t
 LEFT JOIN categories c ON t.category_id = c.id
+WHERE t.is_duplicate = 0
 GROUP BY t.category_id
 ORDER BY total;
 
@@ -123,8 +196,32 @@ SELECT strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
        SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS expenses,
        SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS income
 FROM transactions
+WHERE is_duplicate = 0
+GROUP BY month
+ORDER BY month DESC;
+
+getMonthlySpendingByAccount:
+SELECT strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+       SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS expenses,
+       SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS income
+FROM transactions
+WHERE account_id = ? AND is_duplicate = 0
 GROUP BY month
 ORDER BY month DESC;
 
 getTotalBalance:
-SELECT SUM(amount) AS total FROM transactions;
+SELECT SUM(amount) AS total FROM transactions WHERE is_duplicate = 0;
+
+getTotalBalanceByAccount:
+SELECT SUM(amount) AS total FROM transactions WHERE account_id = ? AND is_duplicate = 0;
+
+-- Account summary
+getAccountSummary:
+SELECT a.id, a.name, a.bank_name, a.iban, a.currency, a.color,
+       COUNT(t.id) AS transaction_count,
+       SUM(t.amount) AS balance
+FROM accounts a
+LEFT JOIN transactions t ON a.id = t.account_id AND t.is_duplicate = 0
+WHERE a.is_active = 1
+GROUP BY a.id
+ORDER BY a.name;

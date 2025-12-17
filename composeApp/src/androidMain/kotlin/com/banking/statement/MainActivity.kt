@@ -10,17 +10,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.banking.statement.db.AccountMatchResult
 import com.banking.statement.db.DatabaseDriverFactory
+import com.banking.statement.db.ImportResult
 import com.banking.statement.db.TransactionRepository
 import com.banking.statement.parser.CsvParser
 import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.categorization.TransactionCategory
-import com.banking.statement.categorization.TransactionCategorizer
 import com.banking.statement.parser.banks.BankParserRegistry
 import com.banking.statement.pdf.PdfProcessor
+import com.banking.statement.ui.AccountOption
 import com.banking.statement.ui.CategorySpending
+import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.MonthlySummary
 import com.banking.statement.ui.TransactionDisplay
 import com.banking.statement.validation.BankStatementValidator
@@ -34,6 +37,28 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import java.io.File
 
+/**
+ * Pending import waiting for user decision
+ */
+data class PendingImport(
+    val parseResult: ParseResult,
+    val fileName: String,
+    val filePath: String?,
+    val fileType: ImportFileType,
+    val matchResult: AccountMatchResult
+)
+
+/**
+ * State for showing import dialogs
+ */
+data class ImportDialogState(
+    val showAccountDialog: Boolean = false,
+    val showSuccessDialog: Boolean = false,
+    val pendingImport: PendingImport? = null,
+    val existingAccounts: List<AccountOption> = emptyList(),
+    val importResult: ImportResult? = null
+)
+
 class MainActivity : ComponentActivity() {
 
     private var importState by mutableStateOf(ImportState())
@@ -43,6 +68,7 @@ class MainActivity : ComponentActivity() {
     private var monthlySummary by mutableStateOf<List<MonthlySummary>>(emptyList())
     private var totalIncome by mutableStateOf(0.0)
     private var totalExpenses by mutableStateOf(0.0)
+    private var dialogState by mutableStateOf(ImportDialogState())
 
     private lateinit var repository: TransactionRepository
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -80,7 +106,12 @@ class MainActivity : ComponentActivity() {
                 categorySpending = categorySpending,
                 monthlySummary = monthlySummary,
                 totalIncome = totalIncome,
-                totalExpenses = totalExpenses
+                totalExpenses = totalExpenses,
+                dialogState = dialogState,
+                onImportChoice = { choice -> handleImportChoice(choice) },
+                onDismissSuccessDialog = {
+                    dialogState = dialogState.copy(showSuccessDialog = false, importResult = null)
+                }
             )
         }
     }
@@ -105,28 +136,12 @@ class MainActivity : ComponentActivity() {
                 }
 
                 if (parseResult.success && parseResult.transactions.isNotEmpty()) {
-                    // Save to database
-                    withContext(Dispatchers.IO) {
-                        val filePath = if (fileType == ImportFileType.PDF) {
-                            savePdfToStorage(uri, fileName)
-                        } else null
+                    // Check if we need to show a dialog
+                    val filePath = if (fileType == ImportFileType.PDF) {
+                        savePdfToStorage(uri, fileName)
+                    } else null
 
-                        repository.saveImport(
-                            parseResult = parseResult,
-                            fileName = fileName,
-                            filePath = filePath,
-                            sourceType = fileType.name
-                        )
-                    }
-
-                    importState = ImportState(
-                        isProcessing = false,
-                        parseResult = parseResult,
-                        savedToDatabase = true,
-                        transactionCount = parseResult.transactions.size
-                    )
-
-                    updateStats()
+                    handleSuccessfulParse(parseResult, fileName, filePath, fileType)
                 } else {
                     importState = ImportState(
                         isProcessing = false,
@@ -141,6 +156,156 @@ class MainActivity : ComponentActivity() {
                     isProcessing = false,
                     errorMessage = "Error: ${e.message}"
                 )
+            }
+        }
+    }
+
+    private suspend fun handleSuccessfulParse(
+        parseResult: ParseResult,
+        fileName: String,
+        filePath: String?,
+        fileType: ImportFileType
+    ) {
+        // Check for matching accounts
+        val matchResult = withContext(Dispatchers.IO) {
+            repository.findMatchingAccount(
+                bankName = parseResult.bankName,
+                iban = parseResult.accountIban
+            )
+        }
+
+        when (matchResult) {
+            is AccountMatchResult.IbanMatch -> {
+                // Auto-add to matching account
+                val result = withContext(Dispatchers.IO) {
+                    repository.saveImportToAccount(
+                        accountId = matchResult.account.id,
+                        parseResult = parseResult,
+                        fileName = fileName,
+                        filePath = filePath,
+                        sourceType = fileType.name
+                    )
+                }
+
+                importState = ImportState(
+                    isProcessing = false,
+                    parseResult = parseResult,
+                    savedToDatabase = true,
+                    transactionCount = result.transactionsImported
+                )
+
+                // Show success dialog
+                dialogState = dialogState.copy(
+                    showSuccessDialog = true,
+                    importResult = result.copy(isNewAccount = false)
+                )
+
+                updateStats()
+            }
+
+            is AccountMatchResult.BankMatch, AccountMatchResult.NoMatch -> {
+                // Need user decision - show dialog
+                val existingAccounts = withContext(Dispatchers.IO) {
+                    repository.getAccountSummary().map { summary ->
+                        AccountOption(
+                            id = summary.id,
+                            name = summary.name,
+                            bankName = summary.bank_name,
+                            iban = summary.iban,
+                            color = summary.color,
+                            transactionCount = summary.transaction_count,
+                            balance = summary.balance
+                        )
+                    }
+                }
+
+                importState = ImportState(isProcessing = false)
+
+                dialogState = ImportDialogState(
+                    showAccountDialog = true,
+                    pendingImport = PendingImport(
+                        parseResult = parseResult,
+                        fileName = fileName,
+                        filePath = filePath,
+                        fileType = fileType,
+                        matchResult = matchResult
+                    ),
+                    existingAccounts = existingAccounts
+                )
+            }
+        }
+    }
+
+    private fun handleImportChoice(choice: ImportChoice) {
+        val pending = dialogState.pendingImport ?: return
+
+        coroutineScope.launch {
+            when (choice) {
+                is ImportChoice.CreateNew -> {
+                    dialogState = dialogState.copy(showAccountDialog = false)
+                    importState = ImportState(isProcessing = true)
+
+                    val result = withContext(Dispatchers.IO) {
+                        repository.saveImportWithNewAccount(
+                            accountName = choice.accountName,
+                            parseResult = pending.parseResult,
+                            fileName = pending.fileName,
+                            filePath = pending.filePath,
+                            sourceType = pending.fileType.name
+                        )
+                    }
+
+                    importState = ImportState(
+                        isProcessing = false,
+                        parseResult = pending.parseResult,
+                        savedToDatabase = true,
+                        transactionCount = result.transactionsImported
+                    )
+
+                    dialogState = ImportDialogState(
+                        showSuccessDialog = true,
+                        importResult = result
+                    )
+
+                    updateStats()
+                }
+
+                is ImportChoice.AddToExisting -> {
+                    dialogState = dialogState.copy(showAccountDialog = false)
+                    importState = ImportState(isProcessing = true)
+
+                    val result = withContext(Dispatchers.IO) {
+                        repository.saveImportToAccount(
+                            accountId = choice.accountId,
+                            parseResult = pending.parseResult,
+                            fileName = pending.fileName,
+                            filePath = pending.filePath,
+                            sourceType = pending.fileType.name
+                        )
+                    }
+
+                    importState = ImportState(
+                        isProcessing = false,
+                        parseResult = pending.parseResult,
+                        savedToDatabase = true,
+                        transactionCount = result.transactionsImported
+                    )
+
+                    dialogState = ImportDialogState(
+                        showSuccessDialog = true,
+                        importResult = result
+                    )
+
+                    updateStats()
+                }
+
+                ImportChoice.Cancel -> {
+                    dialogState = ImportDialogState()
+                    importState = ImportState(
+                        isProcessing = false,
+                        errorMessage = "Import cancelled"
+                    )
+                }
             }
         }
     }
@@ -315,9 +480,13 @@ class MainActivity : ComponentActivity() {
             val transactionsCount = withContext(Dispatchers.IO) {
                 repository.getTransactionCount().toInt()
             }
+            val accountsCount = withContext(Dispatchers.IO) {
+                repository.getAccountCount().toInt()
+            }
             stats = DatabaseStats(
                 totalStatements = statementsCount,
-                totalTransactions = transactionsCount
+                totalTransactions = transactionsCount,
+                totalAccounts = accountsCount
             )
             // Also reload transaction data
             loadTransactionData()
@@ -328,7 +497,6 @@ class MainActivity : ComponentActivity() {
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
                 val allTransactions = repository.getAllTransactions()
-                val categorizer = TransactionCategorizer()
 
                 // Convert DB transactions to display format with categorization
                 transactions = allTransactions.map { tx ->
