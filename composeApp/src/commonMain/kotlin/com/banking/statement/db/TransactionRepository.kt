@@ -7,22 +7,134 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 
+/**
+ * Result of checking if an import matches an existing account
+ */
+sealed class AccountMatchResult {
+    /** IBAN matches an existing account - auto-add */
+    data class IbanMatch(val account: Accounts) : AccountMatchResult()
+
+    /** Same bank found but different/no IBAN - ask user */
+    data class BankMatch(val account: Accounts) : AccountMatchResult()
+
+    /** No matching account found - new bank */
+    data object NoMatch : AccountMatchResult()
+}
+
+/**
+ * Result of an import operation
+ */
+data class ImportResult(
+    val statementId: Long,
+    val accountId: Long,
+    val transactionsImported: Int,
+    val duplicatesSkipped: Int,
+    val isNewAccount: Boolean
+)
+
 class TransactionRepository(
     driverFactory: DatabaseDriverFactory
 ) {
     private val database = BankingDatabase(driverFactory.createDriver())
     private val queries = database.bankingDatabaseQueries
 
-    fun saveImport(
+    // ==================== Account Operations ====================
+
+    /**
+     * Check if the import matches an existing account
+     */
+    fun findMatchingAccount(bankName: String, iban: String?): AccountMatchResult {
+        // First, try to match by IBAN (exact match)
+        if (!iban.isNullOrBlank()) {
+            val ibanMatch = queries.getAccountByIban(iban).executeAsOneOrNull()
+            if (ibanMatch != null) {
+                return AccountMatchResult.IbanMatch(ibanMatch)
+            }
+        }
+
+        // Then, try to match by bank name
+        val bankMatch = queries.getAccountByBankName(bankName).executeAsOneOrNull()
+        if (bankMatch != null) {
+            return AccountMatchResult.BankMatch(bankMatch)
+        }
+
+        return AccountMatchResult.NoMatch
+    }
+
+    /**
+     * Get all accounts
+     */
+    fun getAllAccounts(): List<Accounts> {
+        return queries.getAllAccounts().executeAsList()
+    }
+
+    /**
+     * Get account summary with balances
+     */
+    fun getAccountSummary(): List<GetAccountSummary> {
+        return queries.getAccountSummary().executeAsList()
+    }
+
+    /**
+     * Create a new account
+     */
+    fun createAccount(
+        name: String,
+        bankName: String,
+        iban: String?,
+        currency: String = "EUR",
+        color: String? = null,
+        icon: String? = null
+    ): Long {
+        queries.insertAccount(
+            name = name,
+            bank_name = bankName,
+            iban = iban,
+            currency = currency,
+            color = color,
+            icon = icon
+        )
+        return queries.getLastInsertedAccountId().executeAsOne()
+    }
+
+    /**
+     * Update an existing account
+     */
+    fun updateAccount(accountId: Long, name: String, color: String?, icon: String?) {
+        queries.updateAccount(name, color, icon, accountId)
+    }
+
+    /**
+     * Deactivate an account (soft delete)
+     */
+    fun deactivateAccount(accountId: Long) {
+        queries.deactivateAccount(accountId)
+    }
+
+    /**
+     * Get account count
+     */
+    fun getAccountCount(): Long {
+        return queries.getAccountCount().executeAsOne()
+    }
+
+    // ==================== Import Operations ====================
+
+    /**
+     * Save import to an existing account
+     */
+    fun saveImportToAccount(
+        accountId: Long,
         parseResult: ParseResult,
         fileName: String,
         filePath: String?,
         sourceType: String
-    ): Long {
+    ): ImportResult {
         val importDate = Clock.System.now().epochSeconds
 
         // Insert statement record
         queries.insertStatement(
+            account_id = accountId,
             file_name = fileName,
             file_path = filePath,
             source_type = sourceType,
@@ -34,17 +146,86 @@ class TransactionRepository(
 
         val statementId = queries.getLastInsertedStatementId().executeAsOne()
 
-        // Insert all transactions
+        // Insert all transactions with duplicate detection
+        var imported = 0
+        var duplicates = 0
+
         parseResult.transactions.forEach { transaction ->
-            insertTransaction(statementId, transaction)
+            val isDuplicate = checkDuplicate(accountId, transaction)
+            if (!isDuplicate) {
+                insertTransaction(statementId, accountId, transaction, isDuplicate = false)
+                imported++
+            } else {
+                // Still insert but mark as duplicate for reference
+                insertTransaction(statementId, accountId, transaction, isDuplicate = true)
+                duplicates++
+            }
         }
 
-        return statementId
+        return ImportResult(
+            statementId = statementId,
+            accountId = accountId,
+            transactionsImported = imported,
+            duplicatesSkipped = duplicates,
+            isNewAccount = false
+        )
     }
 
-    private fun insertTransaction(statementId: Long, transaction: ParsedTransaction) {
+    /**
+     * Save import and create a new account
+     */
+    fun saveImportWithNewAccount(
+        accountName: String,
+        parseResult: ParseResult,
+        fileName: String,
+        filePath: String?,
+        sourceType: String,
+        accountColor: String? = null
+    ): ImportResult {
+        // Create new account
+        val accountId = createAccount(
+            name = accountName,
+            bankName = parseResult.bankName,
+            iban = parseResult.accountIban,
+            currency = parseResult.transactions.firstOrNull()?.currency ?: "EUR",
+            color = accountColor
+        )
+
+        // Save the import
+        val result = saveImportToAccount(
+            accountId = accountId,
+            parseResult = parseResult,
+            fileName = fileName,
+            filePath = filePath,
+            sourceType = sourceType
+        )
+
+        return result.copy(isNewAccount = true)
+    }
+
+    /**
+     * Check if a transaction is a duplicate
+     */
+    private fun checkDuplicate(accountId: Long, transaction: ParsedTransaction): Boolean {
+        val existing = queries.findDuplicateTransaction(
+            account_id = accountId,
+            booking_date = transaction.bookingDate.toEpochSeconds(),
+            amount = transaction.amount,
+            description = transaction.description
+        ).executeAsOneOrNull()
+
+        return existing != null
+    }
+
+    private fun insertTransaction(
+        statementId: Long,
+        accountId: Long,
+        transaction: ParsedTransaction,
+        isDuplicate: Boolean
+    ) {
         queries.insertTransaction(
             statement_id = statementId,
+            account_id = accountId,
             transaction_id = transaction.transactionId,
             booking_date = transaction.bookingDate.toEpochSeconds(),
             value_date = transaction.valueDate?.toEpochSeconds(),
@@ -58,20 +239,42 @@ class TransactionRepository(
             transaction_type = transaction.transactionType,
             bank_transaction_code = transaction.bankTransactionCode,
             category_id = null,
-            raw_text = transaction.rawText
+            raw_text = transaction.rawText,
+            is_duplicate = if (isDuplicate) 1L else 0L
         )
     }
+
+    // ==================== Statement Operations ====================
 
     fun getAllStatements(): List<Statements> {
         return queries.getAllStatements().executeAsList()
     }
 
-    fun getTransactionsByStatement(statementId: Long): List<Transactions> {
-        return queries.getTransactionsByStatement(statementId).executeAsList()
+    fun getStatementsByAccount(accountId: Long): List<Statements> {
+        return queries.getStatementsByAccount(accountId).executeAsList()
     }
+
+    fun deleteStatement(statementId: Long) {
+        queries.deleteTransactionsByStatement(statementId)
+        queries.deleteStatement(statementId)
+    }
+
+    fun getStatementCount(): Long {
+        return queries.getStatementCount().executeAsOne()
+    }
+
+    // ==================== Transaction Operations ====================
 
     fun getAllTransactions(): List<Transactions> {
         return queries.getAllTransactions().executeAsList()
+    }
+
+    fun getTransactionsByAccount(accountId: Long): List<Transactions> {
+        return queries.getTransactionsByAccount(accountId).executeAsList()
+    }
+
+    fun getTransactionsByStatement(statementId: Long): List<Transactions> {
+        return queries.getTransactionsByStatement(statementId).executeAsList()
     }
 
     fun getTransactionsByDateRange(startDate: LocalDate, endDate: LocalDate): List<Transactions> {
@@ -81,20 +284,16 @@ class TransactionRepository(
         ).executeAsList()
     }
 
-    fun deleteStatement(statementId: Long) {
-        queries.deleteTransactionsByStatement(statementId)
-        queries.deleteStatement(statementId)
-    }
-
     fun getTransactionCount(): Long {
-        return queries.getAllTransactions().executeAsList().size.toLong()
+        return queries.getTransactionCount().executeAsOne()
     }
 
-    fun getStatementCount(): Long {
-        return queries.getAllStatements().executeAsList().size.toLong()
+    fun updateTransactionCategory(transactionId: Long, categoryId: Long?) {
+        queries.updateTransactionCategory(categoryId, transactionId)
     }
 
-    // Category operations
+    // ==================== Category Operations ====================
+
     fun getAllCategories(): List<Categories> {
         return queries.getAllCategories().executeAsList()
     }
@@ -103,14 +302,25 @@ class TransactionRepository(
         queries.insertCategory(name, icon, color, null)
     }
 
-    fun updateTransactionCategory(transactionId: Long, categoryId: Long?) {
-        queries.updateTransactionCategory(categoryId, transactionId)
-    }
+    // ==================== Summary Operations ====================
 
-    // Summary queries
     fun getMonthlySpending(): List<GetMonthlySpending> {
         return queries.getMonthlySpending().executeAsList()
     }
+
+    fun getMonthlySpendingByAccount(accountId: Long): List<GetMonthlySpendingByAccount> {
+        return queries.getMonthlySpendingByAccount(accountId).executeAsList()
+    }
+
+    fun getTotalBalance(): Double {
+        return queries.getTotalBalance().executeAsOneOrNull()?.total ?: 0.0
+    }
+
+    fun getTotalBalanceByAccount(accountId: Long): Double {
+        return queries.getTotalBalanceByAccount(accountId).executeAsOneOrNull()?.total ?: 0.0
+    }
+
+    // ==================== Helper Functions ====================
 
     private fun LocalDate.toEpochSeconds(): Long {
         return this.atStartOfDayIn(TimeZone.UTC).epochSeconds
