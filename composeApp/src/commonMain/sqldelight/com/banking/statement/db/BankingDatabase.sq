@@ -91,6 +91,9 @@ UPDATE accounts SET name = ?, color = ?, icon = ? WHERE id = ?;
 deactivateAccount:
 UPDATE accounts SET is_active = 0 WHERE id = ?;
 
+deleteAccount:
+DELETE FROM accounts WHERE id = ?;
+
 getAccountCount:
 SELECT COUNT(*) FROM accounts WHERE is_active = 1;
 
@@ -116,6 +119,12 @@ DELETE FROM statements WHERE id = ?;
 
 getStatementCount:
 SELECT COUNT(*) FROM statements;
+
+getStatementCountByAccount:
+SELECT COUNT(*) FROM statements WHERE account_id = ?;
+
+deleteStatementsByAccount:
+DELETE FROM statements WHERE account_id = ?;
 
 -- Queries for transactions
 getAllTransactions:
@@ -225,3 +234,17 @@ LEFT JOIN transactions t ON a.id = t.account_id AND t.is_duplicate = 0
 WHERE a.is_active = 1
 GROUP BY a.id
 ORDER BY a.name;
+
+-- Clear all data
+deleteAllTransactions:
+DELETE FROM transactions;
+
+deleteAllStatements:
+DELETE FROM statements;
+
+deleteAllAccounts:
+DELETE FROM accounts;
+
+-- Delete transactions by account
+deleteTransactionsByAccount:
+DELETE FROM transactions WHERE account_id = ?;

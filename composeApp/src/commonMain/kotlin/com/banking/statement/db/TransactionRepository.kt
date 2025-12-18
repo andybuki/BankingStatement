@@ -112,10 +112,48 @@ class TransactionRepository(
     }
 
     /**
+     * Delete an account and all its data (hard delete)
+     */
+    fun deleteAccount(accountId: Long) {
+        // Delete transactions first
+        queries.deleteTransactionsByAccount(accountId)
+        // Delete statements
+        queries.deleteStatementsByAccount(accountId)
+        // Delete account
+        queries.deleteAccount(accountId)
+    }
+
+    /**
+     * Clear all data from the database
+     */
+    fun clearAllData() {
+        queries.deleteAllTransactions()
+        queries.deleteAllStatements()
+        queries.deleteAllAccounts()
+    }
+
+    /**
+     * Update account name
+     */
+    fun updateAccountName(accountId: Long, newName: String) {
+        val account = queries.getAccountById(accountId).executeAsOneOrNull()
+        if (account != null) {
+            queries.updateAccount(newName, account.color, account.icon, accountId)
+        }
+    }
+
+    /**
      * Get account count
      */
     fun getAccountCount(): Long {
         return queries.getAccountCount().executeAsOne()
+    }
+
+    /**
+     * Get statement count for an account
+     */
+    fun getStatementCountByAccount(accountId: Long): Long {
+        return queries.getStatementCountByAccount(accountId).executeAsOne()
     }
 
     // ==================== Import Operations ====================
