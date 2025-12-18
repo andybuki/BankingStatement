@@ -102,6 +102,7 @@
     <string name="edit">Edit</string>
     <string name="save">Save</string>
     <string name="edit_account">Edit Account</string>
+    <string name="all_accounts">All Accounts</string>
 
     <!-- Errors -->
     <string name="error_reading_file">Could not read file</string>

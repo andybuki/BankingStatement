@@ -80,6 +80,7 @@ data class AppStrings(
     val edit: String,
     val save: String,
     val editAccount: String,
+    val allAccounts: String,
 
     // Errors
     val errorReadingFile: String,
@@ -164,6 +165,7 @@ fun defaultEnglishStrings() = AppStrings(
     edit = "Edit",
     save = "Save",
     editAccount = "Edit Account",
+    allAccounts = "All Accounts",
 
     errorReadingFile = "Could not read file",
     errorUnsupportedFormat = "Unsupported file format",

@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,9 +44,78 @@ fun SpendingOverviewScreen(
     totalExpenses: Double,
     categorySpending: List<CategorySpending>,
     monthlySummary: List<MonthlySummary>,
+    transactions: List<TransactionDisplay> = emptyList(),
+    accounts: List<AccountFilterOption> = emptyList(),
     onBackClick: () -> Unit
 ) {
     val strings = LocalStrings.current
+    var selectedAccountId by remember { mutableStateOf<Long?>(null) }
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    // Filter transactions and recalculate spending based on selected account
+    val filteredData = remember(transactions, selectedAccountId) {
+        val filtered = if (selectedAccountId == null) {
+            transactions
+        } else {
+            transactions.filter { it.accountId == selectedAccountId }
+        }
+
+        val income = filtered.filter { it.amount > 0 }.sumOf { it.amount }
+        val expenses = filtered.filter { it.amount < 0 }.sumOf { it.amount }
+
+        // Calculate category spending
+        val spendingByCategory = filtered
+            .filter { it.amount < 0 }
+            .groupBy { it.category }
+            .mapValues { (_, txs) -> txs.sumOf { it.amount } }
+
+        val totalExpensesAmount = spendingByCategory.values.sum()
+
+        val categoryList = spendingByCategory.map { (category, total) ->
+            CategorySpending(
+                category = category,
+                totalAmount = total,
+                transactionCount = filtered.count { it.category == category && it.amount < 0 },
+                percentage = if (totalExpensesAmount != 0.0) {
+                    ((total / totalExpensesAmount) * 100).toFloat()
+                } else 0f
+            )
+        }.sortedBy { it.totalAmount }
+
+        // Calculate monthly summary
+        val monthlyData = filtered.groupBy { tx ->
+            // Extract month from date string (format: DD.MM.YYYY)
+            val parts = tx.date.split(".")
+            if (parts.size == 3) "${parts[2]}-${parts[1]}" else tx.date
+        }
+
+        val monthlyList = monthlyData.map { (month, txs) ->
+            val monthIncome = txs.filter { it.amount > 0 }.sumOf { it.amount }
+            val monthExpenses = txs.filter { it.amount < 0 }.sumOf { it.amount }
+            MonthlySummary(
+                month = formatMonthDisplay(month),
+                income = monthIncome,
+                expenses = monthExpenses
+            )
+        }.sortedByDescending { it.month }
+
+        FilteredSpendingData(income, expenses, categoryList, monthlyList)
+    }
+
+    // Use filtered data if filtering is active, otherwise use passed data
+    val displayIncome = if (selectedAccountId == null) totalIncome else filteredData.income
+    val displayExpenses = if (selectedAccountId == null) totalExpenses else filteredData.expenses
+    val displayCategorySpending = if (selectedAccountId == null) categorySpending else filteredData.categorySpending
+    val displayMonthlySummary = if (selectedAccountId == null) monthlySummary else filteredData.monthlySummary
+
+    // Get selected account name for display
+    val selectedAccountName = remember(selectedAccountId, accounts) {
+        if (selectedAccountId == null) {
+            strings.allAccounts
+        } else {
+            accounts.find { it.id == selectedAccountId }?.name ?: strings.allAccounts
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -73,6 +142,53 @@ fun SpendingOverviewScreen(
             }
         }
 
+        // Account filter dropdown (only show if multiple accounts)
+        if (accounts.size > 1) {
+            item {
+                Box {
+                    OutlinedButton(
+                        onClick = { dropdownExpanded = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = selectedAccountName,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(" ▼")
+                    }
+
+                    DropdownMenu(
+                        expanded = dropdownExpanded,
+                        onDismissRequest = { dropdownExpanded = false },
+                        modifier = Modifier.fillMaxWidth(0.9f)
+                    ) {
+                        // All Accounts option
+                        DropdownMenuItem(
+                            text = { Text(strings.allAccounts) },
+                            onClick = {
+                                selectedAccountId = null
+                                dropdownExpanded = false
+                            }
+                        )
+                        HorizontalDivider()
+                        // Individual accounts
+                        accounts.forEach { account ->
+                            if (account.id != null) {
+                                DropdownMenuItem(
+                                    text = { Text(account.name) },
+                                    onClick = {
+                                        selectedAccountId = account.id
+                                        dropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Summary Cards
         item {
             Row(
@@ -81,13 +197,13 @@ fun SpendingOverviewScreen(
             ) {
                 SummaryCard(
                     title = strings.income,
-                    amount = totalIncome,
+                    amount = displayIncome,
                     color = Color(0xFF4CAF50),
                     modifier = Modifier.weight(1f)
                 )
                 SummaryCard(
                     title = strings.expenses,
-                    amount = totalExpenses,
+                    amount = displayExpenses,
                     color = Color(0xFFE57373),
                     modifier = Modifier.weight(1f)
                 )
@@ -96,7 +212,7 @@ fun SpendingOverviewScreen(
 
         // Net balance
         item {
-            val netAmount = totalIncome + totalExpenses
+            val netAmount = displayIncome + displayExpenses
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -140,7 +256,7 @@ fun SpendingOverviewScreen(
         }
 
         // Category items
-        if (categorySpending.isEmpty()) {
+        if (displayCategorySpending.isEmpty()) {
             item {
                 Text(
                     text = strings.noSpendingData,
@@ -149,13 +265,13 @@ fun SpendingOverviewScreen(
                 )
             }
         } else {
-            items(categorySpending.filter { it.totalAmount < 0 }.sortedBy { it.totalAmount }) { spending ->
+            items(displayCategorySpending.filter { it.totalAmount < 0 }.sortedBy { it.totalAmount }) { spending ->
                 CategorySpendingItem(spending)
             }
         }
 
         // Monthly summary title
-        if (monthlySummary.isNotEmpty()) {
+        if (displayMonthlySummary.isNotEmpty()) {
             item {
                 Text(
                     text = strings.monthlySummary,
@@ -165,7 +281,7 @@ fun SpendingOverviewScreen(
                 )
             }
 
-            items(monthlySummary) { summary ->
+            items(displayMonthlySummary) { summary ->
                 MonthlyItem(summary)
             }
         }
@@ -175,6 +291,32 @@ fun SpendingOverviewScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+/**
+ * Helper data class for filtered spending calculations
+ */
+private data class FilteredSpendingData(
+    val income: Double,
+    val expenses: Double,
+    val categorySpending: List<CategorySpending>,
+    val monthlySummary: List<MonthlySummary>
+)
+
+/**
+ * Format month string for display
+ */
+private fun formatMonthDisplay(yearMonth: String): String {
+    val parts = yearMonth.split("-")
+    if (parts.size != 2) return yearMonth
+    val monthNames = listOf(
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    )
+    val monthIndex = parts[1].toIntOrNull()?.minus(1) ?: return yearMonth
+    return if (monthIndex in 0..11) {
+        "${monthNames[monthIndex]} ${parts[0]}"
+    } else yearMonth
 }
 
 @Composable
