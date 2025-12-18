@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,15 +28,46 @@ data class TransactionDisplay(
     val amount: Double,
     val currency: String,
     val category: TransactionCategory,
-    val counterparty: String?
+    val counterparty: String?,
+    val accountId: Long = 0,
+    val accountName: String = ""
+)
+
+/**
+ * Filter option for account dropdown
+ */
+data class AccountFilterOption(
+    val id: Long?,  // null means "All Accounts"
+    val name: String
 )
 
 @Composable
 fun TransactionListScreen(
     transactions: List<TransactionDisplay>,
+    accounts: List<AccountFilterOption> = emptyList(),
     onBackClick: () -> Unit
 ) {
     val strings = LocalStrings.current
+    var selectedAccountId by remember { mutableStateOf<Long?>(null) }
+    var dropdownExpanded by remember { mutableStateOf(false) }
+
+    // Filter transactions based on selected account
+    val filteredTransactions = remember(transactions, selectedAccountId) {
+        if (selectedAccountId == null) {
+            transactions
+        } else {
+            transactions.filter { it.accountId == selectedAccountId }
+        }
+    }
+
+    // Get selected account name for display
+    val selectedAccountName = remember(selectedAccountId, accounts) {
+        if (selectedAccountId == null) {
+            strings.allAccounts
+        } else {
+            accounts.find { it.id == selectedAccountId }?.name ?: strings.allAccounts
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -62,15 +93,61 @@ fun TransactionListScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Account filter dropdown (only show if multiple accounts)
+        if (accounts.size > 1) {
+            Box {
+                OutlinedButton(
+                    onClick = { dropdownExpanded = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = selectedAccountName,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(" ▼")
+                }
+
+                DropdownMenu(
+                    expanded = dropdownExpanded,
+                    onDismissRequest = { dropdownExpanded = false },
+                    modifier = Modifier.fillMaxWidth(0.9f)
+                ) {
+                    // All Accounts option
+                    DropdownMenuItem(
+                        text = { Text(strings.allAccounts) },
+                        onClick = {
+                            selectedAccountId = null
+                            dropdownExpanded = false
+                        }
+                    )
+                    HorizontalDivider()
+                    // Individual accounts
+                    accounts.forEach { account ->
+                        if (account.id != null) {
+                            DropdownMenuItem(
+                                text = { Text(account.name) },
+                                onClick = {
+                                    selectedAccountId = account.id
+                                    dropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         Text(
-            text = "${transactions.size} ${strings.transactions.lowercase()}",
+            text = "${filteredTransactions.size} ${strings.transactions.lowercase()}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (transactions.isEmpty()) {
+        if (filteredTransactions.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -85,7 +162,7 @@ fun TransactionListScreen(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(transactions) { transaction ->
+                items(filteredTransactions) { transaction ->
                     TransactionItem(transaction)
                 }
             }
