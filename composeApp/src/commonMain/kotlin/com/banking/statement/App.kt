@@ -17,6 +17,9 @@ import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.*
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
+// Composition local for strings
+val LocalStrings = compositionLocalOf { defaultEnglishStrings() }
+
 data class ImportState(
     val isProcessing: Boolean = false,
     val parseResult: ParseResult? = null,
@@ -73,40 +76,43 @@ fun App(
     onDismissSuccessDialog: (() -> Unit)? = null
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
+    val strings = provideStrings()
 
-    MaterialTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            when (currentScreen) {
-                Screen.HOME -> HomeScreen(
-                    onPickFile = onPickFile,
-                    importState = importState,
-                    stats = stats,
-                    onViewTransactions = { currentScreen = Screen.TRANSACTIONS },
-                    onViewSpending = { currentScreen = Screen.SPENDING }
-                )
-                Screen.TRANSACTIONS -> TransactionListScreen(
-                    transactions = transactions,
-                    onBackClick = { currentScreen = Screen.HOME }
-                )
-                Screen.SPENDING -> SpendingOverviewScreen(
-                    totalIncome = totalIncome,
-                    totalExpenses = totalExpenses,
-                    categorySpending = categorySpending,
-                    monthlySummary = monthlySummary,
-                    onBackClick = { currentScreen = Screen.HOME }
+    CompositionLocalProvider(LocalStrings provides strings) {
+        MaterialTheme {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                when (currentScreen) {
+                    Screen.HOME -> HomeScreen(
+                        onPickFile = onPickFile,
+                        importState = importState,
+                        stats = stats,
+                        onViewTransactions = { currentScreen = Screen.TRANSACTIONS },
+                        onViewSpending = { currentScreen = Screen.SPENDING }
+                    )
+                    Screen.TRANSACTIONS -> TransactionListScreen(
+                        transactions = transactions,
+                        onBackClick = { currentScreen = Screen.HOME }
+                    )
+                    Screen.SPENDING -> SpendingOverviewScreen(
+                        totalIncome = totalIncome,
+                        totalExpenses = totalExpenses,
+                        categorySpending = categorySpending,
+                        monthlySummary = monthlySummary,
+                        onBackClick = { currentScreen = Screen.HOME }
+                    )
+                }
+
+                // Import dialogs - handled through platform-specific dialog state
+                // The dialogState is cast and handled in the platform-specific composable wrapper
+                HandleImportDialogs(
+                    dialogState = dialogState,
+                    onImportChoice = onImportChoice,
+                    onDismissSuccessDialog = onDismissSuccessDialog
                 )
             }
-
-            // Import dialogs - handled through platform-specific dialog state
-            // The dialogState is cast and handled in the platform-specific composable wrapper
-            HandleImportDialogs(
-                dialogState = dialogState,
-                onImportChoice = onImportChoice,
-                onDismissSuccessDialog = onDismissSuccessDialog
-            )
         }
     }
 }
@@ -126,6 +132,8 @@ fun HomeScreen(
     onViewTransactions: () -> Unit,
     onViewSpending: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -137,7 +145,7 @@ fun HomeScreen(
 
         // Title
         Text(
-            text = "Bank Statement Analyzer",
+            text = strings.homeTitle,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -146,7 +154,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Import your bank statements to analyze",
+            text = strings.homeSubtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -180,10 +188,10 @@ fun HomeScreen(
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Processing...")
+                Text(strings.processing)
             } else {
                 Text(
-                    text = "Import Statement",
+                    text = strings.importButton,
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -192,7 +200,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "PDF: 15 German banks • CSV/Excel: All banks",
+            text = strings.supportedFormats,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -234,6 +242,8 @@ fun StatsCard(
     onViewTransactions: () -> Unit,
     onViewSpending: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -249,15 +259,15 @@ fun StatsCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 StatItem(
-                    label = "Accounts",
+                    label = strings.accounts,
                     value = stats.totalAccounts.toString()
                 )
                 StatItem(
-                    label = "Statements",
+                    label = strings.statements,
                     value = stats.totalStatements.toString()
                 )
                 StatItem(
-                    label = "Transactions",
+                    label = strings.transactions,
                     value = stats.totalTransactions.toString()
                 )
             }
@@ -273,14 +283,14 @@ fun StatsCard(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Transactions")
+                    Text(strings.viewTransactions)
                 }
                 OutlinedButton(
                     onClick = onViewSpending,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Spending")
+                    Text(strings.viewSpending)
                 }
             }
         }
@@ -334,6 +344,8 @@ fun ErrorCard(message: String) {
 
 @Composable
 fun SuccessCard(result: ParseResult, transactionCount: Int) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -354,13 +366,13 @@ fun SuccessCard(result: ParseResult, transactionCount: Int) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Import Successful",
+                        text = strings.importSuccessful,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "$transactionCount transactions imported",
+                        text = "$transactionCount ${strings.transactions.lowercase()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
@@ -371,12 +383,12 @@ fun SuccessCard(result: ParseResult, transactionCount: Int) {
             HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(16.dp))
 
-            DetailRow("Bank", result.bankName)
+            DetailRow(strings.bankLabel, result.bankName)
             result.statementPeriod?.let {
-                DetailRow("Period", it)
+                DetailRow(strings.periodLabel, it)
             }
             result.accountIban?.let {
-                DetailRow("Account", it.take(12) + "...")
+                DetailRow(strings.accountLabel, it.take(12) + "...")
             }
         }
     }
@@ -384,6 +396,8 @@ fun SuccessCard(result: ParseResult, transactionCount: Int) {
 
 @Composable
 fun ValidationFailedCard(result: ParseResult) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -404,13 +418,13 @@ fun ValidationFailedCard(result: ParseResult) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Import Failed",
+                        text = strings.importFailed,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Text(
-                        text = result.errorMessage ?: "Could not parse file",
+                        text = result.errorMessage ?: strings.errorReadingFile,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
                     )
@@ -420,7 +434,7 @@ fun ValidationFailedCard(result: ParseResult) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Tip: Make sure the file contains valid bank statement data with dates and amounts.",
+                text = strings.importTip,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
             )

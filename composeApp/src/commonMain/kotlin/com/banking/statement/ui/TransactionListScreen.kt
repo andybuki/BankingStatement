@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.banking.statement.LocalStrings
 import com.banking.statement.categorization.TransactionCategory
 
 /**
@@ -35,6 +36,8 @@ fun TransactionListScreen(
     transactions: List<TransactionDisplay>,
     onBackClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -47,20 +50,20 @@ fun TransactionListScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Transactions",
+                text = strings.transactionListTitle,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             TextButton(onClick = onBackClick) {
-                Text("Back")
+                Text(strings.back)
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "${transactions.size} transactions",
+            text = "${transactions.size} ${strings.transactions.lowercase()}",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -73,7 +76,7 @@ fun TransactionListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No transactions yet.\nImport a bank statement to get started.",
+                    text = "${strings.noTransactions}.\n${strings.importFirst}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

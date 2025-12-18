@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Analyseur de Relevés</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Analyseur de Relevés</string>
+    <string name="home_subtitle">Importez vos relevés bancaires pour les analyser</string>
+    <string name="import_button">Importer un Relevé</string>
+    <string name="processing">Traitement…</string>
+    <string name="supported_formats">PDF: 15 banques allemandes • CSV/Excel: Toutes les banques</string>
+
+    <!-- Stats -->
+    <string name="accounts">Comptes</string>
+    <string name="statements">Relevés</string>
+    <string name="transactions">Transactions</string>
+    <string name="view_transactions">Transactions</string>
+    <string name="view_spending">Dépenses</string>
+
+    <!-- Import Results -->
+    <string name="import_successful">Importation réussie</string>
+    <string name="import_failed">Échec de l\'importation</string>
+    <string name="transactions_imported">%d transactions importées</string>
+    <string name="bank_label">Banque</string>
+    <string name="period_label">Période</string>
+    <string name="account_label">Compte</string>
+    <string name="import_tip">Conseil: Assurez-vous que le fichier contient des données valides de relevé bancaire avec dates et montants.</string>
+
+    <!-- Transaction List -->
+    <string name="transaction_list_title">Transactions</string>
+    <string name="no_transactions">Pas encore de transactions</string>
+    <string name="import_first">Importez un relevé bancaire pour voir vos transactions</string>
+    <string name="back">Retour</string>
+
+    <!-- Spending Overview -->
+    <string name="spending_title">Aperçu des Dépenses</string>
+    <string name="total_income">Revenus Totaux</string>
+    <string name="total_expenses">Dépenses Totales</string>
+    <string name="net_balance">Solde Net</string>
+    <string name="spending_by_category">Dépenses par Catégorie</string>
+    <string name="monthly_summary">Résumé Mensuel</string>
+    <string name="income">Revenus</string>
+    <string name="expenses">Dépenses</string>
+    <string name="no_spending_data">Pas encore de données de dépenses</string>
+    <string name="net">Net</string>
+
+    <!-- Import Dialog -->
+    <string name="new_bank_statement">Nouveau Relevé Bancaire</string>
+    <string name="where_should_go">Où ces transactions doivent-elles aller?</string>
+    <string name="create_new_account">Créer un nouveau compte</string>
+    <string name="add_to_existing">Ajouter à un compte existant</string>
+    <string name="account_name">Nom du compte</string>
+    <string name="cancel">Annuler</string>
+    <string name="import_action">Importer</string>
+    <string name="iban_label">IBAN</string>
+    <string name="add_to_account">Ajouter à %s?</string>
+
+    <!-- Success Dialog -->
+    <string name="account_created">Compte créé!</string>
+    <string name="import_complete">Importation terminée!</string>
+    <string name="new_account_message">Le nouveau compte \"%s\" a été créé.</string>
+    <string name="transactions_imported_count">✓ %d transactions importées</string>
+    <string name="duplicates_skipped">○ %d doublons ignorés</string>
+    <string name="done">Terminé</string>
+    <string name="add">Ajouter</string>
+
+    <!-- Categories -->
+    <string name="category_rent">Loyer</string>
+    <string name="category_utilities">Services publics</string>
+    <string name="category_groceries">Alimentation</string>
+    <string name="category_supermarket">Supermarché</string>
+    <string name="category_restaurants">Restaurants</string>
+    <string name="category_transport">Transport</string>
+    <string name="category_entertainment">Divertissement</string>
+    <string name="category_shopping">Shopping</string>
+    <string name="category_health">Santé</string>
+    <string name="category_insurance">Assurance</string>
+    <string name="category_subscriptions">Abonnements</string>
+    <string name="category_salary">Salaire</string>
+    <string name="category_transfers">Virements</string>
+    <string name="category_cash">Espèces</string>
+    <string name="category_fees">Frais</string>
+    <string name="category_travel">Voyages</string>
+    <string name="category_education">Éducation</string>
+    <string name="category_gifts">Cadeaux</string>
+    <string name="category_investments">Investissements</string>
+    <string name="category_taxes">Impôts</string>
+    <string name="category_other">Autres</string>
+
+    <!-- Errors -->
+    <string name="error_reading_file">Impossible de lire le fichier</string>
+    <string name="error_unsupported_format">Format de fichier non pris en charge</string>
+    <string name="error_not_bank_statement">Ceci ne semble pas être un relevé bancaire</string>
+    <string name="import_cancelled">Importation annulée</string>
+</resources>

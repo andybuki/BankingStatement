@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kontoauszug Analysator</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Kontoauszug Analysator</string>
+    <string name="home_subtitle">Importieren Sie Ihre Kontoauszüge zur Analyse</string>
+    <string name="import_button">Auszug importieren</string>
+    <string name="processing">Verarbeitung…</string>
+    <string name="supported_formats">PDF: 15 deutsche Banken • CSV/Excel: Alle Banken</string>
+
+    <!-- Stats -->
+    <string name="accounts">Konten</string>
+    <string name="statements">Auszüge</string>
+    <string name="transactions">Buchungen</string>
+    <string name="view_transactions">Buchungen</string>
+    <string name="view_spending">Ausgaben</string>
+
+    <!-- Import Results -->
+    <string name="import_successful">Import erfolgreich</string>
+    <string name="import_failed">Import fehlgeschlagen</string>
+    <string name="transactions_imported">%d Buchungen importiert</string>
+    <string name="bank_label">Bank</string>
+    <string name="period_label">Zeitraum</string>
+    <string name="account_label">Konto</string>
+    <string name="import_tip">Tipp: Stellen Sie sicher, dass die Datei gültige Kontoauszugsdaten mit Datum und Beträgen enthält.</string>
+
+    <!-- Transaction List -->
+    <string name="transaction_list_title">Buchungen</string>
+    <string name="no_transactions">Noch keine Buchungen</string>
+    <string name="import_first">Importieren Sie einen Kontoauszug, um Ihre Buchungen zu sehen</string>
+    <string name="back">Zurück</string>
+
+    <!-- Spending Overview -->
+    <string name="spending_title">Ausgabenübersicht</string>
+    <string name="total_income">Gesamteinnahmen</string>
+    <string name="total_expenses">Gesamtausgaben</string>
+    <string name="net_balance">Nettosaldo</string>
+    <string name="spending_by_category">Ausgaben nach Kategorie</string>
+    <string name="monthly_summary">Monatliche Übersicht</string>
+    <string name="income">Einnahmen</string>
+    <string name="expenses">Ausgaben</string>
+    <string name="no_spending_data">Noch keine Ausgabendaten</string>
+    <string name="net">Netto</string>
+
+    <!-- Import Dialog -->
+    <string name="new_bank_statement">Neuer Kontoauszug</string>
+    <string name="where_should_go">Wohin sollen diese Buchungen?</string>
+    <string name="create_new_account">Neues Konto erstellen</string>
+    <string name="add_to_existing">Zu bestehendem Konto hinzufügen</string>
+    <string name="account_name">Kontoname</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="import_action">Importieren</string>
+    <string name="iban_label">IBAN</string>
+    <string name="add_to_account">Zu %s hinzufügen?</string>
+
+    <!-- Success Dialog -->
+    <string name="account_created">Konto erstellt!</string>
+    <string name="import_complete">Import abgeschlossen!</string>
+    <string name="new_account_message">Neues Konto \"%s\" wurde erstellt.</string>
+    <string name="transactions_imported_count">✓ %d Buchungen importiert</string>
+    <string name="duplicates_skipped">○ %d Duplikate übersprungen</string>
+    <string name="done">Fertig</string>
+    <string name="add">Hinzufügen</string>
+
+    <!-- Categories -->
+    <string name="category_rent">Miete</string>
+    <string name="category_utilities">Nebenkosten</string>
+    <string name="category_groceries">Lebensmittel</string>
+    <string name="category_supermarket">Supermarkt</string>
+    <string name="category_restaurants">Restaurants</string>
+    <string name="category_transport">Verkehr</string>
+    <string name="category_entertainment">Unterhaltung</string>
+    <string name="category_shopping">Einkaufen</string>
+    <string name="category_health">Gesundheit</string>
+    <string name="category_insurance">Versicherung</string>
+    <string name="category_subscriptions">Abonnements</string>
+    <string name="category_salary">Gehalt</string>
+    <string name="category_transfers">Überweisungen</string>
+    <string name="category_cash">Bargeld</string>
+    <string name="category_fees">Gebühren</string>
+    <string name="category_travel">Reisen</string>
+    <string name="category_education">Bildung</string>
+    <string name="category_gifts">Geschenke</string>
+    <string name="category_investments">Investitionen</string>
+    <string name="category_taxes">Steuern</string>
+    <string name="category_other">Sonstiges</string>
+
+    <!-- Errors -->
+    <string name="error_reading_file">Datei konnte nicht gelesen werden</string>
+    <string name="error_unsupported_format">Nicht unterstütztes Dateiformat</string>
+    <string name="error_not_bank_statement">Dies scheint kein Kontoauszug zu sein</string>
+    <string name="import_cancelled">Import abgebrochen</string>
+</resources>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Analizador de Extractos</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Analizador de Extractos</string>
+    <string name="home_subtitle">Importa tus extractos bancarios para analizar</string>
+    <string name="import_button">Importar Extracto</string>
+    <string name="processing">Procesando…</string>
+    <string name="supported_formats">PDF: 15 bancos alemanes • CSV/Excel: Todos los bancos</string>
+
+    <!-- Stats -->
+    <string name="accounts">Cuentas</string>
+    <string name="statements">Extractos</string>
+    <string name="transactions">Transacciones</string>
+    <string name="view_transactions">Transacciones</string>
+    <string name="view_spending">Gastos</string>
+
+    <!-- Import Results -->
+    <string name="import_successful">Importación exitosa</string>
+    <string name="import_failed">Importación fallida</string>
+    <string name="transactions_imported">%d transacciones importadas</string>
+    <string name="bank_label">Banco</string>
+    <string name="period_label">Período</string>
+    <string name="account_label">Cuenta</string>
+    <string name="import_tip">Consejo: Asegúrate de que el archivo contenga datos válidos de extracto bancario con fechas y montos.</string>
+
+    <!-- Transaction List -->
+    <string name="transaction_list_title">Transacciones</string>
+    <string name="no_transactions">Aún no hay transacciones</string>
+    <string name="import_first">Importa un extracto bancario para ver tus transacciones</string>
+    <string name="back">Volver</string>
+
+    <!-- Spending Overview -->
+    <string name="spending_title">Resumen de Gastos</string>
+    <string name="total_income">Ingresos Totales</string>
+    <string name="total_expenses">Gastos Totales</string>
+    <string name="net_balance">Saldo Neto</string>
+    <string name="spending_by_category">Gastos por Categoría</string>
+    <string name="monthly_summary">Resumen Mensual</string>
+    <string name="income">Ingresos</string>
+    <string name="expenses">Gastos</string>
+    <string name="no_spending_data">Aún no hay datos de gastos</string>
+    <string name="net">Neto</string>
+
+    <!-- Import Dialog -->
+    <string name="new_bank_statement">Nuevo Extracto Bancario</string>
+    <string name="where_should_go">¿Dónde deben ir estas transacciones?</string>
+    <string name="create_new_account">Crear nueva cuenta</string>
+    <string name="add_to_existing">Añadir a cuenta existente</string>
+    <string name="account_name">Nombre de cuenta</string>
+    <string name="cancel">Cancelar</string>
+    <string name="import_action">Importar</string>
+    <string name="iban_label">IBAN</string>
+    <string name="add_to_account">¿Añadir a %s?</string>
+
+    <!-- Success Dialog -->
+    <string name="account_created">¡Cuenta creada!</string>
+    <string name="import_complete">¡Importación completada!</string>
+    <string name="new_account_message">Se ha creado la nueva cuenta \"%s\".</string>
+    <string name="transactions_imported_count">✓ %d transacciones importadas</string>
+    <string name="duplicates_skipped">○ %d duplicados omitidos</string>
+    <string name="done">Listo</string>
+    <string name="add">Añadir</string>
+
+    <!-- Categories -->
+    <string name="category_rent">Alquiler</string>
+    <string name="category_utilities">Servicios</string>
+    <string name="category_groceries">Comestibles</string>
+    <string name="category_supermarket">Supermercado</string>
+    <string name="category_restaurants">Restaurantes</string>
+    <string name="category_transport">Transporte</string>
+    <string name="category_entertainment">Entretenimiento</string>
+    <string name="category_shopping">Compras</string>
+    <string name="category_health">Salud</string>
+    <string name="category_insurance">Seguros</string>
+    <string name="category_subscriptions">Suscripciones</string>
+    <string name="category_salary">Salario</string>
+    <string name="category_transfers">Transferencias</string>
+    <string name="category_cash">Efectivo</string>
+    <string name="category_fees">Comisiones</string>
+    <string name="category_travel">Viajes</string>
+    <string name="category_education">Educación</string>
+    <string name="category_gifts">Regalos</string>
+    <string name="category_investments">Inversiones</string>
+    <string name="category_taxes">Impuestos</string>
+    <string name="category_other">Otros</string>
+
+    <!-- Errors -->
+    <string name="error_reading_file">No se pudo leer el archivo</string>
+    <string name="error_unsupported_format">Formato de archivo no soportado</string>
+    <string name="error_not_bank_statement">Esto no parece ser un extracto bancario</string>
+    <string name="import_cancelled">Importación cancelada</string>
+</resources>
