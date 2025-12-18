@@ -37,7 +37,8 @@ data class DatabaseStats(
 enum class Screen {
     HOME,
     TRANSACTIONS,
-    SPENDING
+    SPENDING,
+    ACCOUNTS
 }
 
 /**
@@ -73,7 +74,12 @@ fun App(
     // Dialog state - platform-specific handling passes these
     dialogState: Any? = null,
     onImportChoice: ((ImportChoice) -> Unit)? = null,
-    onDismissSuccessDialog: (() -> Unit)? = null
+    onDismissSuccessDialog: (() -> Unit)? = null,
+    // Account management
+    accountsForManagement: List<AccountManagementItem> = emptyList(),
+    onDeleteAccount: ((Long) -> Unit)? = null,
+    onEditAccount: ((Long, String) -> Unit)? = null,
+    onClearAllData: (() -> Unit)? = null
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
     val strings = provideStrings()
@@ -90,7 +96,8 @@ fun App(
                         importState = importState,
                         stats = stats,
                         onViewTransactions = { currentScreen = Screen.TRANSACTIONS },
-                        onViewSpending = { currentScreen = Screen.SPENDING }
+                        onViewSpending = { currentScreen = Screen.SPENDING },
+                        onManageAccounts = { currentScreen = Screen.ACCOUNTS }
                     )
                     Screen.TRANSACTIONS -> TransactionListScreen(
                         transactions = transactions,
@@ -102,6 +109,13 @@ fun App(
                         categorySpending = categorySpending,
                         monthlySummary = monthlySummary,
                         onBackClick = { currentScreen = Screen.HOME }
+                    )
+                    Screen.ACCOUNTS -> AccountManagementScreen(
+                        accounts = accountsForManagement,
+                        onBackClick = { currentScreen = Screen.HOME },
+                        onDeleteAccount = { id -> onDeleteAccount?.invoke(id) },
+                        onEditAccount = { id, name -> onEditAccount?.invoke(id, name) },
+                        onClearAllData = { onClearAllData?.invoke() }
                     )
                 }
 
@@ -130,7 +144,8 @@ fun HomeScreen(
     importState: ImportState,
     stats: DatabaseStats,
     onViewTransactions: () -> Unit,
-    onViewSpending: () -> Unit
+    onViewSpending: () -> Unit,
+    onManageAccounts: () -> Unit
 ) {
     val strings = LocalStrings.current
 
@@ -167,7 +182,8 @@ fun HomeScreen(
             StatsCard(
                 stats = stats,
                 onViewTransactions = onViewTransactions,
-                onViewSpending = onViewSpending
+                onViewSpending = onViewSpending,
+                onManageAccounts = onManageAccounts
             )
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -240,7 +256,8 @@ fun HomeScreen(
 fun StatsCard(
     stats: DatabaseStats,
     onViewTransactions: () -> Unit,
-    onViewSpending: () -> Unit
+    onViewSpending: () -> Unit,
+    onManageAccounts: () -> Unit
 ) {
     val strings = LocalStrings.current
 
@@ -292,6 +309,16 @@ fun StatsCard(
                 ) {
                     Text(strings.viewSpending)
                 }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = onManageAccounts,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(strings.manageAccounts)
             }
         }
     }

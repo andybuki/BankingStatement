@@ -21,6 +21,7 @@ import com.banking.statement.parser.ParseResult
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.parser.banks.BankParserRegistry
 import com.banking.statement.pdf.PdfProcessor
+import com.banking.statement.ui.AccountManagementItem
 import com.banking.statement.ui.AccountOption
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.ImportChoice
@@ -69,6 +70,7 @@ class MainActivity : ComponentActivity() {
     private var totalIncome by mutableStateOf(0.0)
     private var totalExpenses by mutableStateOf(0.0)
     private var dialogState by mutableStateOf(ImportDialogState())
+    private var accountsForManagement by mutableStateOf<List<AccountManagementItem>>(emptyList())
 
     private lateinit var repository: TransactionRepository
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -93,6 +95,7 @@ class MainActivity : ComponentActivity() {
         // Load stats and data
         updateStats()
         loadTransactionData()
+        loadAccountsData()
 
         setContent {
             App(
@@ -111,7 +114,11 @@ class MainActivity : ComponentActivity() {
                 onImportChoice = { choice -> handleImportChoice(choice) },
                 onDismissSuccessDialog = {
                     dialogState = dialogState.copy(showSuccessDialog = false, importResult = null)
-                }
+                },
+                accountsForManagement = accountsForManagement,
+                onDeleteAccount = { accountId -> deleteAccount(accountId) },
+                onEditAccount = { accountId, newName -> editAccount(accountId, newName) },
+                onClearAllData = { clearAllData() }
             )
         }
     }
@@ -576,5 +583,57 @@ class MainActivity : ComponentActivity() {
         return if (monthIndex in 0..11) {
             "${monthNames[monthIndex]} ${parts[0]}"
         } else yearMonth
+    }
+
+    private fun loadAccountsData() {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                val accountSummaries = repository.getAccountSummary()
+                accountsForManagement = accountSummaries.map { summary ->
+                    val statementCount = repository.getStatementCountByAccount(summary.id)
+                    AccountManagementItem(
+                        id = summary.id,
+                        name = summary.name,
+                        bankName = summary.bank_name,
+                        iban = summary.iban,
+                        color = summary.color,
+                        transactionCount = summary.transaction_count,
+                        statementCount = statementCount,
+                        balance = summary.balance
+                    )
+                }
+            }
+        }
+    }
+
+    private fun deleteAccount(accountId: Long) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.deleteAccount(accountId)
+            }
+            updateStats()
+            loadAccountsData()
+            loadTransactionData()
+        }
+    }
+
+    private fun editAccount(accountId: Long, newName: String) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.updateAccountName(accountId, newName)
+            }
+            loadAccountsData()
+        }
+    }
+
+    private fun clearAllData() {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.clearAllData()
+            }
+            updateStats()
+            loadAccountsData()
+            loadTransactionData()
+        }
     }
 }

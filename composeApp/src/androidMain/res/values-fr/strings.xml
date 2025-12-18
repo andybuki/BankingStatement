@@ -86,6 +86,23 @@
     <string name="category_taxes">Impôts</string>
     <string name="category_other">Autres</string>
 
+    <!-- Account Management -->
+    <string name="manage_accounts">Gérer les Comptes</string>
+    <string name="no_accounts">Pas encore de comptes</string>
+    <string name="no_accounts_hint">Importez un relevé bancaire pour créer votre premier compte</string>
+    <string name="delete_account">Supprimer le Compte</string>
+    <string name="delete_account_confirm">Êtes-vous sûr de vouloir supprimer \"%s\"? Tous les relevés et transactions de ce compte seront supprimés.</string>
+    <string name="delete">Supprimer</string>
+    <string name="clear_all_data">Effacer Toutes les Données</string>
+    <string name="clear_all_data_confirm">Êtes-vous sûr de vouloir supprimer toutes les données? Tous les comptes, relevés et transactions seront supprimés. Cette action est irréversible.</string>
+    <string name="clear">Effacer</string>
+    <string name="account_deleted">Compte supprimé</string>
+    <string name="all_data_cleared">Toutes les données effacées</string>
+    <string name="statements_count">%d relevés</string>
+    <string name="edit">Modifier</string>
+    <string name="save">Enregistrer</string>
+    <string name="edit_account">Modifier le Compte</string>
+
     <!-- Errors -->
     <string name="error_reading_file">Impossible de lire le fichier</string>
     <string name="error_unsupported_format">Format de fichier non pris en charge</string>
