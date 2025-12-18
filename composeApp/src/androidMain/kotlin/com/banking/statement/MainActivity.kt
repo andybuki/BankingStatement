@@ -495,8 +495,9 @@ class MainActivity : ComponentActivity() {
                 totalTransactions = transactionsCount,
                 totalAccounts = accountsCount
             )
-            // Also reload transaction data
+            // Also reload transaction and account data
             loadTransactionData()
+            loadAccountsData()
         }
     }
 
