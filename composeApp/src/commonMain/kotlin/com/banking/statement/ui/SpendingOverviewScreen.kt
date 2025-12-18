@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.banking.statement.LocalStrings
 import com.banking.statement.categorization.TransactionCategory
 import kotlin.math.absoluteValue
 
@@ -45,6 +46,8 @@ fun SpendingOverviewScreen(
     monthlySummary: List<MonthlySummary>,
     onBackClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -59,13 +62,13 @@ fun SpendingOverviewScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Spending Overview",
+                    text = strings.spendingTitle,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 TextButton(onClick = onBackClick) {
-                    Text("Back")
+                    Text(strings.back)
                 }
             }
         }
@@ -77,13 +80,13 @@ fun SpendingOverviewScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 SummaryCard(
-                    title = "Income",
+                    title = strings.income,
                     amount = totalIncome,
                     color = Color(0xFF4CAF50),
                     modifier = Modifier.weight(1f)
                 )
                 SummaryCard(
-                    title = "Expenses",
+                    title = strings.expenses,
                     amount = totalExpenses,
                     color = Color(0xFFE57373),
                     modifier = Modifier.weight(1f)
@@ -113,7 +116,7 @@ fun SpendingOverviewScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Net Balance",
+                        text = strings.netBalance,
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
@@ -129,7 +132,7 @@ fun SpendingOverviewScreen(
         // Category breakdown title
         item {
             Text(
-                text = "Spending by Category",
+                text = strings.spendingByCategory,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp)
@@ -140,7 +143,7 @@ fun SpendingOverviewScreen(
         if (categorySpending.isEmpty()) {
             item {
                 Text(
-                    text = "No spending data available",
+                    text = strings.noSpendingData,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -155,7 +158,7 @@ fun SpendingOverviewScreen(
         if (monthlySummary.isNotEmpty()) {
             item {
                 Text(
-                    text = "Monthly Summary",
+                    text = strings.monthlySummary,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -283,6 +286,8 @@ fun CategorySpendingItem(spending: CategorySpending) {
 
 @Composable
 fun MonthlyItem(summary: MonthlySummary) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -307,7 +312,7 @@ fun MonthlyItem(summary: MonthlySummary) {
             ) {
                 Column {
                     Text(
-                        text = "Income",
+                        text = strings.income,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -319,7 +324,7 @@ fun MonthlyItem(summary: MonthlySummary) {
                 }
                 Column {
                     Text(
-                        text = "Expenses",
+                        text = strings.expenses,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -331,7 +336,7 @@ fun MonthlyItem(summary: MonthlySummary) {
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "Net",
+                        text = strings.net,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

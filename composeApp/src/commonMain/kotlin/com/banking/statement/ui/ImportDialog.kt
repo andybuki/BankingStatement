@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.banking.statement.LocalStrings
 
 /**
  * Represents an existing account for selection
@@ -54,6 +55,7 @@ fun ImportAccountDialog(
     suggestedAccountName: String,
     onChoice: (ImportChoice) -> Unit
 ) {
+    val strings = LocalStrings.current
     var selectedOption by remember { mutableStateOf<String>("new") }
     var selectedAccountId by remember { mutableStateOf<Long?>(existingAccounts.firstOrNull()?.id) }
     var newAccountName by remember { mutableStateOf(suggestedAccountName) }
@@ -74,7 +76,7 @@ fun ImportAccountDialog(
             ) {
                 // Title
                 Text(
-                    text = "New Bank Statement",
+                    text = strings.newBankStatement,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -95,7 +97,7 @@ fun ImportAccountDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Bank",
+                                text = strings.bankLabel,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -111,7 +113,7 @@ fun ImportAccountDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "Period",
+                                    text = strings.periodLabel,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 )
@@ -127,7 +129,7 @@ fun ImportAccountDialog(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Transactions",
+                                text = strings.transactions,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -143,7 +145,7 @@ fun ImportAccountDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "IBAN",
+                                    text = strings.ibanLabel,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 )
@@ -161,7 +163,7 @@ fun ImportAccountDialog(
 
                 // Options
                 Text(
-                    text = "Where should these transactions go?",
+                    text = strings.whereToGo,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
@@ -188,7 +190,7 @@ fun ImportAccountDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Create new account",
+                            text = strings.createNewAccount,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
@@ -197,7 +199,7 @@ fun ImportAccountDialog(
                             OutlinedTextField(
                                 value = newAccountName,
                                 onValueChange = { newAccountName = it },
-                                label = { Text("Account name") },
+                                label = { Text(strings.accountName) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -228,7 +230,7 @@ fun ImportAccountDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Add to existing account",
+                                text = strings.addToExisting,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium
                             )
@@ -261,7 +263,7 @@ fun ImportAccountDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = { onChoice(ImportChoice.Cancel) }) {
-                        Text("Cancel")
+                        Text(strings.cancel)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -279,7 +281,7 @@ fun ImportAccountDialog(
                             else -> false
                         }
                     ) {
-                        Text("Import")
+                        Text(strings.importAction)
                     }
                 }
             }
@@ -374,13 +376,15 @@ fun ImportConfirmationDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("Add to $accountName?") },
+        title = { Text(strings.addToAccount.replace("%s", accountName)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("This statement from $bankName will be added to your existing account.")
-                Text("• $transactionCount transactions found")
+                Text("• $transactionCount ${strings.transactions.lowercase()}")
                 if (duplicateCount > 0) {
                     Text(
                         "• $duplicateCount duplicates will be skipped",
@@ -391,12 +395,12 @@ fun ImportConfirmationDialog(
         },
         confirmButton = {
             Button(onClick = onConfirm) {
-                Text("Add")
+                Text(strings.add)
             }
         },
         dismissButton = {
             TextButton(onClick = onCancel) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         }
     )
@@ -413,11 +417,13 @@ fun ImportSuccessDialog(
     isNewAccount: Boolean,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (isNewAccount) "Account Created!" else "Import Complete!",
+                text = if (isNewAccount) strings.accountCreated else strings.importComplete,
                 fontWeight = FontWeight.Bold
             )
         },
@@ -426,7 +432,7 @@ fun ImportSuccessDialog(
                 if (isNewAccount) {
                     Text("New account \"$accountName\" has been created.")
                 }
-                Text("✓ $transactionsImported transactions imported")
+                Text("✓ $transactionsImported ${strings.transactions.lowercase()}")
                 if (duplicatesSkipped > 0) {
                     Text(
                         "○ $duplicatesSkipped duplicates skipped",
@@ -437,7 +443,7 @@ fun ImportSuccessDialog(
         },
         confirmButton = {
             Button(onClick = onDismiss) {
-                Text("Done")
+                Text(strings.done)
             }
         }
     )
