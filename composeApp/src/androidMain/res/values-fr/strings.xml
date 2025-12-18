@@ -102,6 +102,7 @@
     <string name="edit">Modifier</string>
     <string name="save">Enregistrer</string>
     <string name="edit_account">Modifier le Compte</string>
+    <string name="all_accounts">Tous les Comptes</string>
 
     <!-- Errors -->
     <string name="error_reading_file">Impossible de lire le fichier</string>

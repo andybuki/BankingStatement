@@ -101,6 +101,7 @@ fun App(
                     )
                     Screen.TRANSACTIONS -> TransactionListScreen(
                         transactions = transactions,
+                        accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
                         onBackClick = { currentScreen = Screen.HOME }
                     )
                     Screen.SPENDING -> SpendingOverviewScreen(
@@ -108,6 +109,8 @@ fun App(
                         totalExpenses = totalExpenses,
                         categorySpending = categorySpending,
                         monthlySummary = monthlySummary,
+                        transactions = transactions,
+                        accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
                         onBackClick = { currentScreen = Screen.HOME }
                     )
                     Screen.ACCOUNTS -> AccountManagementScreen(

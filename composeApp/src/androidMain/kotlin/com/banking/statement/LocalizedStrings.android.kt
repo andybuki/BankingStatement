@@ -71,6 +71,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     edit = stringResource(R.string.edit),
     save = stringResource(R.string.save),
     editAccount = stringResource(R.string.edit_account),
+    allAccounts = stringResource(R.string.all_accounts),
 
     errorReadingFile = stringResource(R.string.error_reading_file),
     errorUnsupportedFormat = stringResource(R.string.error_unsupported_format),

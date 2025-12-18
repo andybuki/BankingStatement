@@ -506,6 +506,9 @@ class MainActivity : ComponentActivity() {
             withContext(Dispatchers.IO) {
                 val allTransactions = repository.getAllTransactions()
 
+                // Get account names map for display
+                val accountNames = repository.getAccountSummary().associate { it.id to it.name }
+
                 // Convert DB transactions to display format with categorization
                 transactions = allTransactions.map { tx ->
                     val category = TransactionCategory.categorize(
@@ -523,7 +526,9 @@ class MainActivity : ComponentActivity() {
                         amount = tx.amount,
                         currency = tx.currency,
                         category = category,
-                        counterparty = tx.counterparty_name
+                        counterparty = tx.counterparty_name,
+                        accountId = tx.account_id,
+                        accountName = accountNames[tx.account_id] ?: ""
                     )
                 }
 
