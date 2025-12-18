@@ -5,6 +5,7 @@ package com.banking.statement.db
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.parser.ParsedTransaction
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
@@ -170,7 +171,7 @@ class TransactionRepository(
         filePath: String?,
         sourceType: String
     ): ImportResult {
-        val importDate = Clock.System.now().epochSeconds
+        val importDate = kotlinx.datetime.Clock.System.now().epochSeconds
 
         // Insert statement record
         queries.insertStatement(
