@@ -45,6 +45,36 @@ object BankParserRegistry {
         register(TomorrowBankParser())
         register(BunqParser())
         register(RevolutPdfParser())
+
+        // US/UK/Australian banks
+        register(BankwestParser())
+        register(SunTrustParser())
+        register(BankOfAmericaParser())
+        register(VirginMoneyParser())
+        register(LloydsParser())
+        register(WestpacParser())
+
+        // European banks
+        register(IngPolandParser())
+        register(AbnAmroParser())
+        register(FinecoParser())
+        register(BancoBpmParser())
+        register(IllimityParser())
+        register(UniCreditParser())
+        register(SocieteGeneraleParser())
+        register(NickelParser())
+
+        // Latin American banks
+        register(BcpParser())
+        register(BancoOccidenteParser())
+        register(GrupoInversoresParser())
+        register(BbvaFrancesParser())
+        register(BancoProvinciaParser())
+
+        // African banks
+        register(AfrilandParser())
+        register(UbaParser())
+        register(JahaParser())
     }
 
     fun register(parser: BankPdfParser) {
