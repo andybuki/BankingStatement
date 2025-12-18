@@ -86,6 +86,23 @@
     <string name="category_taxes">Steuern</string>
     <string name="category_other">Sonstiges</string>
 
+    <!-- Account Management -->
+    <string name="manage_accounts">Konten verwalten</string>
+    <string name="no_accounts">Noch keine Konten</string>
+    <string name="no_accounts_hint">Importieren Sie einen Kontoauszug, um Ihr erstes Konto zu erstellen</string>
+    <string name="delete_account">Konto löschen</string>
+    <string name="delete_account_confirm">Möchten Sie \"%s\" wirklich löschen? Alle Auszüge und Buchungen dieses Kontos werden entfernt.</string>
+    <string name="delete">Löschen</string>
+    <string name="clear_all_data">Alle Daten löschen</string>
+    <string name="clear_all_data_confirm">Möchten Sie wirklich alle Daten löschen? Alle Konten, Auszüge und Buchungen werden entfernt. Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="clear">Löschen</string>
+    <string name="account_deleted">Konto gelöscht</string>
+    <string name="all_data_cleared">Alle Daten gelöscht</string>
+    <string name="statements_count">%d Auszüge</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="save">Speichern</string>
+    <string name="edit_account">Konto bearbeiten</string>
+
     <!-- Errors -->
     <string name="error_reading_file">Datei konnte nicht gelesen werden</string>
     <string name="error_unsupported_format">Nicht unterstütztes Dateiformat</string>

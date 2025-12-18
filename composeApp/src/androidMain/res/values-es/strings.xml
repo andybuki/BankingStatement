@@ -86,6 +86,23 @@
     <string name="category_taxes">Impuestos</string>
     <string name="category_other">Otros</string>
 
+    <!-- Account Management -->
+    <string name="manage_accounts">Gestionar Cuentas</string>
+    <string name="no_accounts">Aún no hay cuentas</string>
+    <string name="no_accounts_hint">Importa un extracto bancario para crear tu primera cuenta</string>
+    <string name="delete_account">Eliminar Cuenta</string>
+    <string name="delete_account_confirm">¿Estás seguro de que deseas eliminar \"%s\"? Se eliminarán todos los extractos y transacciones de esta cuenta.</string>
+    <string name="delete">Eliminar</string>
+    <string name="clear_all_data">Borrar Todos los Datos</string>
+    <string name="clear_all_data_confirm">¿Estás seguro de que deseas eliminar todos los datos? Se eliminarán todas las cuentas, extractos y transacciones. Esta acción no se puede deshacer.</string>
+    <string name="clear">Borrar</string>
+    <string name="account_deleted">Cuenta eliminada</string>
+    <string name="all_data_cleared">Todos los datos eliminados</string>
+    <string name="statements_count">%d extractos</string>
+    <string name="edit">Editar</string>
+    <string name="save">Guardar</string>
+    <string name="edit_account">Editar Cuenta</string>
+
     <!-- Errors -->
     <string name="error_reading_file">No se pudo leer el archivo</string>
     <string name="error_unsupported_format">Formato de archivo no soportado</string>
