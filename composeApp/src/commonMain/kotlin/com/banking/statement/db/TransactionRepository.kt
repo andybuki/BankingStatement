@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.time.ExperimentalTime::class)
+
 package com.banking.statement.db
 
 import com.banking.statement.parser.ParseResult
