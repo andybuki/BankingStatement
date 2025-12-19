@@ -137,17 +137,11 @@ class MainActivity : ComponentActivity() {
                 onDeleteAccount = { accountId -> deleteAccount(accountId) },
                 onEditAccount = { accountId, newName -> editAccount(accountId, newName) },
                 onClearAllData = { clearAllData() },
-                onExportTransactions = { format, txList, accountName ->
-                    exportTransactions(format, txList, accountName, share = false)
-                },
                 onShareTransactions = { format, txList, accountName ->
-                    exportTransactions(format, txList, accountName, share = true)
-                },
-                onExportSpending = { format, data ->
-                    exportSpending(format, data, share = false)
+                    shareTransactions(format, txList, accountName)
                 },
                 onShareSpending = { format, data ->
-                    exportSpending(format, data, share = true)
+                    shareSpending(format, data)
                 }
             )
         }
@@ -673,11 +667,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun exportTransactions(
+    private fun shareTransactions(
         format: ExportFormat,
         transactions: List<TransactionDisplay>,
-        accountName: String?,
-        share: Boolean
+        accountName: String?
     ) {
         coroutineScope.launch {
             try {
@@ -703,15 +696,11 @@ class MainActivity : ComponentActivity() {
                 }
 
                 if (result.success) {
-                    if (share) {
-                        val shareIntent = fileExporter.createShareIntent(result)
-                        if (shareIntent != null) {
-                            startActivity(Intent.createChooser(shareIntent, getString(R.string.share)))
-                        } else {
-                            Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
-                        }
+                    val shareIntent = fileExporter.createShareIntent(result)
+                    if (shareIntent != null) {
+                        startActivity(Intent.createChooser(shareIntent, getString(R.string.share)))
                     } else {
-                        Toast.makeText(this@MainActivity, getString(R.string.export_success), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(this@MainActivity, result.errorMessage ?: getString(R.string.export_error), Toast.LENGTH_SHORT).show()
@@ -723,10 +712,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun exportSpending(
+    private fun shareSpending(
         format: ExportFormat,
-        data: SpendingExportData,
-        share: Boolean
+        data: SpendingExportData
     ) {
         coroutineScope.launch {
             try {
@@ -750,15 +738,11 @@ class MainActivity : ComponentActivity() {
                 }
 
                 if (result.success) {
-                    if (share) {
-                        val shareIntent = fileExporter.createShareIntent(result)
-                        if (shareIntent != null) {
-                            startActivity(Intent.createChooser(shareIntent, getString(R.string.share)))
-                        } else {
-                            Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
-                        }
+                    val shareIntent = fileExporter.createShareIntent(result)
+                    if (shareIntent != null) {
+                        startActivity(Intent.createChooser(shareIntent, getString(R.string.share)))
                     } else {
-                        Toast.makeText(this@MainActivity, getString(R.string.export_success), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(this@MainActivity, result.errorMessage ?: getString(R.string.export_error), Toast.LENGTH_SHORT).show()

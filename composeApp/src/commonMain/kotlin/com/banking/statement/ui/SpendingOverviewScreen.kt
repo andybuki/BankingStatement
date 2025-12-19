@@ -49,13 +49,11 @@ fun SpendingOverviewScreen(
     transactions: List<TransactionDisplay> = emptyList(),
     accounts: List<AccountFilterOption> = emptyList(),
     onBackClick: () -> Unit,
-    onExport: ((ExportFormat, SpendingExportData) -> Unit)? = null,
     onShare: ((ExportFormat, SpendingExportData) -> Unit)? = null
 ) {
     val strings = LocalStrings.current
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
-    var exportMenuExpanded by remember { mutableStateOf(false) }
     var shareMenuExpanded by remember { mutableStateOf(false) }
 
     // Filter transactions and recalculate spending based on selected account
@@ -146,43 +144,14 @@ fun SpendingOverviewScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Create export data
-                    val exportData = SpendingExportData(
-                        totalIncome = displayIncome,
-                        totalExpenses = displayExpenses,
-                        categorySpending = displayCategorySpending,
-                        monthlySummary = displayMonthlySummary
-                    )
-
-                    // Export button with dropdown
-                    if (onExport != null && displayCategorySpending.isNotEmpty()) {
-                        Box {
-                            TextButton(onClick = { exportMenuExpanded = true }) {
-                                Text(strings.export)
-                            }
-                            DropdownMenu(
-                                expanded = exportMenuExpanded,
-                                onDismissRequest = { exportMenuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(strings.exportCsv) },
-                                    onClick = {
-                                        exportMenuExpanded = false
-                                        onExport(ExportFormat.CSV, exportData)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.exportPdf) },
-                                    onClick = {
-                                        exportMenuExpanded = false
-                                        onExport(ExportFormat.PDF, exportData)
-                                    }
-                                )
-                            }
-                        }
-                    }
                     // Share button with dropdown
                     if (onShare != null && displayCategorySpending.isNotEmpty()) {
+                        val exportData = SpendingExportData(
+                            totalIncome = displayIncome,
+                            totalExpenses = displayExpenses,
+                            categorySpending = displayCategorySpending,
+                            monthlySummary = displayMonthlySummary
+                        )
                         Box {
                             TextButton(onClick = { shareMenuExpanded = true }) {
                                 Text(strings.share)
