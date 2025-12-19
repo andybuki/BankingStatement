@@ -36,6 +36,7 @@ data class AccountManagementItem(
 /**
  * Account Management Screen for viewing, editing, and deleting accounts
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountManagementScreen(
     accounts: List<AccountManagementItem>,
@@ -51,29 +52,37 @@ fun AccountManagementScreen(
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = strings.manageAccounts,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = strings.manageAccounts,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Text(
+                            text = "←",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
-            TextButton(onClick = onBackClick) {
-                Text(strings.back)
-            }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+        ) {
+        Spacer(modifier = Modifier.height(8.dp))
 
         if (accounts.isEmpty()) {
             // Empty state
@@ -139,6 +148,7 @@ fun AccountManagementScreen(
             ) {
                 Text(strings.clearAllData)
             }
+        }
         }
     }
 

@@ -42,6 +42,7 @@ data class AccountFilterOption(
     val name: String
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionListScreen(
     transactions: List<TransactionDisplay>,
@@ -87,61 +88,69 @@ fun TransactionListScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = strings.transactionListTitle,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Share button with dropdown
-                if (onShare != null && filteredTransactions.isNotEmpty()) {
-                    Box {
-                        TextButton(onClick = { shareMenuExpanded = true }) {
-                            Text(strings.share)
-                        }
-                        DropdownMenu(
-                            expanded = shareMenuExpanded,
-                            onDismissRequest = { shareMenuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(strings.exportCsv) },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    onShare(ExportFormat.CSV, filteredTransactions, selectedAccountName)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(strings.exportPdf) },
-                                onClick = {
-                                    shareMenuExpanded = false
-                                    onShare(ExportFormat.PDF, filteredTransactions, selectedAccountName)
-                                }
-                            )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = strings.transactionListTitle,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Text(
+                            text = "←",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                actions = {
+                    // Share button with dropdown
+                    if (onShare != null && filteredTransactions.isNotEmpty()) {
+                        Box {
+                            IconButton(onClick = { shareMenuExpanded = true }) {
+                                Text(
+                                    text = "↗",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = shareMenuExpanded,
+                                onDismissRequest = { shareMenuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(strings.exportCsv) },
+                                    onClick = {
+                                        shareMenuExpanded = false
+                                        onShare(ExportFormat.CSV, filteredTransactions, selectedAccountName)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(strings.exportPdf) },
+                                    onClick = {
+                                        shareMenuExpanded = false
+                                        onShare(ExportFormat.PDF, filteredTransactions, selectedAccountName)
+                                    }
+                                )
+                            }
                         }
                     }
-                }
-                TextButton(onClick = onBackClick) {
-                    Text(strings.back)
-                }
-            }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
 
         // Account filter dropdown (only show if multiple accounts)
         if (accounts.size > 1) {
@@ -240,6 +249,7 @@ fun TransactionListScreen(
                     TransactionItem(transaction)
                 }
             }
+        }
         }
     }
 }
