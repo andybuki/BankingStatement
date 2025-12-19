@@ -75,6 +75,37 @@ object BankParserRegistry {
         register(AfrilandParser())
         register(UbaParser())
         register(JahaParser())
+        register(NairobiBankParser())
+        register(KcbParser())
+
+        // Asian banks
+        register(PosbParser())
+        register(HdfcParser())
+        register(SbiParser())
+        register(CanaraParser())
+        register(AlfaBankParser())
+        register(MaybankParser())
+        register(CimbParser())
+        register(NayaPayParser())
+        register(McbParser())
+        register(AbBankParser())
+        register(UcbParser())
+
+        // North American banks (additional)
+        register(BankTrnParser())
+        register(DaveBankParser())
+        register(UsBankParser())
+        register(TdBankParser())
+        register(WalmartParser())
+        register(ScotiaBankParser())
+        register(RbcParser())
+
+        // European banks (additional)
+        register(MetroBankParser())
+        register(WiseParser())
+        register(BankOfIrelandParser())
+        register(BancaMarchParser())
+        register(BancoCttParser())
     }
 
     fun register(parser: BankPdfParser) {
