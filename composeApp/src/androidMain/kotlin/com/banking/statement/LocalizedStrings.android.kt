@@ -85,5 +85,11 @@ actual fun provideStrings(): AppStrings = AppStrings(
     exportSuccess = stringResource(R.string.export_success),
     exportError = stringResource(R.string.export_error),
     exportTransactions = stringResource(R.string.export_transactions),
-    exportSpending = stringResource(R.string.export_spending)
+    exportSpending = stringResource(R.string.export_spending),
+
+    settings = stringResource(R.string.settings),
+    theme = stringResource(R.string.theme),
+    themeLight = stringResource(R.string.theme_light),
+    themeDark = stringResource(R.string.theme_dark),
+    themeSystem = stringResource(R.string.theme_system)
 )

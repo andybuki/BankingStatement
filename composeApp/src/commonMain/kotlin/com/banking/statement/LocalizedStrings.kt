@@ -96,7 +96,14 @@ data class AppStrings(
     val exportSuccess: String,
     val exportError: String,
     val exportTransactions: String,
-    val exportSpending: String
+    val exportSpending: String,
+
+    // Settings / Theme
+    val settings: String,
+    val theme: String,
+    val themeLight: String,
+    val themeDark: String,
+    val themeSystem: String
 )
 
 /**
@@ -189,5 +196,11 @@ fun defaultEnglishStrings() = AppStrings(
     exportSuccess = "Export successful",
     exportError = "Export failed",
     exportTransactions = "Transactions Export",
-    exportSpending = "Spending Overview Export"
+    exportSpending = "Spending Overview Export",
+
+    settings = "Settings",
+    theme = "Theme",
+    themeLight = "Light",
+    themeDark = "Dark",
+    themeSystem = "System"
 )
