@@ -1,6 +1,7 @@
 package com.banking.statement
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import bankingstatement.composeapp.generated.resources.Res
+import bankingstatement.composeapp.generated.resources.logo
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
 import com.banking.statement.parser.ImportFileType
@@ -19,6 +22,7 @@ import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.*
 import com.banking.statement.ui.theme.BankingStatementTheme
 import com.banking.statement.ui.theme.ThemeMode
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 // Composition local for strings
@@ -173,7 +177,16 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // App Logo
+        Image(
+            painter = painterResource(Res.drawable.logo),
+            contentDescription = strings.homeTitle,
+            modifier = Modifier.size(120.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Title
         Text(
