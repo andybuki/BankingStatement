@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.banking.statement.export.ExportFormat
+import com.banking.statement.export.SpendingExportData
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.*
@@ -79,7 +81,12 @@ fun App(
     accountsForManagement: List<AccountManagementItem> = emptyList(),
     onDeleteAccount: ((Long) -> Unit)? = null,
     onEditAccount: ((Long, String) -> Unit)? = null,
-    onClearAllData: (() -> Unit)? = null
+    onClearAllData: (() -> Unit)? = null,
+    // Export callbacks
+    onExportTransactions: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
+    onShareTransactions: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
+    onExportSpending: ((ExportFormat, SpendingExportData) -> Unit)? = null,
+    onShareSpending: ((ExportFormat, SpendingExportData) -> Unit)? = null
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
     val strings = provideStrings()
@@ -102,7 +109,9 @@ fun App(
                     Screen.TRANSACTIONS -> TransactionListScreen(
                         transactions = transactions,
                         accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
-                        onBackClick = { currentScreen = Screen.HOME }
+                        onBackClick = { currentScreen = Screen.HOME },
+                        onExport = onExportTransactions,
+                        onShare = onShareTransactions
                     )
                     Screen.SPENDING -> SpendingOverviewScreen(
                         totalIncome = totalIncome,
@@ -111,7 +120,9 @@ fun App(
                         monthlySummary = monthlySummary,
                         transactions = transactions,
                         accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
-                        onBackClick = { currentScreen = Screen.HOME }
+                        onBackClick = { currentScreen = Screen.HOME },
+                        onExport = onExportSpending,
+                        onShare = onShareSpending
                     )
                     Screen.ACCOUNTS -> AccountManagementScreen(
                         accounts = accountsForManagement,

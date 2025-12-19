@@ -109,4 +109,14 @@
     <string name="error_unsupported_format">Nicht unterstütztes Dateiformat</string>
     <string name="error_not_bank_statement">Dies scheint kein Kontoauszug zu sein</string>
     <string name="import_cancelled">Import abgebrochen</string>
+
+    <!-- Export -->
+    <string name="export">Exportieren</string>
+    <string name="export_csv">Als CSV exportieren</string>
+    <string name="export_pdf">Als PDF exportieren</string>
+    <string name="share">Teilen</string>
+    <string name="export_success">Export erfolgreich</string>
+    <string name="export_error">Export fehlgeschlagen</string>
+    <string name="export_transactions">Buchungen Export</string>
+    <string name="export_spending">Ausgabenübersicht Export</string>
 </resources>

@@ -76,5 +76,14 @@ actual fun provideStrings(): AppStrings = AppStrings(
     errorReadingFile = stringResource(R.string.error_reading_file),
     errorUnsupportedFormat = stringResource(R.string.error_unsupported_format),
     errorNotBankStatement = stringResource(R.string.error_not_bank_statement),
-    importCancelled = stringResource(R.string.import_cancelled)
+    importCancelled = stringResource(R.string.import_cancelled),
+
+    export = stringResource(R.string.export),
+    exportCsv = stringResource(R.string.export_csv),
+    exportPdf = stringResource(R.string.export_pdf),
+    share = stringResource(R.string.share),
+    exportSuccess = stringResource(R.string.export_success),
+    exportError = stringResource(R.string.export_error),
+    exportTransactions = stringResource(R.string.export_transactions),
+    exportSpending = stringResource(R.string.export_spending)
 )
