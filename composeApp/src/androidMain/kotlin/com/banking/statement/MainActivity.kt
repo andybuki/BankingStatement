@@ -35,6 +35,8 @@ import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.MonthlySummary
 import com.banking.statement.ui.TransactionDisplay
+import com.banking.statement.ui.theme.ThemeMode
+import com.banking.statement.ui.theme.ThemePreferences
 import com.banking.statement.validation.BankStatementValidator
 import android.widget.Toast
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -80,10 +82,12 @@ class MainActivity : ComponentActivity() {
     private var totalExpenses by mutableStateOf(0.0)
     private var dialogState by mutableStateOf(ImportDialogState())
     private var accountsForManagement by mutableStateOf<List<AccountManagementItem>>(emptyList())
+    private var currentThemeMode by mutableStateOf(ThemeMode.SYSTEM)
 
     private lateinit var repository: TransactionRepository
     private lateinit var fileExporter: FileExporter
     private lateinit var pdfGenerator: PdfGenerator
+    private lateinit var themePreferences: ThemePreferences
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private val filePickerLauncher = registerForActivityResult(
@@ -106,6 +110,10 @@ class MainActivity : ComponentActivity() {
         // Initialize exporters
         fileExporter = FileExporter(applicationContext)
         pdfGenerator = PdfGenerator(applicationContext)
+
+        // Initialize theme preferences
+        themePreferences = ThemePreferences(applicationContext)
+        currentThemeMode = themePreferences.getThemeMode()
 
         // Clean up old export files
         fileExporter.cleanupOldExports()
@@ -142,6 +150,11 @@ class MainActivity : ComponentActivity() {
                 },
                 onShareSpending = { format, data ->
                     shareSpending(format, data)
+                },
+                themeMode = currentThemeMode,
+                onThemeModeChange = { mode ->
+                    currentThemeMode = mode
+                    themePreferences.setThemeMode(mode)
                 }
             )
         }

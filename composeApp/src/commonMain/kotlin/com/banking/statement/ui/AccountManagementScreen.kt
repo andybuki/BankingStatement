@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.theme.ThemeMode
 
 /**
  * Data class for account display in management screen
@@ -41,7 +42,9 @@ fun AccountManagementScreen(
     onBackClick: () -> Unit,
     onDeleteAccount: (Long) -> Unit,
     onEditAccount: (Long, String) -> Unit,
-    onClearAllData: () -> Unit
+    onClearAllData: () -> Unit,
+    currentThemeMode: ThemeMode = ThemeMode.SYSTEM,
+    onThemeModeChange: (ThemeMode) -> Unit = {}
 ) {
     val strings = LocalStrings.current
     var showDeleteDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
@@ -111,6 +114,14 @@ fun AccountManagementScreen(
                 }
             }
         }
+
+        // Settings Section
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ThemeSettingsCard(
+            currentThemeMode = currentThemeMode,
+            onThemeModeChange = onThemeModeChange
+        )
 
         // Clear all data button (only show if there's data)
         if (accounts.isNotEmpty()) {
@@ -406,6 +417,104 @@ private fun EditAccountDialog(
             }
         }
     )
+}
+
+@Composable
+private fun ThemeSettingsCard(
+    currentThemeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.settings,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = strings.theme,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ThemeOption(
+                    label = strings.themeLight,
+                    selected = currentThemeMode == ThemeMode.LIGHT,
+                    onClick = { onThemeModeChange(ThemeMode.LIGHT) },
+                    modifier = Modifier.weight(1f)
+                )
+                ThemeOption(
+                    label = strings.themeDark,
+                    selected = currentThemeMode == ThemeMode.DARK,
+                    onClick = { onThemeModeChange(ThemeMode.DARK) },
+                    modifier = Modifier.weight(1f)
+                )
+                ThemeOption(
+                    label = strings.themeSystem,
+                    selected = currentThemeMode == ThemeMode.SYSTEM,
+                    onClick = { onThemeModeChange(ThemeMode.SYSTEM) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = if (selected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val textColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = backgroundColor
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = textColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 // Helper functions
