@@ -107,7 +107,13 @@ data class AppStrings(
 
     // Search
     val searchTransactions: String,
-    val filtered: String
+    val filtered: String,
+
+    // Time Periods
+    val periodWeek: String,
+    val periodMonth: String,
+    val periodYear: String,
+    val periodAll: String
 )
 
 /**
@@ -209,5 +215,10 @@ fun defaultEnglishStrings() = AppStrings(
     themeSystem = "System",
 
     searchTransactions = "Search transactions...",
-    filtered = "filtered"
+    filtered = "filtered",
+
+    periodWeek = "Week",
+    periodMonth = "Month",
+    periodYear = "Year",
+    periodAll = "All"
 )

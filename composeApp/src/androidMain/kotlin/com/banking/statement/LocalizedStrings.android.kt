@@ -94,5 +94,10 @@ actual fun provideStrings(): AppStrings = AppStrings(
     themeSystem = stringResource(R.string.theme_system),
 
     searchTransactions = stringResource(R.string.search_transactions),
-    filtered = stringResource(R.string.filtered)
+    filtered = stringResource(R.string.filtered),
+
+    periodWeek = stringResource(R.string.period_week),
+    periodMonth = stringResource(R.string.period_month),
+    periodYear = stringResource(R.string.period_year),
+    periodAll = stringResource(R.string.period_all)
 )
