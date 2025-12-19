@@ -7,7 +7,7 @@
     <string name="home_subtitle">Importa tus extractos bancarios para analizar</string>
     <string name="import_button">Importar Extracto</string>
     <string name="processing">Procesando…</string>
-    <string name="supported_formats">PDF: 15 bancos alemanes • CSV/Excel: Todos los bancos</string>
+    <string name="supported_formats">PDF • CSV</string>
 
     <!-- Stats -->
     <string name="accounts">Cuentas</string>
@@ -103,6 +103,17 @@
     <string name="save">Guardar</string>
     <string name="edit_account">Editar Cuenta</string>
     <string name="all_accounts">Todas las Cuentas</string>
+
+    <!-- Settings / Theme -->
+    <string name="settings">Configuración</string>
+    <string name="theme">Tema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    <string name="theme_system">Sistema</string>
+
+    <!-- Search -->
+    <string name="search_transactions">Buscar transacciones…</string>
+    <string name="filtered">filtradas</string>
 
     <!-- Errors -->
     <string name="error_reading_file">No se pudo leer el archivo</string>
