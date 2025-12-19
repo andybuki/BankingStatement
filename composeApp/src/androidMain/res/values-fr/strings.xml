@@ -130,4 +130,10 @@
     <string name="export_error">Échec de l\'exportation</string>
     <string name="export_transactions">Exporter les Transactions</string>
     <string name="export_spending">Exporter l\'Aperçu des Dépenses</string>
+
+    <!-- Time Periods -->
+    <string name="period_week">Semaine</string>
+    <string name="period_month">Mois</string>
+    <string name="period_year">Année</string>
+    <string name="period_all">Tout</string>
 </resources>
