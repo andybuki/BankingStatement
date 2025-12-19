@@ -40,6 +40,7 @@ data class MonthlySummary(
     val netAmount: Double get() = income + expenses // expenses are negative
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpendingOverviewScreen(
     totalIncome: Double,
@@ -121,40 +122,41 @@ fun SpendingOverviewScreen(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Header
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = strings.spendingTitle,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+    // Create export data for share menu
+    val exportData = SpendingExportData(
+        totalIncome = displayIncome,
+        totalExpenses = displayExpenses,
+        categorySpending = displayCategorySpending,
+        monthlySummary = displayMonthlySummary
+    )
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = strings.spendingTitle,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Text(
+                            text = "←",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                actions = {
                     // Share button with dropdown
                     if (onShare != null && displayCategorySpending.isNotEmpty()) {
-                        val exportData = SpendingExportData(
-                            totalIncome = displayIncome,
-                            totalExpenses = displayExpenses,
-                            categorySpending = displayCategorySpending,
-                            monthlySummary = displayMonthlySummary
-                        )
                         Box {
-                            TextButton(onClick = { shareMenuExpanded = true }) {
-                                Text(strings.share)
+                            IconButton(onClick = { shareMenuExpanded = true }) {
+                                Text(
+                                    text = "↗",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
                             }
                             DropdownMenu(
                                 expanded = shareMenuExpanded,
@@ -177,13 +179,20 @@ fun SpendingOverviewScreen(
                             }
                         }
                     }
-                    TextButton(onClick = onBackClick) {
-                        Text(strings.back)
-                    }
-                }
-            }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
         }
-
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // Account filter dropdown (only show if multiple accounts)
         if (accounts.size > 1) {
             item {
@@ -331,6 +340,7 @@ fun SpendingOverviewScreen(
         // Bottom spacing
         item {
             Spacer(modifier = Modifier.height(32.dp))
+        }
         }
     }
 }
