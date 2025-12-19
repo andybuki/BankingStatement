@@ -109,4 +109,14 @@
     <string name="error_unsupported_format">Unsupported file format</string>
     <string name="error_not_bank_statement">This does not appear to be a bank statement</string>
     <string name="import_cancelled">Import cancelled</string>
+
+    <!-- Export -->
+    <string name="export">Export</string>
+    <string name="export_csv">Export as CSV</string>
+    <string name="export_pdf">Export as PDF</string>
+    <string name="share">Share</string>
+    <string name="export_success">Export successful</string>
+    <string name="export_error">Export failed</string>
+    <string name="export_transactions">Transactions Export</string>
+    <string name="export_spending">Spending Overview Export</string>
 </resources>

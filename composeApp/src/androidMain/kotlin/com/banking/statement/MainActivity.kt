@@ -2,6 +2,7 @@
 
 package com.banking.statement
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -23,6 +24,11 @@ import com.banking.statement.parser.ParseResult
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.parser.banks.BankParserRegistry
 import com.banking.statement.pdf.PdfProcessor
+import com.banking.statement.export.ExportFormat
+import com.banking.statement.export.ExportManager
+import com.banking.statement.export.FileExporter
+import com.banking.statement.export.PdfGenerator
+import com.banking.statement.export.SpendingExportData
 import com.banking.statement.ui.AccountManagementItem
 import com.banking.statement.ui.AccountOption
 import com.banking.statement.ui.CategorySpending
@@ -30,6 +36,7 @@ import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.MonthlySummary
 import com.banking.statement.ui.TransactionDisplay
 import com.banking.statement.validation.BankStatementValidator
+import android.widget.Toast
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -75,6 +82,8 @@ class MainActivity : ComponentActivity() {
     private var accountsForManagement by mutableStateOf<List<AccountManagementItem>>(emptyList())
 
     private lateinit var repository: TransactionRepository
+    private lateinit var fileExporter: FileExporter
+    private lateinit var pdfGenerator: PdfGenerator
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private val filePickerLauncher = registerForActivityResult(
@@ -93,6 +102,13 @@ class MainActivity : ComponentActivity() {
         // Initialize database
         val driverFactory = DatabaseDriverFactory(applicationContext)
         repository = TransactionRepository(driverFactory)
+
+        // Initialize exporters
+        fileExporter = FileExporter(applicationContext)
+        pdfGenerator = PdfGenerator(applicationContext)
+
+        // Clean up old export files
+        fileExporter.cleanupOldExports()
 
         // Load stats and data
         updateStats()
@@ -120,7 +136,19 @@ class MainActivity : ComponentActivity() {
                 accountsForManagement = accountsForManagement,
                 onDeleteAccount = { accountId -> deleteAccount(accountId) },
                 onEditAccount = { accountId, newName -> editAccount(accountId, newName) },
-                onClearAllData = { clearAllData() }
+                onClearAllData = { clearAllData() },
+                onExportTransactions = { format, txList, accountName ->
+                    exportTransactions(format, txList, accountName, share = false)
+                },
+                onShareTransactions = { format, txList, accountName ->
+                    exportTransactions(format, txList, accountName, share = true)
+                },
+                onExportSpending = { format, data ->
+                    exportSpending(format, data, share = false)
+                },
+                onShareSpending = { format, data ->
+                    exportSpending(format, data, share = true)
+                }
             )
         }
     }
@@ -642,6 +670,103 @@ class MainActivity : ComponentActivity() {
             updateStats()
             loadAccountsData()
             loadTransactionData()
+        }
+    }
+
+    private fun exportTransactions(
+        format: ExportFormat,
+        transactions: List<TransactionDisplay>,
+        accountName: String?,
+        share: Boolean
+    ) {
+        coroutineScope.launch {
+            try {
+                val timestamp = System.currentTimeMillis()
+                val accountSuffix = accountName?.replace(" ", "_")?.take(20) ?: "all"
+                val result = withContext(Dispatchers.IO) {
+                    when (format) {
+                        ExportFormat.CSV -> {
+                            val csvContent = ExportManager.generateTransactionsCsv(transactions, accountName)
+                            val fileName = "transactions_${accountSuffix}_$timestamp.csv"
+                            fileExporter.saveCsv(csvContent, fileName)
+                        }
+                        ExportFormat.PDF -> {
+                            val pdfContent = ExportManager.generateTransactionsPdfContent(
+                                transactions = transactions,
+                                accountName = accountName,
+                                title = getString(R.string.export_transactions)
+                            )
+                            val fileName = "transactions_${accountSuffix}_$timestamp.pdf"
+                            pdfGenerator.generatePdf(pdfContent, fileName)
+                        }
+                    }
+                }
+
+                if (result.success) {
+                    if (share) {
+                        val shareIntent = fileExporter.createShareIntent(result)
+                        if (shareIntent != null) {
+                            startActivity(Intent.createChooser(shareIntent, getString(R.string.share)))
+                        } else {
+                            Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(this@MainActivity, getString(R.string.export_success), Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this@MainActivity, result.errorMessage ?: getString(R.string.export_error), Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun exportSpending(
+        format: ExportFormat,
+        data: SpendingExportData,
+        share: Boolean
+    ) {
+        coroutineScope.launch {
+            try {
+                val timestamp = System.currentTimeMillis()
+                val result = withContext(Dispatchers.IO) {
+                    when (format) {
+                        ExportFormat.CSV -> {
+                            val csvContent = ExportManager.generateSpendingCsv(data)
+                            val fileName = "spending_overview_$timestamp.csv"
+                            fileExporter.saveCsv(csvContent, fileName)
+                        }
+                        ExportFormat.PDF -> {
+                            val pdfContent = ExportManager.generateSpendingPdfContent(
+                                data = data,
+                                title = getString(R.string.export_spending)
+                            )
+                            val fileName = "spending_overview_$timestamp.pdf"
+                            pdfGenerator.generatePdf(pdfContent, fileName)
+                        }
+                    }
+                }
+
+                if (result.success) {
+                    if (share) {
+                        val shareIntent = fileExporter.createShareIntent(result)
+                        if (shareIntent != null) {
+                            startActivity(Intent.createChooser(shareIntent, getString(R.string.share)))
+                        } else {
+                            Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(this@MainActivity, getString(R.string.export_success), Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this@MainActivity, result.errorMessage ?: getString(R.string.export_error), Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

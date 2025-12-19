@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.banking.statement.LocalStrings
 import com.banking.statement.categorization.TransactionCategory
+import com.banking.statement.export.ExportFormat
 
 /**
  * Display model for a transaction in the list
@@ -45,11 +46,15 @@ data class AccountFilterOption(
 fun TransactionListScreen(
     transactions: List<TransactionDisplay>,
     accounts: List<AccountFilterOption> = emptyList(),
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onExport: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
+    onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null
 ) {
     val strings = LocalStrings.current
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var exportMenuExpanded by remember { mutableStateOf(false) }
+    var shareMenuExpanded by remember { mutableStateOf(false) }
 
     // Filter transactions based on selected account
     val filteredTransactions = remember(transactions, selectedAccountId) {
@@ -86,8 +91,67 @@ fun TransactionListScreen(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            TextButton(onClick = onBackClick) {
-                Text(strings.back)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Export button with dropdown
+                if (onExport != null && filteredTransactions.isNotEmpty()) {
+                    Box {
+                        TextButton(onClick = { exportMenuExpanded = true }) {
+                            Text(strings.export)
+                        }
+                        DropdownMenu(
+                            expanded = exportMenuExpanded,
+                            onDismissRequest = { exportMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(strings.exportCsv) },
+                                onClick = {
+                                    exportMenuExpanded = false
+                                    onExport(ExportFormat.CSV, filteredTransactions, selectedAccountName)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(strings.exportPdf) },
+                                onClick = {
+                                    exportMenuExpanded = false
+                                    onExport(ExportFormat.PDF, filteredTransactions, selectedAccountName)
+                                }
+                            )
+                        }
+                    }
+                }
+                // Share button with dropdown
+                if (onShare != null && filteredTransactions.isNotEmpty()) {
+                    Box {
+                        TextButton(onClick = { shareMenuExpanded = true }) {
+                            Text(strings.share)
+                        }
+                        DropdownMenu(
+                            expanded = shareMenuExpanded,
+                            onDismissRequest = { shareMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(strings.exportCsv) },
+                                onClick = {
+                                    shareMenuExpanded = false
+                                    onShare(ExportFormat.CSV, filteredTransactions, selectedAccountName)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(strings.exportPdf) },
+                                onClick = {
+                                    shareMenuExpanded = false
+                                    onShare(ExportFormat.PDF, filteredTransactions, selectedAccountName)
+                                }
+                            )
+                        }
+                    }
+                }
+                TextButton(onClick = onBackClick) {
+                    Text(strings.back)
+                }
             }
         }
 
