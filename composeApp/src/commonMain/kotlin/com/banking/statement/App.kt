@@ -17,6 +17,8 @@ import com.banking.statement.export.SpendingExportData
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.*
+import com.banking.statement.ui.theme.BankingStatementTheme
+import com.banking.statement.ui.theme.ThemeMode
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 // Composition local for strings
@@ -84,13 +86,16 @@ fun App(
     onClearAllData: (() -> Unit)? = null,
     // Share callbacks
     onShareTransactions: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
-    onShareSpending: ((ExportFormat, SpendingExportData) -> Unit)? = null
+    onShareSpending: ((ExportFormat, SpendingExportData) -> Unit)? = null,
+    // Theme
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    onThemeModeChange: ((ThemeMode) -> Unit)? = null
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
     val strings = provideStrings()
 
     CompositionLocalProvider(LocalStrings provides strings) {
-        MaterialTheme {
+        BankingStatementTheme(themeMode = themeMode) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
@@ -125,7 +130,9 @@ fun App(
                         onBackClick = { currentScreen = Screen.HOME },
                         onDeleteAccount = { id -> onDeleteAccount?.invoke(id) },
                         onEditAccount = { id, name -> onEditAccount?.invoke(id, name) },
-                        onClearAllData = { onClearAllData?.invoke() }
+                        onClearAllData = { onClearAllData?.invoke() },
+                        currentThemeMode = themeMode,
+                        onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) }
                     )
                 }
 
