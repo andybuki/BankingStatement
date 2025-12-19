@@ -309,29 +309,35 @@ fun StatsCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Navigation buttons - styled as proper buttons
+            // Navigation buttons - styled as proper buttons with clear background
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                FilledTonalButton(
+                Button(
                     onClick = onViewTransactions,
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
                     Text(
                         text = strings.viewTransactions,
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
-                FilledTonalButton(
+                Button(
                     onClick = onViewSpending,
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
                     Text(
                         text = strings.viewSpending,
@@ -342,14 +348,14 @@ fun StatsCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            FilledTonalButton(
+            Button(
                 onClick = onManageAccounts,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
                 )
             ) {
                 Text(

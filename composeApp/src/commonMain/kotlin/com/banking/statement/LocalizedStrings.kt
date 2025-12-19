@@ -125,7 +125,7 @@ fun defaultEnglishStrings() = AppStrings(
     homeSubtitle = "Import your bank statements to analyze",
     importButton = "Import Statement",
     processing = "Processing...",
-    supportedFormats = "PDF: 15 German banks • CSV/Excel: All banks",
+    supportedFormats = "PDF • CSV",
 
     accounts = "Accounts",
     statements = "Statements",

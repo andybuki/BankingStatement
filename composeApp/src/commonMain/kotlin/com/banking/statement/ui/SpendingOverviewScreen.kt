@@ -142,8 +142,8 @@ fun SpendingOverviewScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Text(
-                            text = "←",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = "‹",
+                            style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -154,8 +154,8 @@ fun SpendingOverviewScreen(
                         Box {
                             IconButton(onClick = { shareMenuExpanded = true }) {
                                 Text(
-                                    text = "↗",
-                                    style = MaterialTheme.typography.titleMedium
+                                    text = "⤴",
+                                    style = MaterialTheme.typography.headlineSmall
                                 )
                             }
                             DropdownMenu(
@@ -412,8 +412,9 @@ fun CategorySpendingItem(spending: CategorySpending) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -486,8 +487,9 @@ fun MonthlyItem(summary: MonthlySummary) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

@@ -7,7 +7,7 @@
     <string name="home_subtitle">Import your bank statements to analyze</string>
     <string name="import_button">Import Statement</string>
     <string name="processing">Processing…</string>
-    <string name="supported_formats">PDF: 15 German banks • CSV/Excel: All banks</string>
+    <string name="supported_formats">PDF • CSV</string>
 
     <!-- Stats -->
     <string name="accounts">Accounts</string>
