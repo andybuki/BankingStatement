@@ -53,14 +53,29 @@ fun TransactionListScreen(
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
     var shareMenuExpanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
-    // Filter transactions based on selected account
-    val filteredTransactions = remember(transactions, selectedAccountId) {
-        if (selectedAccountId == null) {
+    // Filter transactions based on selected account and search query
+    val filteredTransactions = remember(transactions, selectedAccountId, searchQuery) {
+        var result = if (selectedAccountId == null) {
             transactions
         } else {
             transactions.filter { it.accountId == selectedAccountId }
         }
+
+        // Apply search filter
+        if (searchQuery.isNotBlank()) {
+            val query = searchQuery.lowercase().trim()
+            result = result.filter { tx ->
+                tx.description.lowercase().contains(query) ||
+                tx.counterparty?.lowercase()?.contains(query) == true ||
+                tx.category.displayName.lowercase().contains(query) ||
+                tx.date.contains(query) ||
+                formatAmount(tx.amount, tx.currency).contains(query)
+            }
+        }
+
+        result
     }
 
     // Get selected account name for display
@@ -174,13 +189,37 @@ fun TransactionListScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        // Search field
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(strings.searchTransactions) },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            ),
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Text("✕", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
-            text = "${filteredTransactions.size} ${strings.transactions.lowercase()}",
+            text = "${filteredTransactions.size} ${strings.transactions.lowercase()}" +
+                if (searchQuery.isNotBlank()) " (${strings.filtered})" else "",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         if (filteredTransactions.isEmpty()) {
             Box(

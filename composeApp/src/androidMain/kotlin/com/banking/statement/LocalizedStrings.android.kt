@@ -91,5 +91,8 @@ actual fun provideStrings(): AppStrings = AppStrings(
     theme = stringResource(R.string.theme),
     themeLight = stringResource(R.string.theme_light),
     themeDark = stringResource(R.string.theme_dark),
-    themeSystem = stringResource(R.string.theme_system)
+    themeSystem = stringResource(R.string.theme_system),
+
+    searchTransactions = stringResource(R.string.search_transactions),
+    filtered = stringResource(R.string.filtered)
 )
