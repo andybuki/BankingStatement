@@ -1,5 +1,6 @@
 package com.banking.statement.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,12 +12,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import bankingstatement.composeapp.generated.resources.Res
+import bankingstatement.composeapp.generated.resources.back
+import bankingstatement.composeapp.generated.resources.share
 import com.banking.statement.LocalStrings
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
+import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
 
 /**
@@ -141,10 +147,11 @@ fun SpendingOverviewScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Text(
-                            text = "‹",
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold
+                        Image(
+                            painter = painterResource(Res.drawable.back),
+                            contentDescription = strings.back,
+                            modifier = Modifier.size(24.dp),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
                         )
                     }
                 },
@@ -153,9 +160,11 @@ fun SpendingOverviewScreen(
                     if (onShare != null && displayCategorySpending.isNotEmpty()) {
                         Box {
                             IconButton(onClick = { shareMenuExpanded = true }) {
-                                Text(
-                                    text = "⤴",
-                                    style = MaterialTheme.typography.headlineSmall
+                                Image(
+                                    painter = painterResource(Res.drawable.share),
+                                    contentDescription = strings.share,
+                                    modifier = Modifier.size(24.dp),
+                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
                                 )
                             }
                             DropdownMenu(

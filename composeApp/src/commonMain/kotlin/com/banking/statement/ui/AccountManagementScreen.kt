@@ -1,5 +1,6 @@
 package com.banking.statement.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,11 +14,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import bankingstatement.composeapp.generated.resources.Res
+import bankingstatement.composeapp.generated.resources.back
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.theme.ThemeMode
+import org.jetbrains.compose.resources.painterResource
 
 /**
  * Data class for account display in management screen
@@ -63,10 +68,11 @@ fun AccountManagementScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Text(
-                            text = "‹",
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold
+                        Image(
+                            painter = painterResource(Res.drawable.back),
+                            contentDescription = strings.back,
+                            modifier = Modifier.size(24.dp),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
                         )
                     }
                 },
