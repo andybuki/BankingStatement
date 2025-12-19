@@ -7,7 +7,7 @@
     <string name="home_subtitle">Importieren Sie Ihre Kontoauszüge zur Analyse</string>
     <string name="import_button">Auszug importieren</string>
     <string name="processing">Verarbeitung…</string>
-    <string name="supported_formats">PDF: 15 deutsche Banken • CSV/Excel: Alle Banken</string>
+    <string name="supported_formats">PDF • CSV</string>
 
     <!-- Stats -->
     <string name="accounts">Konten</string>
@@ -103,6 +103,17 @@
     <string name="save">Speichern</string>
     <string name="edit_account">Konto bearbeiten</string>
     <string name="all_accounts">Alle Konten</string>
+
+    <!-- Settings / Theme -->
+    <string name="settings">Einstellungen</string>
+    <string name="theme">Design</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="theme_system">System</string>
+
+    <!-- Search -->
+    <string name="search_transactions">Buchungen suchen…</string>
+    <string name="filtered">gefiltert</string>
 
     <!-- Errors -->
     <string name="error_reading_file">Datei konnte nicht gelesen werden</string>
