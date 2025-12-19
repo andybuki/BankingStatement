@@ -82,10 +82,8 @@ fun App(
     onDeleteAccount: ((Long) -> Unit)? = null,
     onEditAccount: ((Long, String) -> Unit)? = null,
     onClearAllData: (() -> Unit)? = null,
-    // Export callbacks
-    onExportTransactions: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
+    // Share callbacks
     onShareTransactions: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
-    onExportSpending: ((ExportFormat, SpendingExportData) -> Unit)? = null,
     onShareSpending: ((ExportFormat, SpendingExportData) -> Unit)? = null
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
@@ -110,7 +108,6 @@ fun App(
                         transactions = transactions,
                         accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
                         onBackClick = { currentScreen = Screen.HOME },
-                        onExport = onExportTransactions,
                         onShare = onShareTransactions
                     )
                     Screen.SPENDING -> SpendingOverviewScreen(
@@ -121,7 +118,6 @@ fun App(
                         transactions = transactions,
                         accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
                         onBackClick = { currentScreen = Screen.HOME },
-                        onExport = onExportSpending,
                         onShare = onShareSpending
                     )
                     Screen.ACCOUNTS -> AccountManagementScreen(
