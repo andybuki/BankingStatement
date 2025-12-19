@@ -103,7 +103,11 @@ data class AppStrings(
     val theme: String,
     val themeLight: String,
     val themeDark: String,
-    val themeSystem: String
+    val themeSystem: String,
+
+    // Search
+    val searchTransactions: String,
+    val filtered: String
 )
 
 /**
@@ -202,5 +206,8 @@ fun defaultEnglishStrings() = AppStrings(
     theme = "Theme",
     themeLight = "Light",
     themeDark = "Dark",
-    themeSystem = "System"
+    themeSystem = "System",
+
+    searchTransactions = "Search transactions...",
+    filtered = "filtered"
 )
