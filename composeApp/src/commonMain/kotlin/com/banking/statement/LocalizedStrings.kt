@@ -86,7 +86,17 @@ data class AppStrings(
     val errorReadingFile: String,
     val errorUnsupportedFormat: String,
     val errorNotBankStatement: String,
-    val importCancelled: String
+    val importCancelled: String,
+
+    // Export
+    val export: String,
+    val exportCsv: String,
+    val exportPdf: String,
+    val share: String,
+    val exportSuccess: String,
+    val exportError: String,
+    val exportTransactions: String,
+    val exportSpending: String
 )
 
 /**
@@ -170,5 +180,14 @@ fun defaultEnglishStrings() = AppStrings(
     errorReadingFile = "Could not read file",
     errorUnsupportedFormat = "Unsupported file format",
     errorNotBankStatement = "This does not appear to be a bank statement",
-    importCancelled = "Import cancelled"
+    importCancelled = "Import cancelled",
+
+    export = "Export",
+    exportCsv = "Export as CSV",
+    exportPdf = "Export as PDF",
+    share = "Share",
+    exportSuccess = "Export successful",
+    exportError = "Export failed",
+    exportTransactions = "Transactions Export",
+    exportSpending = "Spending Overview Export"
 )

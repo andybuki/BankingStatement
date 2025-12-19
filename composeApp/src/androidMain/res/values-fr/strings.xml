@@ -109,4 +109,14 @@
     <string name="error_unsupported_format">Format de fichier non pris en charge</string>
     <string name="error_not_bank_statement">Ceci ne semble pas être un relevé bancaire</string>
     <string name="import_cancelled">Importation annulée</string>
+
+    <!-- Export -->
+    <string name="export">Exporter</string>
+    <string name="export_csv">Exporter en CSV</string>
+    <string name="export_pdf">Exporter en PDF</string>
+    <string name="share">Partager</string>
+    <string name="export_success">Exportation réussie</string>
+    <string name="export_error">Échec de l\'exportation</string>
+    <string name="export_transactions">Exporter les Transactions</string>
+    <string name="export_spending">Exporter l\'Aperçu des Dépenses</string>
 </resources>
