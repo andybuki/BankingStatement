@@ -900,3 +900,540 @@ class JahaParser : InternationalBankParser() {
         return parseInternationalStatement(pdfText, fileName)
     }
 }
+
+/**
+ * Nairobi Bank (Kenya)
+ */
+class NairobiBankParser : InternationalBankParser() {
+    override val bankName = "Nairobi Bank"
+    override val currency = "KES"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("nairobi bank", "nairobi")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) } && (lower.contains("kenya") || lower.contains("kes"))
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * KCB Bank (Kenya)
+ */
+class KcbParser : InternationalBankParser() {
+    override val bankName = "KCB Bank"
+    override val currency = "KES"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("kcb bank", "kenya commercial bank", "kcb ")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+// ============================================================
+// Asian Banks
+// ============================================================
+
+/**
+ * POSB Bank (Singapore - DBS subsidiary)
+ */
+class PosbParser : InternationalBankParser() {
+    override val bankName = "POSB"
+    override val currency = "SGD"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("posb", "posb bank", "posb savings", "dbs posb")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * HDFC Bank (India)
+ */
+class HdfcParser : InternationalBankParser() {
+    override val bankName = "HDFC Bank"
+    override val currency = "INR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("hdfc bank", "hdfc", "hdfcbank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * State Bank of India (India)
+ */
+class SbiParser : InternationalBankParser() {
+    override val bankName = "State Bank of India"
+    override val currency = "INR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("state bank of india", "sbi ", "sbin", "onlinesbi")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * Canara Bank (India)
+ */
+class CanaraParser : InternationalBankParser() {
+    override val bankName = "Canara Bank"
+    override val currency = "INR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("canara bank", "canarabank", "syndicatebank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * Alfa Bank (Russia)
+ */
+class AlfaBankParser : InternationalBankParser() {
+    override val bankName = "Alfa Bank"
+    override val currency = "RUB"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.COMMA_DECIMAL
+
+    private val identifiers = listOf("alfa bank", "alfabank", "альфа-банк", "alfa-bank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * MayBank (Malaysia)
+ */
+class MaybankParser : InternationalBankParser() {
+    override val bankName = "Maybank"
+    override val currency = "MYR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("maybank", "malayan banking", "maybank2u")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * CIMB Bank (Malaysia/Southeast Asia)
+ */
+class CimbParser : InternationalBankParser() {
+    override val bankName = "CIMB Bank"
+    override val currency = "MYR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("cimb", "cimb bank", "cimbclicks")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * NayaPay (Pakistan - fintech)
+ */
+class NayaPayParser : InternationalBankParser() {
+    override val bankName = "NayaPay"
+    override val currency = "PKR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("nayapay", "naya pay")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * MCB - Muslim Commercial Bank (Pakistan)
+ */
+class McbParser : InternationalBankParser() {
+    override val bankName = "MCB Bank"
+    override val currency = "PKR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("mcb bank", "muslim commercial bank", "mcb ", "mcbbank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * AB Bank (Bangladesh)
+ */
+class AbBankParser : InternationalBankParser() {
+    override val bankName = "AB Bank"
+    override val currency = "BDT"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("ab bank", "arab bangladesh bank", "abbank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * United Commercial Bank Limited (UCB - Bangladesh)
+ */
+class UcbParser : InternationalBankParser() {
+    override val bankName = "UCB Bank"
+    override val currency = "BDT"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("united commercial bank", "ucb bank", "ucbl", "ucb limited")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+// ============================================================
+// North American Banks
+// ============================================================
+
+/**
+ * Bank TRN
+ */
+class BankTrnParser : InternationalBankParser() {
+    override val bankName = "Bank TRN"
+    override val currency = "USD"
+    override val dateFormat = DateFormat.MM_DD_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("bank trn", "banktrn", "trn bank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * Dave Bank (US - fintech)
+ */
+class DaveBankParser : InternationalBankParser() {
+    override val bankName = "Dave"
+    override val currency = "USD"
+    override val dateFormat = DateFormat.MM_DD_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("dave ", "dave bank", "dave.com", "davebank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * US Bank
+ */
+class UsBankParser : InternationalBankParser() {
+    override val bankName = "US Bank"
+    override val currency = "USD"
+    override val dateFormat = DateFormat.MM_DD_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("u.s. bank", "us bank", "usbank", "usbancorp")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * TD Bank (USA/Canada)
+ */
+class TdBankParser : InternationalBankParser() {
+    override val bankName = "TD Bank"
+    override val currency = "USD"
+    override val dateFormat = DateFormat.MM_DD_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("td bank", "td canada trust", "tdbank", "toronto-dominion")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * Walmart MoneyCard
+ */
+class WalmartParser : InternationalBankParser() {
+    override val bankName = "Walmart MoneyCard"
+    override val currency = "USD"
+    override val dateFormat = DateFormat.MM_DD_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("walmart", "walmart moneycard", "walmartmoneycard", "green dot")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * ScotiaBank (Canada)
+ */
+class ScotiaBankParser : InternationalBankParser() {
+    override val bankName = "Scotiabank"
+    override val currency = "CAD"
+    override val dateFormat = DateFormat.MM_DD_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("scotiabank", "bank of nova scotia", "scotia bank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * Royal Bank of Canada (RBC)
+ */
+class RbcParser : InternationalBankParser() {
+    override val bankName = "Royal Bank of Canada"
+    override val currency = "CAD"
+    override val dateFormat = DateFormat.MM_DD_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("royal bank of canada", "rbc ", "rbc bank", "rbcroyalbank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+// ============================================================
+// UK/European Banks (Additional)
+// ============================================================
+
+/**
+ * Metro Bank (UK)
+ */
+class MetroBankParser : InternationalBankParser() {
+    override val bankName = "Metro Bank"
+    override val currency = "GBP"
+    override val dateFormat = DateFormat.DD_MMM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("metro bank", "metrobank")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * Wise (TransferWise - UK fintech)
+ */
+class WiseParser : InternationalBankParser() {
+    override val bankName = "Wise"
+    override val currency = "EUR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("wise ", "wise.com", "transferwise", "wise account")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * Bank of Ireland
+ */
+class BankOfIrelandParser : InternationalBankParser() {
+    override val bankName = "Bank of Ireland"
+    override val currency = "EUR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.DOT_DECIMAL
+
+    private val identifiers = listOf("bank of ireland", "boi ", "bankofireland", "bofi")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * BancaMarch (Spain)
+ */
+class BancaMarchParser : InternationalBankParser() {
+    override val bankName = "Banca March"
+    override val currency = "EUR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.COMMA_DECIMAL
+
+    private val identifiers = listOf("banca march", "bancamarch", "march.es")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
+
+/**
+ * Banco CTT (Portugal)
+ */
+class BancoCttParser : InternationalBankParser() {
+    override val bankName = "Banco CTT"
+    override val currency = "EUR"
+    override val dateFormat = DateFormat.DD_MM_YYYY
+    override val amountFormat = AmountFormat.COMMA_DECIMAL
+
+    private val identifiers = listOf("banco ctt", "bancoctt", "ctt banco")
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseInternationalStatement(pdfText, fileName)
+    }
+}
