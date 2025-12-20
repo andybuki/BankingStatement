@@ -182,40 +182,59 @@ fun SpendingOverviewScreen(
                             Box(
                                 modifier = Modifier
                                     .size(24.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(
-                                        if (showChartView) MaterialTheme.colorScheme.primaryContainer
-                                        else Color.Transparent
-                                    ),
+                                    .clip(RoundedCornerShape(4.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                // Simple pie chart icon using Canvas
-                                Canvas(modifier = Modifier.size(18.dp)) {
-                                    val strokeWidth = 3.dp.toPx()
-                                    drawArc(
-                                        color = Color(0xFF4CAF50),
-                                        startAngle = -90f,
-                                        sweepAngle = 120f,
-                                        useCenter = false,
-                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                        size = Size(size.width, size.height)
-                                    )
-                                    drawArc(
-                                        color = Color(0xFFE57373),
-                                        startAngle = 30f,
-                                        sweepAngle = 100f,
-                                        useCenter = false,
-                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                        size = Size(size.width, size.height)
-                                    )
-                                    drawArc(
-                                        color = Color(0xFF2196F3),
-                                        startAngle = 130f,
-                                        sweepAngle = 140f,
-                                        useCenter = false,
-                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                        size = Size(size.width, size.height)
-                                    )
+                                if (showChartView) {
+                                    // List icon - three colored horizontal lines
+                                    Canvas(modifier = Modifier.size(18.dp)) {
+                                        val lineHeight = 2.5.dp.toPx()
+                                        val spacing = size.height / 4
+                                        val colors = listOf(
+                                            Color(0xFF4CAF50),
+                                            Color(0xFFE57373),
+                                            Color(0xFF2196F3)
+                                        )
+                                        colors.forEachIndexed { index, color ->
+                                            val y = spacing * (index + 1)
+                                            drawLine(
+                                                color = color,
+                                                start = Offset(0f, y),
+                                                end = Offset(size.width, y),
+                                                strokeWidth = lineHeight,
+                                                cap = StrokeCap.Round
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    // Pie chart icon - three colored arcs
+                                    Canvas(modifier = Modifier.size(18.dp)) {
+                                        val strokeWidth = 3.dp.toPx()
+                                        drawArc(
+                                            color = Color(0xFF4CAF50),
+                                            startAngle = -90f,
+                                            sweepAngle = 120f,
+                                            useCenter = false,
+                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                            size = Size(size.width, size.height)
+                                        )
+                                        drawArc(
+                                            color = Color(0xFFE57373),
+                                            startAngle = 30f,
+                                            sweepAngle = 100f,
+                                            useCenter = false,
+                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                            size = Size(size.width, size.height)
+                                        )
+                                        drawArc(
+                                            color = Color(0xFF2196F3),
+                                            startAngle = 130f,
+                                            sweepAngle = 140f,
+                                            useCenter = false,
+                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                            size = Size(size.width, size.height)
+                                        )
+                                    }
                                 }
                             }
                         }
