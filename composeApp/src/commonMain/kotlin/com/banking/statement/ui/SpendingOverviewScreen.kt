@@ -29,6 +29,9 @@ import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 
 /**
  * Time period for filtering spending
@@ -586,7 +589,12 @@ private fun filterByTimePeriod(
 ): List<TransactionDisplay> {
     if (period == TimePeriod.ALL) return transactions
 
-    // Get current date components
+    // Get actual current date from system
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val currentYear = today.year
+    val currentMonth = today.monthNumber
+    val currentDay = today.dayOfMonth
+
     // Since we're working with date strings in DD.MM.YYYY format
     // we need to parse and compare them
     return transactions.filter { tx ->
@@ -599,18 +607,14 @@ private fun filterByTimePeriod(
             val year = parts[2].toIntOrNull() ?: return@filter true
 
             // Calculate days ago (simplified - assumes 30 days per month)
-            val currentYear = 2024 // This would ideally come from system
-            val currentMonth = 12
-            val currentDay = 19
-
             val txDays = year * 365 + month * 30 + day
             val currentDays = currentYear * 365 + currentMonth * 30 + currentDay
             val daysAgo = currentDays - txDays
 
             when (period) {
-                TimePeriod.WEEK -> daysAgo <= 7
-                TimePeriod.MONTH -> daysAgo <= 30
-                TimePeriod.YEAR -> daysAgo <= 365
+                TimePeriod.WEEK -> daysAgo in 0..7
+                TimePeriod.MONTH -> daysAgo in 0..30
+                TimePeriod.YEAR -> daysAgo in 0..365
                 TimePeriod.ALL -> true
             }
         } catch (e: Exception) {
