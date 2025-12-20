@@ -241,43 +241,44 @@ private fun AccountManagementCard(
                 // Account name and bank
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = account.name,
+                        text = account.bankName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = account.bankName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
 
                 // Action buttons
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TextButton(
+                    FilledTonalButton(
                         onClick = onEdit,
                         modifier = Modifier.height(32.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
                     ) {
                         Text(
                             text = strings.edit,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
-                    TextButton(
+                    FilledTonalButton(
                         onClick = onDelete,
                         modifier = Modifier.height(32.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
                     ) {
                         Text(
                             text = strings.delete,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
@@ -516,14 +517,8 @@ private fun ThemeSettingsCard(
                 )
                 ThemeOption(
                     label = strings.themeDark,
-                    selected = currentThemeMode == ThemeMode.DARK,
+                    selected = currentThemeMode == ThemeMode.DARK || currentThemeMode == ThemeMode.SYSTEM,
                     onClick = { onThemeModeChange(ThemeMode.DARK) },
-                    modifier = Modifier.weight(1f)
-                )
-                ThemeOption(
-                    label = strings.themeSystem,
-                    selected = currentThemeMode == ThemeMode.SYSTEM,
-                    onClick = { onThemeModeChange(ThemeMode.SYSTEM) },
                     modifier = Modifier.weight(1f)
                 )
             }
