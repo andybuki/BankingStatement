@@ -52,8 +52,16 @@ class MerchantDatabase(
      * Expected format: c,cc,n (category_code,country_code,name)
      */
     fun loadFromCsv(csvContent: String, onProgress: ((Int, Int) -> Unit)? = null) {
-        val lines = csvContent.lines()
-        val totalLines = lines.size - 1 // exclude header
+        val lines = csvContent.lines().filter { it.isNotBlank() }
+        val totalLines = lines.size
+
+        // Check if first line is a header (contains non-category codes)
+        val hasHeader = lines.firstOrNull()?.let { firstLine ->
+            val parts = parseCsvLine(firstLine)
+            parts.isNotEmpty() && !categoryCodeMap.containsKey(parts[0])
+        } ?: false
+
+        val startIndex = if (hasHeader) 1 else 0
 
         database.bankingDatabaseQueries.transaction {
             // Clear existing data
@@ -61,7 +69,7 @@ class MerchantDatabase(
 
             var count = 0
             lines.forEachIndexed { index, line ->
-                if (index == 0) return@forEachIndexed // skip header
+                if (index < startIndex) return@forEachIndexed // skip header if present
 
                 val parts = parseCsvLine(line)
                 if (parts.size >= 3) {
