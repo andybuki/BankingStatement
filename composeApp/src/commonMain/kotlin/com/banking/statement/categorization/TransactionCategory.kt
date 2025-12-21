@@ -162,6 +162,18 @@ enum class TransactionCategory(
         )
     ),
 
+    // Travel & Accommodation
+    TRAVEL(
+        displayName = "Travel",
+        icon = "flight",
+        color = "#29B6F6",
+        keywords = listOf(
+            "hotel", "hostel", "airbnb", "booking.com", "expedia", "trivago",
+            "airline", "lufthansa", "ryanair", "easyjet", "flug", "flight",
+            "car rental", "sixt", "europcar", "hertz", "avis"
+        )
+    ),
+
     // Income
     SALARY(
         displayName = "Salary",

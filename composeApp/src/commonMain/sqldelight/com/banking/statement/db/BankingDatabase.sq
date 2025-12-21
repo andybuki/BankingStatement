@@ -248,3 +248,40 @@ DELETE FROM accounts;
 -- Delete transactions by account
 deleteTransactionsByAccount:
 DELETE FROM transactions WHERE account_id = ?;
+
+-- Merchant database for categorization
+CREATE TABLE IF NOT EXISTS merchants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_code TEXT NOT NULL,
+    country_code TEXT NOT NULL,
+    name TEXT NOT NULL,
+    name_normalized TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_merchants_name_normalized ON merchants(name_normalized);
+CREATE INDEX IF NOT EXISTS idx_merchants_category ON merchants(category_code);
+
+-- Merchant queries
+insertMerchant:
+INSERT INTO merchants(category_code, country_code, name, name_normalized)
+VALUES (?, ?, ?, ?);
+
+findMerchantByName:
+SELECT category_code, country_code, name FROM merchants
+WHERE name_normalized = ?
+LIMIT 1;
+
+findMerchantByNameContains:
+SELECT category_code, country_code, name FROM merchants
+WHERE ? LIKE '%' || name_normalized || '%'
+ORDER BY LENGTH(name_normalized) DESC
+LIMIT 1;
+
+getMerchantCount:
+SELECT COUNT(*) FROM merchants;
+
+clearMerchants:
+DELETE FROM merchants;
+
+isMerchantsLoaded:
+SELECT COUNT(*) > 0 FROM merchants;

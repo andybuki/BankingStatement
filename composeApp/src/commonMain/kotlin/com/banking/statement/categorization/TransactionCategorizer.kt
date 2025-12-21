@@ -3,14 +3,30 @@ package com.banking.statement.categorization
 import com.banking.statement.parser.ParsedTransaction
 
 /**
- * Service for automatically categorizing transactions
+ * Service for automatically categorizing transactions.
+ * Uses merchant database lookup first, then falls back to keyword matching.
  */
-class TransactionCategorizer {
+class TransactionCategorizer(
+    private val merchantDatabase: MerchantDatabase? = null
+) {
 
     /**
-     * Categorize a single transaction
+     * Categorize a single transaction.
+     * Priority: 1) Merchant database lookup, 2) Keyword matching
      */
     fun categorize(transaction: ParsedTransaction): TransactionCategory {
+        // First try merchant database if available
+        merchantDatabase?.let { db ->
+            val merchantCategory = db.findCategory(
+                description = transaction.description,
+                counterparty = transaction.counterpartyName
+            )
+            if (merchantCategory != null) {
+                return merchantCategory
+            }
+        }
+
+        // Fall back to keyword matching
         return TransactionCategory.categorize(
             description = transaction.description,
             counterparty = transaction.counterpartyName

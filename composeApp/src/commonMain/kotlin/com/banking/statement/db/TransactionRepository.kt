@@ -39,7 +39,7 @@ data class ImportResult(
 class TransactionRepository(
     driverFactory: DatabaseDriverFactory
 ) {
-    private val database = BankingDatabase(driverFactory.createDriver())
+    val database = BankingDatabase(driverFactory.createDriver())
     private val queries = database.bankingDatabaseQueries
 
     // ==================== Account Operations ====================

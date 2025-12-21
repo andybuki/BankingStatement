@@ -21,6 +21,7 @@ import com.banking.statement.parser.CsvParser
 import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
+import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.parser.banks.BankParserRegistry
 import com.banking.statement.pdf.PdfProcessor
@@ -88,6 +89,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var fileExporter: FileExporter
     private lateinit var pdfGenerator: PdfGenerator
     private lateinit var themePreferences: ThemePreferences
+    private lateinit var merchantDatabase: MerchantDatabase
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private val filePickerLauncher = registerForActivityResult(
@@ -106,6 +108,12 @@ class MainActivity : ComponentActivity() {
         // Initialize database
         val driverFactory = DatabaseDriverFactory(applicationContext)
         repository = TransactionRepository(driverFactory)
+
+        // Initialize merchant database for improved categorization
+        merchantDatabase = MerchantDatabase(repository.database)
+
+        // Load merchant data from CSV if not already loaded
+        loadMerchantDatabase()
 
         // Initialize exporters
         fileExporter = FileExporter(applicationContext)
@@ -548,7 +556,11 @@ class MainActivity : ComponentActivity() {
 
                 // Convert DB transactions to display format with categorization
                 transactions = allTransactions.map { tx ->
-                    val category = TransactionCategory.categorize(
+                    // First try merchant database, then fall back to keyword matching
+                    val category = merchantDatabase.findCategory(
+                        tx.description,
+                        tx.counterparty_name
+                    ) ?: TransactionCategory.categorize(
                         tx.description,
                         tx.counterparty_name
                     )
@@ -763,6 +775,53 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /**
+     * Load merchant database from CSV resource if not already loaded.
+     * This enables improved transaction categorization based on known merchant names.
+     */
+    private fun loadMerchantDatabase() {
+        coroutineScope.launch {
+            try {
+                // Check if already loaded
+                val isLoaded = withContext(Dispatchers.IO) {
+                    merchantDatabase.isLoaded()
+                }
+
+                if (isLoaded) {
+                    val count = withContext(Dispatchers.IO) { merchantDatabase.getMerchantCount() }
+                    android.util.Log.d("MerchantDB", "Merchant database already loaded with $count entries")
+                    return@launch
+                }
+
+                // Try to load from resources
+                val csvStream = try {
+                    assets.open("files/merchants.csv")
+                } catch (e: Exception) {
+                    android.util.Log.d("MerchantDB", "No merchants.csv found in assets, using keyword matching only")
+                    return@launch
+                }
+
+                android.util.Log.d("MerchantDB", "Loading merchant database from CSV...")
+                val startTime = System.currentTimeMillis()
+
+                withContext(Dispatchers.IO) {
+                    val csvContent = csvStream.bufferedReader().use { it.readText() }
+                    merchantDatabase.loadFromCsv(csvContent) { loaded, total ->
+                        android.util.Log.d("MerchantDB", "Loaded $loaded / $total merchants")
+                    }
+                }
+
+                val duration = System.currentTimeMillis() - startTime
+                val count = withContext(Dispatchers.IO) { merchantDatabase.getMerchantCount() }
+                android.util.Log.d("MerchantDB", "Merchant database loaded: $count entries in ${duration}ms")
+
+            } catch (e: Exception) {
+                android.util.Log.e("MerchantDB", "Error loading merchant database: ${e.message}")
+                e.printStackTrace()
             }
         }
     }
