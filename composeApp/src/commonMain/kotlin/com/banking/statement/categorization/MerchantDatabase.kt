@@ -25,6 +25,9 @@ class MerchantDatabase(
         "tr" to TransactionCategory.TRAVEL         // travel
     )
 
+    // In-memory cache of merchants for fast contains matching
+    private var merchantCache: List<Pair<String, String>>? = null // (normalized_name, category_code)
+
     /**
      * Check if merchant database is loaded
      */
@@ -63,6 +66,9 @@ class MerchantDatabase(
 
         val startIndex = if (hasHeader) 1 else 0
 
+        // Build cache while loading
+        val cacheBuilder = mutableListOf<Pair<String, String>>()
+
         database.bankingDatabaseQueries.transaction {
             // Clear existing data
             database.bankingDatabaseQueries.clearMerchants()
@@ -78,13 +84,14 @@ class MerchantDatabase(
                     val name = parts[2]
                     val nameNormalized = normalizeName(name)
 
-                    if (categoryCode.isNotBlank() && name.isNotBlank()) {
+                    if (categoryCode.isNotBlank() && name.isNotBlank() && nameNormalized.length >= 3) {
                         database.bankingDatabaseQueries.insertMerchant(
                             category_code = categoryCode,
                             country_code = countryCode,
                             name = name,
                             name_normalized = nameNormalized
                         )
+                        cacheBuilder.add(nameNormalized to categoryCode)
                         count++
 
                         // Report progress every 10000 entries
@@ -96,6 +103,9 @@ class MerchantDatabase(
             }
             onProgress?.invoke(count, totalLines)
         }
+
+        // Sort cache by name length descending (longer matches first)
+        merchantCache = cacheBuilder.sortedByDescending { it.first.length }
     }
 
     /**
@@ -109,30 +119,16 @@ class MerchantDatabase(
         val searchText = normalizeName("$description ${counterparty ?: ""}")
         if (searchText.isBlank()) return null
 
-        // First try exact match on normalized name
-        try {
-            val exactMatch = database.bankingDatabaseQueries
-                .findMerchantByName(searchText)
-                .executeAsOneOrNull()
-
-            if (exactMatch != null) {
-                return categoryCodeMap[exactMatch.category_code]
+        // Use in-memory cache for contains matching
+        val cache = merchantCache
+        if (cache != null) {
+            // Find first merchant name that is contained in the search text
+            // Cache is sorted by length desc, so longer matches are found first
+            for ((merchantName, categoryCode) in cache) {
+                if (searchText.contains(merchantName)) {
+                    return categoryCodeMap[categoryCode]
+                }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        // Try contains match - check if any merchant name is contained in the search text
-        try {
-            val containsMatch = database.bankingDatabaseQueries
-                .findMerchantByNameContains(searchText = searchText)
-                .executeAsOneOrNull()
-
-            if (containsMatch != null) {
-                return categoryCodeMap[containsMatch.category_code]
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
 
         return null
