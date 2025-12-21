@@ -271,7 +271,7 @@ SELECT category_code, country_code, name FROM merchants
 WHERE name_normalized = ?
 LIMIT 1;
 
-findMerchantByNameContains:
+findMerchantByNameContains(searchText TEXT):
 SELECT category_code, country_code, name FROM merchants
 WHERE INSTR(:searchText, name_normalized) > 0
 ORDER BY LENGTH(name_normalized) DESC
