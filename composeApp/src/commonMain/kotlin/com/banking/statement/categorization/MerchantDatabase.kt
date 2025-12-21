@@ -142,19 +142,44 @@ class MerchantDatabase(
         val searchText = normalizeName("$description ${counterparty ?: ""}")
         if (searchText.isBlank()) return null
 
-        // Use in-memory cache for contains matching
+        // Split search text into words for word-boundary matching
+        val searchWords = searchText.split(" ").filter { it.isNotBlank() }
+
+        // Use in-memory cache for matching
         val cache = merchantCache
         if (cache != null) {
-            // Find first merchant name that is contained in the search text
+            // Find first merchant name that matches as complete word(s)
             // Cache is sorted by length desc, so longer matches are found first
             for ((merchantName, categoryCode) in cache) {
-                if (searchText.contains(merchantName)) {
+                if (matchesAsWord(searchText, searchWords, merchantName)) {
                     return categoryCodeMap[categoryCode]
                 }
             }
         }
 
         return null
+    }
+
+    /**
+     * Check if merchant name matches as complete word(s) in search text.
+     * "lidl" matches "lidl sagt danke" but "mie" does NOT match "miete"
+     */
+    private fun matchesAsWord(searchText: String, searchWords: List<String>, merchantName: String): Boolean {
+        val merchantWords = merchantName.split(" ").filter { it.isNotBlank() }
+
+        // Single word merchant - must match a complete word in search
+        if (merchantWords.size == 1) {
+            return searchWords.contains(merchantName)
+        }
+
+        // Multi-word merchant - all words must be present as complete words
+        // and the phrase should appear in order
+        if (merchantWords.all { word -> searchWords.contains(word) }) {
+            // Also verify the words appear in sequence
+            return searchText.contains(merchantName)
+        }
+
+        return false
     }
 
     /**
