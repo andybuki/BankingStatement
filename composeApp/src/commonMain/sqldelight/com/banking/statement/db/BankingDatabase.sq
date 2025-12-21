@@ -282,6 +282,3 @@ SELECT COUNT(*) FROM merchants;
 
 clearMerchants:
 DELETE FROM merchants;
-
-isMerchantsLoaded:
-SELECT COUNT(*) > 0 FROM merchants;
