@@ -109,12 +109,35 @@ class MerchantDatabase(
     }
 
     /**
+     * Ensure cache is loaded - rebuild from database if needed
+     */
+    fun ensureCacheLoaded() {
+        if (merchantCache != null) return
+        if (!isLoaded()) return
+
+        try {
+            val merchants = database.bankingDatabaseQueries
+                .getAllMerchantsForCache()
+                .executeAsList()
+
+            merchantCache = merchants
+                .map { it.name_normalized to it.category_code }
+                .sortedByDescending { it.first.length }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
      * Find category for a transaction description/counterparty.
      * Returns null if no match found.
      */
     fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
         // Skip if no merchants loaded
         if (!isLoaded()) return null
+
+        // Ensure cache is populated
+        ensureCacheLoaded()
 
         val searchText = normalizeName("$description ${counterparty ?: ""}")
         if (searchText.isBlank()) return null

@@ -274,5 +274,8 @@ LIMIT 1;
 getMerchantCount:
 SELECT COUNT(*) FROM merchants;
 
+getAllMerchantsForCache:
+SELECT name_normalized, category_code FROM merchants;
+
 clearMerchants:
 DELETE FROM merchants;
