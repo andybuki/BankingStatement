@@ -103,7 +103,11 @@ class MerchantDatabase(
      * Returns null if no match found.
      */
     fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
+        // Skip if no merchants loaded
+        if (!isLoaded()) return null
+
         val searchText = normalizeName("$description ${counterparty ?: ""}")
+        if (searchText.isBlank()) return null
 
         // First try exact match on normalized name
         try {
@@ -115,7 +119,7 @@ class MerchantDatabase(
                 return categoryCodeMap[exactMatch.category_code]
             }
         } catch (e: Exception) {
-            // Ignore and continue
+            e.printStackTrace()
         }
 
         // Try contains match - check if any merchant name is contained in the search text
@@ -128,7 +132,7 @@ class MerchantDatabase(
                 return categoryCodeMap[containsMatch.category_code]
             }
         } catch (e: Exception) {
-            // Ignore and continue
+            e.printStackTrace()
         }
 
         return null

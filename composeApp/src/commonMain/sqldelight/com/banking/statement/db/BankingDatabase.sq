@@ -273,7 +273,7 @@ LIMIT 1;
 
 findMerchantByNameContains:
 SELECT category_code, country_code, name FROM merchants
-WHERE ? LIKE '%' || name_normalized || '%'
+WHERE INSTR(?, name_normalized) > 0
 ORDER BY LENGTH(name_normalized) DESC
 LIMIT 1;
 

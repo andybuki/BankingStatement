@@ -819,6 +819,9 @@ class MainActivity : ComponentActivity() {
                 val count = withContext(Dispatchers.IO) { merchantDatabase.getMerchantCount() }
                 android.util.Log.d("MerchantDB", "Merchant database loaded: $count entries in ${duration}ms")
 
+                // Re-categorize transactions now that merchants are loaded
+                loadTransactionData()
+
             } catch (e: Exception) {
                 android.util.Log.e("MerchantDB", "Error loading merchant database: ${e.message}")
                 e.printStackTrace()
