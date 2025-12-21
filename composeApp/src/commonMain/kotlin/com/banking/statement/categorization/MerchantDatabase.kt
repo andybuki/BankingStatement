@@ -125,7 +125,7 @@ class MerchantDatabase(
         // Try contains match - check if any merchant name is contained in the search text
         try {
             val containsMatch = database.bankingDatabaseQueries
-                .findMerchantByNameContains(searchText)
+                .findMerchantByNameContains(searchText = searchText)
                 .executeAsOneOrNull()
 
             if (containsMatch != null) {
