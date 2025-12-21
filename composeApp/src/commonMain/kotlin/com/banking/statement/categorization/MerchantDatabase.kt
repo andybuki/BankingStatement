@@ -30,7 +30,7 @@ class MerchantDatabase(
      */
     fun isLoaded(): Boolean {
         return try {
-            database.bankingDatabaseQueries.isMerchantsLoaded().executeAsOne() > 0
+            database.bankingDatabaseQueries.getMerchantCount().executeAsOne() > 0
         } catch (e: Exception) {
             false
         }
