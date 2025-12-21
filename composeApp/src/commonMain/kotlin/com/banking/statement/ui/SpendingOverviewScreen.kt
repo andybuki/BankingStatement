@@ -880,6 +880,7 @@ private fun getCategoryEmoji(category: TransactionCategory): String {
         TransactionCategory.BANK_FEES -> "🏦"
         TransactionCategory.INVESTMENT -> "📈"
         TransactionCategory.FITNESS -> "💪"
+        TransactionCategory.TRAVEL -> "✈️"
         TransactionCategory.SALARY -> "💰"
         TransactionCategory.REFUND -> "↩️"
         TransactionCategory.TRANSFER -> "↔️"
