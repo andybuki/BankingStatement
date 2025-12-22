@@ -22,6 +22,7 @@ import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.categorization.CategoryOverrideManager
+import com.banking.statement.categorization.KeywordDatabase
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.categorization.TransactionCategorizer
@@ -94,6 +95,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var merchantDatabase: MerchantDatabase
     private lateinit var categoryOverrideManager: CategoryOverrideManager
     private lateinit var transactionCategorizer: TransactionCategorizer
+    private lateinit var keywordDatabase: KeywordDatabase
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private val filePickerLauncher = registerForActivityResult(
@@ -112,6 +114,10 @@ class MainActivity : ComponentActivity() {
         // Initialize database
         val driverFactory = DatabaseDriverFactory(applicationContext)
         repository = TransactionRepository(driverFactory)
+
+        // Initialize keyword database for category matching
+        keywordDatabase = KeywordDatabase()
+        loadKeywordDatabase()
 
         // Initialize merchant database for improved categorization
         merchantDatabase = MerchantDatabase(repository.database)
@@ -879,6 +885,46 @@ class MainActivity : ComponentActivity() {
                 e.printStackTrace()
                 Toast.makeText(this@MainActivity, getString(R.string.export_error), Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    /**
+     * Load keyword database from CSV resource.
+     * Uses country code from IBAN to load appropriate language file.
+     */
+    private fun loadKeywordDatabase(countryCode: String = "de") {
+        try {
+            // Try to load country-specific keywords first
+            val fileName = "files/keywords/keywords_${countryCode.lowercase()}.csv"
+            val csvStream = try {
+                assets.open(fileName)
+            } catch (e: Exception) {
+                // Fall back to German if country-specific file not found
+                if (countryCode != "de") {
+                    android.util.Log.d("KeywordDB", "No keywords file for $countryCode, falling back to German")
+                    try {
+                        assets.open("files/keywords/keywords_de.csv")
+                    } catch (e2: Exception) {
+                        android.util.Log.d("KeywordDB", "No keyword files found")
+                        return
+                    }
+                } else {
+                    android.util.Log.d("KeywordDB", "No keyword files found")
+                    return
+                }
+            }
+
+            val csvContent = csvStream.bufferedReader().use { it.readText() }
+            keywordDatabase.loadFromCsv(csvContent, countryCode)
+
+            // Set the keyword database in TransactionCategory
+            TransactionCategory.setKeywordDatabase(keywordDatabase)
+
+            android.util.Log.d("KeywordDB", "Loaded ${keywordDatabase.getKeywordCount()} keywords for $countryCode")
+
+        } catch (e: Exception) {
+            android.util.Log.e("KeywordDB", "Error loading keyword database: ${e.message}")
+            e.printStackTrace()
         }
     }
 
