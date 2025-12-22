@@ -24,7 +24,7 @@ enum class TransactionCategory(
             "leg immobilien / leg wohnen", "vivawest", "grand city properties", "covivio",
             "adler real estate", "saga", "gewobag", "degewo", "howoge",
             "stadt und land", "gesobau", "gewofag", "wbm", "gewoba",
-            "wiro", "abg frankfurt holding",
+            "wiro", "abg frankfurt holding"
         )
     ),
     UTILITIES(
@@ -241,7 +241,7 @@ enum class TransactionCategory(
             "yogastudio", "pilates", "spinning", "crossfit", "bootcamp",
             "sportschule", "freibad", "hallenbad", "verein",
             "sportverein", "tsv", "fitness abo",
-            "monatskarte fitness", "probetraining","sportpark","sport"
+            "monatskarte fitness", "probetraining","sportpark"
         )
     ),
 
