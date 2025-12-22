@@ -19,7 +19,7 @@ enum class TransactionCategory(
             "gehag", "vonovia", "deutsche wohnen", "immobilien",
             "nettomiete", "kaltmiete", "warmmiete",
             "nebenkosten", "betriebskosten", "heizkosten", "mietkaution", "kaution",
-            "courtage", "gehag", "leg immobilien", "grand city properties",
+            "courtage", "leg immobilien", "grand city properties",
             "covivio", "bonovia", "hausgeld", "hausverwaltung berlin",
             "leg immobilien / leg wohnen", "vivawest", "grand city properties", "covivio",
             "adler real estate", "saga", "gewobag", "degewo", "howoge",
