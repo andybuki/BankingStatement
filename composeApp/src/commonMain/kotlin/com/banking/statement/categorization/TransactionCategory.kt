@@ -110,7 +110,7 @@ enum class TransactionCategory(
             "amazon", "ebay", "zalando", "otto", "h&m", "zara", "mediamarkt",
             "saturn", "ikea", "möbel", "fashion", "kleidung", "electronics",
             "computer","schuhe","hausgeräte","primark","elektromarkt","fashion",
-            "vintage"
+            "vintage","bauhaus"
         )
     ),
 
