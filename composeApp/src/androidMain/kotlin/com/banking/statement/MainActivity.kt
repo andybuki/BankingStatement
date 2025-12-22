@@ -712,16 +712,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleCategoryChange(transaction: TransactionDisplay, newCategory: TransactionCategory) {
-        // Get the pattern to match similar transactions
-        val pattern = categoryOverrideManager.extractPattern(
-            transaction.description,
-            transaction.counterparty
-        )
+        // Get matching key - use counterparty if available, otherwise first words of description
+        val matchKey = getTransactionMatchKey(transaction)
 
-        // Update UI immediately - change all transactions with same pattern
+        // Update UI immediately - change all transactions with same match key
+        var updatedCount = 0
         transactions = transactions.map { tx ->
-            val txPattern = categoryOverrideManager.extractPattern(tx.description, tx.counterparty)
-            if (txPattern == pattern) {
+            val txMatchKey = getTransactionMatchKey(tx)
+            if (txMatchKey == matchKey) {
+                updatedCount++
                 tx.copy(category = newCategory)
             } else {
                 tx
@@ -731,7 +730,7 @@ class MainActivity : ComponentActivity() {
         // Also update category spending for immediate visual feedback
         updateCategorySpending()
 
-        // Save to database in background
+        // Save to database in background - use the full pattern for storage
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
                 categoryOverrideManager.saveOverride(
@@ -742,16 +741,40 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Count how many transactions were updated
-        val updatedCount = transactions.count { tx ->
-            categoryOverrideManager.extractPattern(tx.description, tx.counterparty) == pattern
-        }
-
         Toast.makeText(
             applicationContext,
             if (updatedCount > 1) "$updatedCount transactions updated" else "Category updated",
             Toast.LENGTH_SHORT
         ).show()
+    }
+
+    /**
+     * Get a matching key for grouping similar transactions.
+     * Uses the first significant word from counterparty or description.
+     */
+    private fun getTransactionMatchKey(transaction: TransactionDisplay): String {
+        // Normalize function
+        fun normalize(text: String): String {
+            return text.lowercase()
+                .replace(Regex("[^a-z0-9äöüß ]"), " ")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+        }
+
+        // Get first significant word (length > 3 to skip "gmbh", "ag", etc.)
+        fun getFirstWord(text: String): String? {
+            val normalized = normalize(text)
+            return normalized.split(" ").firstOrNull { it.length > 3 }
+        }
+
+        // Try counterparty first, then description
+        val counterparty = transaction.counterparty
+        if (!counterparty.isNullOrBlank()) {
+            getFirstWord(counterparty)?.let { return it }
+        }
+
+        // Fall back to description
+        return getFirstWord(transaction.description) ?: normalize(transaction.description).take(10)
     }
 
     private fun updateCategorySpending() {
