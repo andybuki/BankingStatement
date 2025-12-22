@@ -279,3 +279,30 @@ SELECT name_normalized, category_code FROM merchants;
 
 clearMerchants:
 DELETE FROM merchants;
+
+-- User category overrides (manual corrections that take priority)
+CREATE TABLE IF NOT EXISTS category_overrides (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pattern TEXT NOT NULL UNIQUE,
+    category_name TEXT NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_overrides_pattern ON category_overrides(pattern);
+
+-- Category override queries
+insertCategoryOverride:
+INSERT OR REPLACE INTO category_overrides(pattern, category_name, created_at)
+VALUES (?, ?, strftime('%s', 'now'));
+
+getCategoryOverrideByPattern:
+SELECT category_name FROM category_overrides WHERE pattern = ? LIMIT 1;
+
+getAllCategoryOverrides:
+SELECT pattern, category_name FROM category_overrides;
+
+deleteCategoryOverride:
+DELETE FROM category_overrides WHERE pattern = ?;
+
+clearCategoryOverrides:
+DELETE FROM category_overrides;

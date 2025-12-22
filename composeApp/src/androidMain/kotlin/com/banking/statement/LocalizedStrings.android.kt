@@ -99,5 +99,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     periodWeek = stringResource(R.string.period_week),
     periodMonth = stringResource(R.string.period_month),
     periodYear = stringResource(R.string.period_year),
-    periodAll = stringResource(R.string.period_all)
+    periodAll = stringResource(R.string.period_all),
+
+    changeCategory = stringResource(R.string.change_category)
 )

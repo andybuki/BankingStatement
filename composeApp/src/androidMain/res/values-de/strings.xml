@@ -136,4 +136,7 @@
     <string name="period_month">Monat</string>
     <string name="period_year">Jahr</string>
     <string name="period_all">Alle</string>
+
+    <!-- Category Override -->
+    <string name="change_category">Kategorie ändern</string>
 </resources>
