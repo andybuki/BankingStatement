@@ -712,24 +712,71 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleCategoryChange(transaction: TransactionDisplay, newCategory: TransactionCategory) {
+        // Get the pattern to match similar transactions
+        val pattern = categoryOverrideManager.extractPattern(
+            transaction.description,
+            transaction.counterparty
+        )
+
+        // Update UI immediately - change all transactions with same pattern
+        transactions = transactions.map { tx ->
+            val txPattern = categoryOverrideManager.extractPattern(tx.description, tx.counterparty)
+            if (txPattern == pattern) {
+                tx.copy(category = newCategory)
+            } else {
+                tx
+            }
+        }
+
+        // Also update category spending for immediate visual feedback
+        updateCategorySpending()
+
+        // Save to database in background
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
-                // Save the override for this transaction pattern
                 categoryOverrideManager.saveOverride(
                     description = transaction.description,
                     counterparty = transaction.counterparty,
                     category = newCategory
                 )
             }
-            // Reload transactions to apply the new category to all matching transactions
-            loadTransactionData()
-
-            Toast.makeText(
-                applicationContext,
-                "Category updated",
-                Toast.LENGTH_SHORT
-            ).show()
         }
+
+        // Count how many transactions were updated
+        val updatedCount = transactions.count { tx ->
+            categoryOverrideManager.extractPattern(tx.description, tx.counterparty) == pattern
+        }
+
+        Toast.makeText(
+            applicationContext,
+            if (updatedCount > 1) "$updatedCount transactions updated" else "Category updated",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun updateCategorySpending() {
+        // Recalculate category spending from current transactions
+        val spendingByCategory = transactions
+            .filter { it.amount < 0 }
+            .groupBy { it.category }
+            .mapValues { (_, txs) -> txs.sumOf { it.amount } }
+
+        val totalExpensesAmount = spendingByCategory.values.sum()
+
+        categorySpending = spendingByCategory.map { (category, total) ->
+            CategorySpending(
+                category = category,
+                totalAmount = total,
+                transactionCount = transactions.count { it.category == category && it.amount < 0 },
+                percentage = if (totalExpensesAmount != 0.0) {
+                    (total / totalExpensesAmount * 100).toFloat()
+                } else 0f
+            )
+        }.sortedBy { it.totalAmount }
+
+        // Update totals
+        totalExpenses = transactions.filter { it.amount < 0 }.sumOf { it.amount }
+        totalIncome = transactions.filter { it.amount > 0 }.sumOf { it.amount }
     }
 
     private fun shareTransactions(
