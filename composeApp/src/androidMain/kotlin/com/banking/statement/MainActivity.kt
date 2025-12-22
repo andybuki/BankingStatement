@@ -749,11 +749,11 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Get a matching key for grouping similar transactions.
-     * Uses the first significant word from counterparty or description.
+     * Get a matching key for grouping identical transactions.
+     * Uses the full normalized counterparty or description - exact match only.
      */
     private fun getTransactionMatchKey(transaction: TransactionDisplay): String {
-        // Normalize function
+        // Normalize function - remove special chars, lowercase, trim
         fun normalize(text: String): String {
             return text.lowercase()
                 .replace(Regex("[^a-z0-9äöüß ]"), " ")
@@ -761,20 +761,13 @@ class MainActivity : ComponentActivity() {
                 .trim()
         }
 
-        // Get first significant word (length > 3 to skip "gmbh", "ag", etc.)
-        fun getFirstWord(text: String): String? {
-            val normalized = normalize(text)
-            return normalized.split(" ").firstOrNull { it.length > 3 }
-        }
-
-        // Try counterparty first, then description
+        // Use counterparty if available, otherwise description
         val counterparty = transaction.counterparty
-        if (!counterparty.isNullOrBlank()) {
-            getFirstWord(counterparty)?.let { return it }
+        return if (!counterparty.isNullOrBlank()) {
+            normalize(counterparty)
+        } else {
+            normalize(transaction.description)
         }
-
-        // Fall back to description
-        return getFirstWord(transaction.description) ?: normalize(transaction.description).take(10)
     }
 
     private fun updateCategorySpending() {
