@@ -176,11 +176,13 @@ enum class TransactionCategory(
 
     // Income
     SALARY(
-        displayName = "Salary",
+        displayName = "Income",
         icon = "payments",
         color = "#66BB6A",
         keywords = listOf(
-            "gehalt", "lohn", "salary", "wage", "vergütung", "arbeitgeber"
+            "gehalt", "lohn", "salary", "wage", "vergütung", "arbeitgeber",
+            "rente", "pension", "ruhestand", "bundeskasse", "rentenversicherung",
+            "altersvorsorge", "betriebsrente", "riester", "rürup"
         )
     ),
     REFUND(

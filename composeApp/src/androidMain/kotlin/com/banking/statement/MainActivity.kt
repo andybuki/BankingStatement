@@ -21,8 +21,10 @@ import com.banking.statement.parser.CsvParser
 import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
+import com.banking.statement.categorization.CategoryOverrideManager
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
+import com.banking.statement.categorization.TransactionCategorizer
 import com.banking.statement.parser.banks.BankParserRegistry
 import com.banking.statement.pdf.PdfProcessor
 import com.banking.statement.export.ExportFormat
@@ -90,6 +92,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var pdfGenerator: PdfGenerator
     private lateinit var themePreferences: ThemePreferences
     private lateinit var merchantDatabase: MerchantDatabase
+    private lateinit var categoryOverrideManager: CategoryOverrideManager
+    private lateinit var transactionCategorizer: TransactionCategorizer
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private val filePickerLauncher = registerForActivityResult(
@@ -111,6 +115,13 @@ class MainActivity : ComponentActivity() {
 
         // Initialize merchant database for improved categorization
         merchantDatabase = MerchantDatabase(repository.database)
+
+        // Initialize category override manager for user corrections
+        categoryOverrideManager = CategoryOverrideManager(repository.database)
+        categoryOverrideManager.loadCache()
+
+        // Initialize transaction categorizer with proper priority
+        transactionCategorizer = TransactionCategorizer(merchantDatabase, categoryOverrideManager)
 
         // Load merchant data from CSV if not already loaded
         loadMerchantDatabase()
@@ -163,6 +174,9 @@ class MainActivity : ComponentActivity() {
                 onThemeModeChange = { mode ->
                     currentThemeMode = mode
                     themePreferences.setThemeMode(mode)
+                },
+                onCategoryChange = { transaction, newCategory ->
+                    handleCategoryChange(transaction, newCategory)
                 }
             )
         }
@@ -556,14 +570,19 @@ class MainActivity : ComponentActivity() {
 
                 // Convert DB transactions to display format with categorization
                 transactions = allTransactions.map { tx ->
-                    // First try merchant database, then fall back to keyword matching
-                    val category = merchantDatabase.findCategory(
-                        tx.description,
-                        tx.counterparty_name
-                    ) ?: TransactionCategory.categorize(
-                        tx.description,
-                        tx.counterparty_name
-                    )
+                    // Priority: 1) User overrides, 2) Keywords, 3) Merchant DB (for expenses)
+                    val category = categoryOverrideManager.findOverride(tx.description, tx.counterparty_name)
+                        ?: TransactionCategory.categorize(tx.description, tx.counterparty_name).let { keywordCategory ->
+                            if (keywordCategory != TransactionCategory.OTHER) {
+                                keywordCategory
+                            } else if (tx.amount < 0) {
+                                // Only use merchant DB for expenses
+                                merchantDatabase.findCategory(tx.description, tx.counterparty_name)
+                                    ?: TransactionCategory.OTHER
+                            } else {
+                                TransactionCategory.OTHER
+                            }
+                        }
                     val date = Instant.fromEpochSeconds(tx.booking_date)
                         .toLocalDateTime(TimeZone.currentSystemDefault())
                         .date
@@ -689,6 +708,27 @@ class MainActivity : ComponentActivity() {
             updateStats()
             loadAccountsData()
             loadTransactionData()
+        }
+    }
+
+    private fun handleCategoryChange(transaction: TransactionDisplay, newCategory: TransactionCategory) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                // Save the override for this transaction pattern
+                categoryOverrideManager.saveOverride(
+                    description = transaction.description,
+                    counterparty = transaction.counterparty,
+                    category = newCategory
+                )
+            }
+            // Reload transactions to apply the new category to all matching transactions
+            loadTransactionData()
+
+            Toast.makeText(
+                applicationContext,
+                "Category updated",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 

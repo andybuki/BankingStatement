@@ -113,7 +113,10 @@ data class AppStrings(
     val periodWeek: String,
     val periodMonth: String,
     val periodYear: String,
-    val periodAll: String
+    val periodAll: String,
+
+    // Category Override
+    val changeCategory: String
 )
 
 /**
@@ -220,5 +223,7 @@ fun defaultEnglishStrings() = AppStrings(
     periodWeek = "Week",
     periodMonth = "Month",
     periodYear = "Year",
-    periodAll = "All"
+    periodAll = "All",
+
+    changeCategory = "Change Category"
 )
