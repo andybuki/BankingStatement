@@ -36,7 +36,7 @@ class CategoryOverrideManager(
         val pattern = extractPattern(description, counterparty)
         if (pattern.isBlank()) return
 
-        database.insertCategoryOverride(pattern, category.name)
+        database.bankingDatabaseQueries.insertCategoryOverride(pattern, category.name)
 
         // Update cache
         val cache = overrideCache ?: mutableMapOf()
@@ -55,7 +55,7 @@ class CategoryOverrideManager(
         overrideCache?.get(pattern)?.let { return it }
 
         // Check database
-        val categoryName = database.getCategoryOverrideByPattern(pattern).executeAsOneOrNull()
+        val categoryName = database.bankingDatabaseQueries.getCategoryOverrideByPattern(pattern).executeAsOneOrNull()
         if (categoryName != null) {
             val category = TransactionCategory.entries.find { it.name == categoryName }
             if (category != null) {
@@ -76,11 +76,15 @@ class CategoryOverrideManager(
     fun loadCache() {
         val cache = mutableMapOf<String, TransactionCategory>()
 
-        database.getAllCategoryOverrides().executeAsList().forEach { row ->
-            val category = TransactionCategory.entries.find { it.name == row.category_name }
-            if (category != null) {
-                cache[row.pattern] = category
+        try {
+            database.bankingDatabaseQueries.getAllCategoryOverrides().executeAsList().forEach { row ->
+                val category = TransactionCategory.entries.find { it.name == row.category_name }
+                if (category != null) {
+                    cache[row.pattern] = category
+                }
             }
+        } catch (e: Exception) {
+            // Table might not exist yet on first run
         }
 
         overrideCache = cache
@@ -93,7 +97,7 @@ class CategoryOverrideManager(
         val pattern = extractPattern(description, counterparty)
         if (pattern.isBlank()) return
 
-        database.deleteCategoryOverride(pattern)
+        database.bankingDatabaseQueries.deleteCategoryOverride(pattern)
         overrideCache?.remove(pattern)
     }
 
@@ -101,7 +105,7 @@ class CategoryOverrideManager(
      * Clear all overrides
      */
     fun clearAll() {
-        database.clearCategoryOverrides()
+        database.bankingDatabaseQueries.clearCategoryOverrides()
         overrideCache?.clear()
     }
 }
