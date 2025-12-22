@@ -4,33 +4,57 @@ import com.banking.statement.parser.ParsedTransaction
 
 /**
  * Service for automatically categorizing transactions.
- * Uses merchant database lookup first, then falls back to keyword matching.
+ * Priority order:
+ * 1) User overrides (manual corrections)
+ * 2) Keyword matching from TransactionCategory (rent, salary, utilities, etc.)
+ * 3) Merchant database (only for unknowns - shops/restaurants not in keywords)
  */
 class TransactionCategorizer(
-    private val merchantDatabase: MerchantDatabase? = null
+    private val merchantDatabase: MerchantDatabase? = null,
+    private val categoryOverrideManager: CategoryOverrideManager? = null
 ) {
 
     /**
      * Categorize a single transaction.
-     * Priority: 1) Merchant database lookup, 2) Keyword matching
+     * Priority: 1) User overrides, 2) Keywords, 3) Merchant DB (for unknowns)
      */
     fun categorize(transaction: ParsedTransaction): TransactionCategory {
-        // First try merchant database if available
-        merchantDatabase?.let { db ->
-            val merchantCategory = db.findCategory(
+        // 1) Check user overrides first (highest priority)
+        categoryOverrideManager?.let { manager ->
+            val override = manager.findOverride(
                 description = transaction.description,
                 counterparty = transaction.counterpartyName
             )
-            if (merchantCategory != null) {
-                return merchantCategory
+            if (override != null) {
+                return override
             }
         }
 
-        // Fall back to keyword matching
-        return TransactionCategory.categorize(
+        // 2) Try keyword matching from TransactionCategory
+        val keywordCategory = TransactionCategory.categorize(
             description = transaction.description,
             counterparty = transaction.counterpartyName
         )
+
+        // If keywords found a category, use it
+        if (keywordCategory != TransactionCategory.OTHER) {
+            return keywordCategory
+        }
+
+        // 3) For unknowns, try merchant database (expenses only)
+        if (transaction.amount < 0) {
+            merchantDatabase?.let { db ->
+                val merchantCategory = db.findCategory(
+                    description = transaction.description,
+                    counterparty = transaction.counterpartyName
+                )
+                if (merchantCategory != null) {
+                    return merchantCategory
+                }
+            }
+        }
+
+        return TransactionCategory.OTHER
     }
 
     /**

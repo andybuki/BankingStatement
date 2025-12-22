@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import bankingstatement.composeapp.generated.resources.share
@@ -54,13 +55,15 @@ fun TransactionListScreen(
     transactions: List<TransactionDisplay>,
     accounts: List<AccountFilterOption> = emptyList(),
     onBackClick: () -> Unit,
-    onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null
+    onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
+    onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null
 ) {
     val strings = LocalStrings.current
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     var dropdownExpanded by remember { mutableStateOf(false) }
     var shareMenuExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var showCategoryPicker by remember { mutableStateOf<TransactionDisplay?>(null) }
 
     // Filter transactions based on selected account and search query
     val filteredTransactions = remember(transactions, selectedAccountId, searchQuery) {
@@ -255,18 +258,43 @@ fun TransactionListScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(filteredTransactions) { transaction ->
-                    TransactionItem(transaction)
+                    TransactionItem(
+                        transaction = transaction,
+                        onClick = if (onCategoryChange != null) {
+                            { showCategoryPicker = transaction }
+                        } else null
+                    )
                 }
             }
         }
         }
     }
+
+    // Category picker dialog
+    showCategoryPicker?.let { transaction ->
+        CategoryPickerDialog(
+            currentCategory = transaction.category,
+            onCategorySelected = { newCategory ->
+                onCategoryChange?.invoke(transaction, newCategory)
+                showCategoryPicker = null
+            },
+            onDismiss = { showCategoryPicker = null }
+        )
+    }
 }
 
 @Composable
-fun TransactionItem(transaction: TransactionDisplay) {
+fun TransactionItem(
+    transaction: TransactionDisplay,
+    onClick: (() -> Unit)? = null
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier.clickable { onClick() }
+                else Modifier
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -388,4 +416,78 @@ private fun getCategoryEmoji(category: TransactionCategory): String {
         TransactionCategory.PAYMENT_SERVICE -> "💳"
         TransactionCategory.OTHER -> "❓"
     }
+}
+
+@Composable
+fun CategoryPickerDialog(
+    currentCategory: TransactionCategory,
+    onCategorySelected: (TransactionCategory) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = strings.changeCategory,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(TransactionCategory.entries.filter { it != TransactionCategory.OTHER }) { category ->
+                    val isSelected = category == currentCategory
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onCategorySelected(category) },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isSelected) {
+                                parseColor(category.color).copy(alpha = 0.3f)
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(parseColor(category.color).copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = getCategoryEmoji(category),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = category.displayName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) parseColor(category.color) else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancel)
+            }
+        }
+    )
 }

@@ -252,21 +252,13 @@ enum class TransactionCategory(
 
     // Income
     SALARY(
-        displayName = "Salary",
+        displayName = "Income",
         icon = "payments",
         color = "#66BB6A",
         keywords = listOf(
             "gehalt", "lohn", "salary", "wage", "vergütung", "arbeitgeber",
-            "brutto gehalt", "netto lohn", "mindestlohn",
-            "tariflohn", "überstundenvergütung",
-            "provisionslohn", "bonus", "weihnachtsgeld",
-            "urlaubsgeld", "monatsgehalt", "leistungsprämie",
-            "erfolgsprämie", "variable vergütung", "fixe vergütung",
-            "arbeitnehmer", "arbeitgebersteuer",
-            "lohnsteuer", "sozialversicherung", "rentenversicherung",
-            "krankenversicherung", "arbeitsentgelt", "einkommenssteuer",
-            "lohnabrechnung", "gehaltsabrechnung", "gehaltserhöhung",
-            "lohnsteigerung", "tarifvertrag", "collective bargaining", "payslip"
+            "rente", "pension", "ruhestand", "bundeskasse", "rentenversicherung",
+            "altersvorsorge", "betriebsrente", "riester", "rürup"
         )
     ),
     REFUND(

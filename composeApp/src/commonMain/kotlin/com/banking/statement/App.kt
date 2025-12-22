@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
 import com.banking.statement.parser.ImportFileType
@@ -89,7 +90,9 @@ fun App(
     onShareSpending: ((ExportFormat, SpendingExportData) -> Unit)? = null,
     // Theme
     themeMode: ThemeMode = ThemeMode.SYSTEM,
-    onThemeModeChange: ((ThemeMode) -> Unit)? = null
+    onThemeModeChange: ((ThemeMode) -> Unit)? = null,
+    // Category override
+    onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
     val strings = provideStrings()
@@ -113,7 +116,8 @@ fun App(
                         transactions = transactions,
                         accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
                         onBackClick = { currentScreen = Screen.HOME },
-                        onShare = onShareTransactions
+                        onShare = onShareTransactions,
+                        onCategoryChange = onCategoryChange
                     )
                     Screen.SPENDING -> SpendingOverviewScreen(
                         totalIncome = totalIncome,
