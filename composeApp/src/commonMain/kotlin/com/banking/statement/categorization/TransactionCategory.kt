@@ -46,7 +46,7 @@ enum class TransactionCategory(
             "bvg", "berliner verkehrsbetriebe", "s-bahn", "u-bahn", "deutsche bahn",
             "db ", "mvv", "hvv", "kvb", "öpnv", "nahverkehr", "vbb", "transport", "bus",
             "zug", "fernverkehr","metro", "avv","rmv","vgn","ivb","svv","carsharing","flixbus",
-            "flixtrain","bike-and-ride","kvb-nextbike"
+            "flixtrain","bike-and-ride","kvb-nextbike","uber","bolt"
 
         )
     ),
@@ -80,7 +80,8 @@ enum class TransactionCategory(
         color = "#81C784",
         keywords = listOf(
             "rewe", "edeka", "lidl", "aldi", "penny", "netto", "kaufland",
-            "real", "supermarkt", "dm-", "rossmann", "müller drogerie"
+            "real", "supermarkt", "dm-", "rossmann", "müller drogerie","norma",
+            "alnatura","nah und gut","ledo","nah & gut","denns bioMarkt"
         )
     ),
     RESTAURANT(
@@ -90,7 +91,13 @@ enum class TransactionCategory(
         keywords = listOf(
             "restaurant", "gaststätte", "bistro", "cafe", "coffee", "starbucks",
             "mcdonald", "burger king", "subway", "pizza", "sushi", "döner",
-            "lieferando", "lieferheld", "uber eats", "wolt", "deliveroo"
+            "lieferando", "lieferheld", "uber eats", "wolt", "deliveroo","pizzeria",
+            "ristorante","taverna","bäckerei","baeckerei","café","cocktailbar","backshop",
+            "McDonald's","burger","imbiss","grill","gasthaus","gasthof","steakhouse",
+            "brauhaus","gaststaette","backhaus","trattoria","frühstück","fruehstueck",
+            "mensa","osteria","hausbrauerei","backstube","kneipe","schlossbrauerei","caffè",
+            "pub","kebab","familienhaus","speisen","bäcker","kaffeerösterei","kebap",
+            "brasserie","teestube","streetfood","eis","vegan"
         )
     ),
 
@@ -101,7 +108,9 @@ enum class TransactionCategory(
         color = "#BA68C8",
         keywords = listOf(
             "amazon", "ebay", "zalando", "otto", "h&m", "zara", "mediamarkt",
-            "saturn", "ikea", "möbel", "fashion", "kleidung", "electronics"
+            "saturn", "ikea", "möbel", "fashion", "kleidung", "electronics",
+            "computer","schuhe","hausgeräte","primark","elektromarkt","fashion",
+            "vintage"
         )
     ),
 
@@ -112,7 +121,14 @@ enum class TransactionCategory(
         color = "#F06292",
         keywords = listOf(
             "apotheke", "pharmacy", "arzt", "doctor", "krankenhaus", "hospital",
-            "zahnarzt", "dentist", "optiker", "brille"
+            "zahnarzt", "dentist", "optiker", "brille","hausarztpraxis","dr. med.",
+            "kosmetik","zahnarztpraxis","hausärztliche praxis","dr.med","praxis",
+            "dermacenter","fußpflegesalon","cosmetic","hautarzt","dr.","sonnenstudio",
+            "nagelstudio","zahnmedizin","dental","augenärzte","augenarzt","kinderarzt",
+            "frauenarzt","beauty","kinderärzte","medizinisches","medizinische","radiologiezentrum",
+            "dermazentrum","hausärzte","fußpflege","urologie","psychotherapeutische","therapeutin",
+            "therapeut","gesundheitszentrum","kieferorthopädie","zahnärzte","zahnärztin","frauenheilkunde",
+            "spa","zahn"
         )
     ),
     INSURANCE(
@@ -131,8 +147,9 @@ enum class TransactionCategory(
         icon = "movie",
         color = "#9575CD",
         keywords = listOf(
-            "netflix", "spotify", "disney", "amazon prime", "kino", "cinema",
-            "theater", "konzert", "ticket", "eventim"
+             "kino", "cinema", "theater", "konzert", "ticket", "eventim",
+            "palast","filmhaus","komödie",
+            "kinemathek","casino","cinemaxX","cineStar","diskothek","festspielbüro","bühne"
         )
     ),
     SUBSCRIPTIONS(
@@ -224,7 +241,7 @@ enum class TransactionCategory(
             "yogastudio", "pilates", "spinning", "crossfit", "bootcamp",
             "sportschule", "freibad", "hallenbad", "verein",
             "sportverein", "tsv", "fitness abo",
-            "monatskarte fitness", "probetraining"
+            "monatskarte fitness", "probetraining","sportpark","sport"
         )
     ),
 
