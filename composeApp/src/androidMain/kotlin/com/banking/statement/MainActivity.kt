@@ -137,6 +137,12 @@ class MainActivity : ComponentActivity() {
         // Load merchant data from CSV if not already loaded
         loadMerchantDatabase()
 
+        // Backfill categories for existing transactions (one-time migration)
+        coroutineScope.launch(Dispatchers.IO) {
+            repository.backfillAutoCategories()
+            android.util.Log.d("Migration", "Backfilled auto_category for existing transactions")
+        }
+
         // Initialize exporters
         fileExporter = FileExporter(applicationContext)
         pdfGenerator = PdfGenerator(applicationContext)

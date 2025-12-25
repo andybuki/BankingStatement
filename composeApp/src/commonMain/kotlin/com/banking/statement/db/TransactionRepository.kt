@@ -10,6 +10,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Result of checking if an import matches an existing account
@@ -380,6 +381,44 @@ class TransactionRepository(
      */
     fun getCategorySpendingByMonthAndAccount(accountId: Long): List<GetCategorySpendingByMonthAndAccount> {
         return queries.getCategorySpendingByMonthAndAccount(accountId).executeAsList()
+    }
+
+    /**
+     * Backfill auto_category for existing transactions that don't have it set.
+     * This is needed after the category persistence feature was added.
+     */
+    fun backfillAutoCategories() {
+        if (transactionCategorizer == null) return
+
+        // Get all transactions without auto_category
+        val transactions = queries.getAllTransactions().executeAsList()
+            .filter { it.auto_category.isNullOrBlank() }
+
+        // Update each transaction with calculated category
+        transactions.forEach { tx ->
+            val parsedTx = com.banking.statement.parser.ParsedTransaction(
+                transactionId = tx.transaction_id,
+                bookingDate = kotlinx.datetime.Instant.fromEpochSeconds(tx.booking_date)
+                    .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date,
+                valueDate = tx.value_date?.let {
+                    kotlinx.datetime.Instant.fromEpochSeconds(it)
+                        .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date
+                },
+                amount = tx.amount,
+                currency = tx.currency,
+                balance = tx.balance,
+                description = tx.description,
+                counterpartyName = tx.counterparty_name,
+                counterpartyIban = tx.counterparty_iban,
+                remittanceInfo = tx.remittance_info,
+                transactionType = tx.transaction_type,
+                bankTransactionCode = tx.bank_transaction_code,
+                rawText = tx.raw_text
+            )
+
+            val category = transactionCategorizer.categorize(parsedTx)
+            queries.updateTransactionCategory(null, category.name, tx.id)
+        }
     }
 
     // ==================== Helper Functions ====================
