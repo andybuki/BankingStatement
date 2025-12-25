@@ -139,8 +139,21 @@ class MainActivity : ComponentActivity() {
 
         // Backfill categories for existing transactions (one-time migration)
         coroutineScope.launch(Dispatchers.IO) {
-            repository.backfillAutoCategories()
-            android.util.Log.d("Migration", "Backfilled auto_category for existing transactions")
+            val backfilledCount = repository.backfillAutoCategories()
+            android.util.Log.d("Migration", "✅ Backfilled $backfilledCount transactions")
+
+            // Debug: Check if trends data is available
+            val categoryData = repository.getCategorySpendingByMonth()
+            android.util.Log.d("Migration", "📊 Category trend data: ${categoryData.size} entries")
+            categoryData.take(5).forEach { row ->
+                android.util.Log.d("Migration", "  - ${row.month}: ${row.auto_category} = ${row.total}")
+            }
+
+            val merchantData = repository.getMerchantSpendingByMonth()
+            android.util.Log.d("Migration", "🏪 Merchant trend data: ${merchantData.size} entries")
+            merchantData.take(5).forEach { row ->
+                android.util.Log.d("Migration", "  - ${row.month}: ${row.counterparty_name} = ${row.total}")
+            }
         }
 
         // Initialize exporters
