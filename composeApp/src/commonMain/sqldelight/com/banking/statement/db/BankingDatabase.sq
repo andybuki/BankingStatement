@@ -52,6 +52,7 @@ CREATE TABLE transactions (
     transaction_type TEXT,
     bank_transaction_code TEXT,
     category_id INTEGER REFERENCES categories(id),
+    auto_category TEXT,
     raw_text TEXT,
     is_duplicate INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
@@ -149,12 +150,12 @@ insertTransaction:
 INSERT INTO transactions(
     statement_id, account_id, transaction_id, booking_date, value_date, amount, currency,
     balance, description, counterparty_name, counterparty_iban, remittance_info,
-    transaction_type, bank_transaction_code, category_id, raw_text, is_duplicate
+    transaction_type, bank_transaction_code, category_id, auto_category, raw_text, is_duplicate
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransactionCategory:
-UPDATE transactions SET category_id = ? WHERE id = ?;
+UPDATE transactions SET category_id = ?, auto_category = ? WHERE id = ?;
 
 markAsDuplicate:
 UPDATE transactions SET is_duplicate = 1 WHERE id = ?;

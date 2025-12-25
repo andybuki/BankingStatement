@@ -45,23 +45,33 @@ fun MainViewController() = ComposeUIViewController {
     val themePreferences = remember { ThemePreferences() }
     var currentThemeMode by remember { mutableStateOf(themePreferences.getThemeMode()) }
 
-    // Initialize database and repository
-    val repository = remember {
-        val driverFactory = DatabaseDriverFactory()
-        TransactionRepository(driverFactory)
-    }
+    // Initialize database driver
+    val driverFactory = remember { DatabaseDriverFactory() }
 
     // Initialize keyword database for category matching
     val keywordDatabase = remember { KeywordDatabase() }
 
+    // Initialize temporary repository to access database
+    val tempRepository = remember { TransactionRepository(driverFactory) }
+
     // Initialize merchant database for improved categorization
-    val merchantDatabase = remember { MerchantDatabase(repository.database) }
+    val merchantDatabase = remember { MerchantDatabase(tempRepository.database) }
 
     // Initialize category override manager for user corrections
     val categoryOverrideManager = remember {
-        CategoryOverrideManager(repository.database).apply {
+        CategoryOverrideManager(tempRepository.database).apply {
             loadCache()
         }
+    }
+
+    // Initialize transaction categorizer
+    val transactionCategorizer = remember {
+        com.banking.statement.categorization.TransactionCategorizer(merchantDatabase, categoryOverrideManager)
+    }
+
+    // Initialize repository with categorizer for auto-categorization on import
+    val repository = remember {
+        TransactionRepository(driverFactory, transactionCategorizer)
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -240,17 +250,26 @@ private suspend fun loadTransactionData(
 
         // Convert DB transactions to display format with categorization
         val txList = allTransactions.map { tx ->
-            // Priority: 1) User overrides, 2) Keywords, 3) Merchant DB (for expenses)
+            // Priority: 1) User overrides, 2) Saved category, 3) Recalculate
             val category = categoryOverrideManager.findOverride(tx.description, tx.counterparty_name)
-                ?: TransactionCategory.categorize(tx.description, tx.counterparty_name).let { keywordCategory ->
-                    if (keywordCategory != TransactionCategory.OTHER) {
-                        keywordCategory
-                    } else if (tx.amount < 0) {
-                        // Only use merchant DB for expenses
-                        merchantDatabase.findCategory(tx.description, tx.counterparty_name)
+                ?: run {
+                    // Use saved category if available
+                    if (!tx.auto_category.isNullOrBlank()) {
+                        TransactionCategory.entries.find { it.name == tx.auto_category }
                             ?: TransactionCategory.OTHER
                     } else {
-                        TransactionCategory.OTHER
+                        // Fall back to recalculation for old data without saved categories
+                        TransactionCategory.categorize(tx.description, tx.counterparty_name).let { keywordCategory ->
+                            if (keywordCategory != TransactionCategory.OTHER) {
+                                keywordCategory
+                            } else if (tx.amount < 0) {
+                                // Only use merchant DB for expenses
+                                merchantDatabase.findCategory(tx.description, tx.counterparty_name)
+                                    ?: TransactionCategory.OTHER
+                            } else {
+                                TransactionCategory.OTHER
+                            }
+                        }
                     }
                 }
             val date = Instant.fromEpochSeconds(tx.booking_date)

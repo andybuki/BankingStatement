@@ -113,21 +113,26 @@ class MainActivity : ComponentActivity() {
 
         // Initialize database
         val driverFactory = DatabaseDriverFactory(applicationContext)
-        repository = TransactionRepository(driverFactory)
 
-        // Initialize keyword database for category matching
+        // Initialize keyword database first
         keywordDatabase = KeywordDatabase()
         loadKeywordDatabase()
 
+        // Initialize temporary repository to get database instance
+        val tempRepository = TransactionRepository(driverFactory)
+
         // Initialize merchant database for improved categorization
-        merchantDatabase = MerchantDatabase(repository.database)
+        merchantDatabase = MerchantDatabase(tempRepository.database)
 
         // Initialize category override manager for user corrections
-        categoryOverrideManager = CategoryOverrideManager(repository.database)
+        categoryOverrideManager = CategoryOverrideManager(tempRepository.database)
         categoryOverrideManager.loadCache()
 
         // Initialize transaction categorizer with proper priority
         transactionCategorizer = TransactionCategorizer(merchantDatabase, categoryOverrideManager)
+
+        // Initialize repository with categorizer for auto-categorization on import
+        repository = TransactionRepository(driverFactory, transactionCategorizer)
 
         // Load merchant data from CSV if not already loaded
         loadMerchantDatabase()
@@ -576,17 +581,26 @@ class MainActivity : ComponentActivity() {
 
                 // Convert DB transactions to display format with categorization
                 transactions = allTransactions.map { tx ->
-                    // Priority: 1) User overrides, 2) Keywords, 3) Merchant DB (for expenses)
+                    // Priority: 1) User overrides, 2) Saved category, 3) Recalculate
                     val category = categoryOverrideManager.findOverride(tx.description, tx.counterparty_name)
-                        ?: TransactionCategory.categorize(tx.description, tx.counterparty_name).let { keywordCategory ->
-                            if (keywordCategory != TransactionCategory.OTHER) {
-                                keywordCategory
-                            } else if (tx.amount < 0) {
-                                // Only use merchant DB for expenses
-                                merchantDatabase.findCategory(tx.description, tx.counterparty_name)
+                        ?: run {
+                            // Use saved category if available
+                            if (!tx.auto_category.isNullOrBlank()) {
+                                TransactionCategory.entries.find { it.name == tx.auto_category }
                                     ?: TransactionCategory.OTHER
                             } else {
-                                TransactionCategory.OTHER
+                                // Fall back to recalculation for old data without saved categories
+                                TransactionCategory.categorize(tx.description, tx.counterparty_name).let { keywordCategory ->
+                                    if (keywordCategory != TransactionCategory.OTHER) {
+                                        keywordCategory
+                                    } else if (tx.amount < 0) {
+                                        // Only use merchant DB for expenses
+                                        merchantDatabase.findCategory(tx.description, tx.counterparty_name)
+                                            ?: TransactionCategory.OTHER
+                                    } else {
+                                        TransactionCategory.OTHER
+                                    }
+                                }
                             }
                         }
                     val date = Instant.fromEpochSeconds(tx.booking_date)
