@@ -22,46 +22,86 @@ class CategoryOverrideManager(
     }
 
     /**
-     * Extract key words from description for pattern matching
+     * Extract primary pattern - prefer counterparty for stability
      */
-    fun extractPattern(description: String, counterparty: String?): String {
+    private fun extractPrimaryPattern(counterparty: String?): String? {
+        if (counterparty.isNullOrBlank()) return null
+        val normalized = normalizePattern(counterparty)
+        return if (normalized.isNotBlank()) normalized else null
+    }
+
+    /**
+     * Extract fallback pattern - full description + counterparty
+     */
+    private fun extractFullPattern(description: String, counterparty: String?): String {
         val combined = "$description ${counterparty ?: ""}"
         return normalizePattern(combined)
     }
 
     /**
-     * Save a user override for a pattern
+     * Save a user override for a pattern.
+     * Prioritizes counterparty-only pattern for better matching across imports.
      */
     fun saveOverride(description: String, counterparty: String?, category: TransactionCategory) {
-        val pattern = extractPattern(description, counterparty)
-        if (pattern.isBlank()) return
-
-        database.bankingDatabaseQueries.insertCategoryOverride(pattern, category.name)
-
-        // Update cache
-        val cache = overrideCache ?: mutableMapOf()
-        cache[pattern] = category
-        overrideCache = cache
+        // Try to save counterparty-only pattern first (more stable)
+        val primaryPattern = extractPrimaryPattern(counterparty)
+        if (!primaryPattern.isNullOrBlank()) {
+            database.bankingDatabaseQueries.insertCategoryOverride(primaryPattern, category.name)
+            val cache = overrideCache ?: mutableMapOf()
+            cache[primaryPattern] = category
+            overrideCache = cache
+        } else {
+            // Fall back to full pattern if no counterparty
+            val fullPattern = extractFullPattern(description, counterparty)
+            if (fullPattern.isNotBlank()) {
+                database.bankingDatabaseQueries.insertCategoryOverride(fullPattern, category.name)
+                val cache = overrideCache ?: mutableMapOf()
+                cache[fullPattern] = category
+                overrideCache = cache
+            }
+        }
     }
 
     /**
-     * Find a user override for a transaction
+     * Find a user override for a transaction.
+     * Checks counterparty-only pattern first, then falls back to full pattern.
      */
     fun findOverride(description: String, counterparty: String?): TransactionCategory? {
-        val pattern = extractPattern(description, counterparty)
-        if (pattern.isBlank()) return null
+        // First try counterparty-only pattern (most reliable)
+        val primaryPattern = extractPrimaryPattern(counterparty)
+        if (!primaryPattern.isNullOrBlank()) {
+            // Check cache first
+            overrideCache?.get(primaryPattern)?.let { return it }
 
-        // Check cache first
-        overrideCache?.get(pattern)?.let { return it }
+            // Check database
+            val categoryName = database.bankingDatabaseQueries.getCategoryOverrideByPattern(primaryPattern).executeAsOneOrNull()
+            if (categoryName != null) {
+                val category = TransactionCategory.entries.find { it.name == categoryName }
+                if (category != null) {
+                    // Update cache
+                    val cache = overrideCache ?: mutableMapOf()
+                    cache[primaryPattern] = category
+                    overrideCache = cache
+                    return category
+                }
+            }
+        }
+
+        // Fall back to full pattern match
+        val fullPattern = extractFullPattern(description, counterparty)
+        if (fullPattern.isBlank()) return null
+
+        // Check cache
+        overrideCache?.get(fullPattern)?.let { return it }
 
         // Check database
-        val categoryName = database.bankingDatabaseQueries.getCategoryOverrideByPattern(pattern).executeAsOneOrNull()
+        val categoryName = database.bankingDatabaseQueries.getCategoryOverrideByPattern(fullPattern).executeAsOneOrNull()
         if (categoryName != null) {
             val category = TransactionCategory.entries.find { it.name == categoryName }
             if (category != null) {
                 // Update cache
                 val cache = overrideCache ?: mutableMapOf()
-                cache[pattern] = category
+                cache[fullPattern] = category
                 overrideCache = cache
                 return category
             }
@@ -94,11 +134,18 @@ class CategoryOverrideManager(
      * Delete an override
      */
     fun deleteOverride(description: String, counterparty: String?) {
-        val pattern = extractPattern(description, counterparty)
-        if (pattern.isBlank()) return
+        // Try to delete both patterns
+        val primaryPattern = extractPrimaryPattern(counterparty)
+        if (!primaryPattern.isNullOrBlank()) {
+            database.bankingDatabaseQueries.deleteCategoryOverride(primaryPattern)
+            overrideCache?.remove(primaryPattern)
+        }
 
-        database.bankingDatabaseQueries.deleteCategoryOverride(pattern)
-        overrideCache?.remove(pattern)
+        val fullPattern = extractFullPattern(description, counterparty)
+        if (fullPattern.isNotBlank()) {
+            database.bankingDatabaseQueries.deleteCategoryOverride(fullPattern)
+            overrideCache?.remove(fullPattern)
+        }
     }
 
     /**

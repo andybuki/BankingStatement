@@ -37,7 +37,8 @@ data class ImportResult(
 )
 
 class TransactionRepository(
-    driverFactory: DatabaseDriverFactory
+    driverFactory: DatabaseDriverFactory,
+    private val transactionCategorizer: com.banking.statement.categorization.TransactionCategorizer? = null
 ) {
     val database = BankingDatabase(driverFactory.createDriver())
     private val queries = database.bankingDatabaseQueries
@@ -266,6 +267,9 @@ class TransactionRepository(
         transaction: ParsedTransaction,
         isDuplicate: Boolean
     ) {
+        // Calculate category using categorizer if available
+        val autoCategory = transactionCategorizer?.categorize(transaction)?.name
+
         queries.insertTransaction(
             statement_id = statementId,
             account_id = accountId,
@@ -282,6 +286,7 @@ class TransactionRepository(
             transaction_type = transaction.transactionType,
             bank_transaction_code = transaction.bankTransactionCode,
             category_id = null,
+            auto_category = autoCategory,
             raw_text = transaction.rawText,
             is_duplicate = if (isDuplicate) 1L else 0L
         )
@@ -331,8 +336,8 @@ class TransactionRepository(
         return queries.getTransactionCount().executeAsOne()
     }
 
-    fun updateTransactionCategory(transactionId: Long, categoryId: Long?) {
-        queries.updateTransactionCategory(categoryId, transactionId)
+    fun updateTransactionCategory(transactionId: Long, categoryId: Long?, categoryName: String?) {
+        queries.updateTransactionCategory(categoryId, categoryName, transactionId)
     }
 
     // ==================== Category Operations ====================
@@ -361,6 +366,20 @@ class TransactionRepository(
 
     fun getTotalBalanceByAccount(accountId: Long): Double {
         return queries.getTotalBalanceByAccount(accountId).executeAsOneOrNull()?.total ?: 0.0
+    }
+
+    /**
+     * Get category spending grouped by month for trend analysis
+     */
+    fun getCategorySpendingByMonth(): List<GetCategorySpendingByMonth> {
+        return queries.getCategorySpendingByMonth().executeAsList()
+    }
+
+    /**
+     * Get category spending grouped by month for a specific account
+     */
+    fun getCategorySpendingByMonthAndAccount(accountId: Long): List<GetCategorySpendingByMonthAndAccount> {
+        return queries.getCategorySpendingByMonthAndAccount(accountId).executeAsList()
     }
 
     // ==================== Helper Functions ====================
