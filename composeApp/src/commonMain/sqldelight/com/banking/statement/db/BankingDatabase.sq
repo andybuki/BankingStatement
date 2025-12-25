@@ -201,6 +201,27 @@ WHERE t.is_duplicate = 0
 GROUP BY t.category_id
 ORDER BY total;
 
+-- Monthly category spending for trend analysis
+getCategorySpendingByMonth:
+SELECT
+    strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+    auto_category,
+    SUM(amount) AS total
+FROM transactions
+WHERE is_duplicate = 0 AND amount < 0 AND auto_category IS NOT NULL
+GROUP BY month, auto_category
+ORDER BY month DESC, total;
+
+getCategorySpendingByMonthAndAccount:
+SELECT
+    strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+    auto_category,
+    SUM(amount) AS total
+FROM transactions
+WHERE account_id = ? AND is_duplicate = 0 AND amount < 0 AND auto_category IS NOT NULL
+GROUP BY month, auto_category
+ORDER BY month DESC, total;
+
 getMonthlySpending:
 SELECT strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
        SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS expenses,

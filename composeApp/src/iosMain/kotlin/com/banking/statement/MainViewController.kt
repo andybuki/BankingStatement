@@ -289,7 +289,7 @@ private suspend fun loadTransactionData(
             )
         }
 
-        // Calculate category spending
+        // Calculate category spending with trends
         val spendingByCategory = txList
             .filter { it.amount < 0 } // Only expenses
             .groupBy { it.category }
@@ -299,6 +299,12 @@ private suspend fun loadTransactionData(
 
         val totalExpensesAmount = spendingByCategory.values.sum()
 
+        // Get monthly category spending for trend analysis
+        val monthlyCategoryData = repository.getCategorySpendingByMonth().map { row ->
+            Triple(row.month ?: "", row.auto_category ?: "", row.total ?: 0.0)
+        }
+        val trends = com.banking.statement.ui.TrendCalculator.calculateTrends(monthlyCategoryData)
+
         val catSpending = spendingByCategory.map { (category, total) ->
             CategorySpending(
                 category = category,
@@ -306,7 +312,8 @@ private suspend fun loadTransactionData(
                 transactionCount = txList.count { it.category == category && it.amount < 0 },
                 percentage = if (totalExpensesAmount != 0.0) {
                     ((total / totalExpensesAmount) * 100).toFloat()
-                } else 0f
+                } else 0f,
+                trend = trends[category]
             )
         }.sortedBy { it.totalAmount }
 

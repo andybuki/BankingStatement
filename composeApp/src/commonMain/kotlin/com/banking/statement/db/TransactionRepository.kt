@@ -368,6 +368,20 @@ class TransactionRepository(
         return queries.getTotalBalanceByAccount(accountId).executeAsOneOrNull()?.total ?: 0.0
     }
 
+    /**
+     * Get category spending grouped by month for trend analysis
+     */
+    fun getCategorySpendingByMonth(): List<GetCategorySpendingByMonth> {
+        return queries.getCategorySpendingByMonth().executeAsList()
+    }
+
+    /**
+     * Get category spending grouped by month for a specific account
+     */
+    fun getCategorySpendingByMonthAndAccount(accountId: Long): List<GetCategorySpendingByMonthAndAccount> {
+        return queries.getCategorySpendingByMonthAndAccount(accountId).executeAsList()
+    }
+
     // ==================== Helper Functions ====================
 
     private fun LocalDate.toEpochSeconds(): Long {

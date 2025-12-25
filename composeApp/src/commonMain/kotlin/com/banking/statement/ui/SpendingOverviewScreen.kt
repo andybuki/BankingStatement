@@ -47,7 +47,34 @@ data class CategorySpending(
     val category: TransactionCategory,
     val totalAmount: Double,
     val transactionCount: Int,
-    val percentage: Float
+    val percentage: Float,
+    val trend: SpendingTrend? = null
+)
+
+/**
+ * Spending trend comparison data
+ */
+data class SpendingTrend(
+    val currentAmount: Double,
+    val previousAmount: Double,
+    val changeAmount: Double,
+    val changePercentage: Float,
+    val direction: TrendDirection
+) {
+    enum class TrendDirection {
+        UP,      // Spending increased
+        DOWN,    // Spending decreased
+        STABLE   // No significant change (<5%)
+    }
+}
+
+/**
+ * Monthly category spending for trend analysis
+ */
+data class CategoryMonthlySpending(
+    val month: String,
+    val category: TransactionCategory,
+    val amount: Double
 )
 
 /**
@@ -746,11 +773,25 @@ fun CategorySpendingItem(spending: CategorySpending) {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "${spending.percentage.toInt()}%",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "${spending.percentage.toInt()}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        // Show trend indicator
+                        spending.trend?.let { trend ->
+                            Text(
+                                text = "${TrendCalculator.getTrendIndicator(trend)} ${TrendCalculator.formatTrendPercentage(trend)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = TrendCalculator.getTrendColor(trend, MaterialTheme.colorScheme.primary)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -771,6 +812,28 @@ fun CategorySpendingItem(spending: CategorySpending) {
                         .clip(RoundedCornerShape(4.dp))
                         .background(categoryColor)
                 )
+            }
+
+            // Trend details
+            spending.trend?.let { trend ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "vs last month:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "${formatCurrency(trend.previousAmount)} → ${formatCurrency(trend.currentAmount)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
