@@ -79,6 +79,11 @@ fun MainViewController() = ComposeUIViewController {
     // Load data on first composition
     remember {
         coroutineScope.launch {
+            // Backfill categories for existing transactions (one-time migration)
+            withContext(Dispatchers.Default) {
+                repository.backfillAutoCategories()
+            }
+
             // Load stats
             updateStats(repository) { newStats ->
                 stats = newStats
