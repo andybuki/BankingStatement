@@ -384,15 +384,31 @@ class TransactionRepository(
     }
 
     /**
+     * Get merchant spending trends (e.g., Lidl, Edeka, REWE per month)
+     */
+    fun getMerchantSpendingByMonth(): List<GetMerchantSpendingByMonth> {
+        return queries.getMerchantSpendingByMonth().executeAsList()
+    }
+
+    /**
+     * Get top merchants by total spending
+     */
+    fun getTopMerchants(): List<GetTopMerchants> {
+        return queries.getTopMerchants().executeAsList()
+    }
+
+    /**
      * Backfill auto_category for existing transactions that don't have it set.
      * This is needed after the category persistence feature was added.
      */
-    fun backfillAutoCategories() {
-        if (transactionCategorizer == null) return
+    fun backfillAutoCategories(): Int {
+        if (transactionCategorizer == null) return 0
 
         // Get all transactions without auto_category
         val transactions = queries.getAllTransactions().executeAsList()
             .filter { it.auto_category.isNullOrBlank() }
+
+        println("🔄 Backfilling ${transactions.size} transactions without auto_category")
 
         // Update each transaction with calculated category
         transactions.forEach { tx ->
@@ -419,6 +435,9 @@ class TransactionRepository(
             val category = transactionCategorizer.categorize(parsedTx)
             queries.updateTransactionCategory(null, category.name, tx.id)
         }
+
+        println("✅ Backfilled ${transactions.size} transactions")
+        return transactions.size
     }
 
     // ==================== Helper Functions ====================

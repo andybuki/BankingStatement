@@ -222,6 +222,37 @@ WHERE account_id = ? AND is_duplicate = 0 AND amount < 0 AND auto_category IS NO
 GROUP BY month, auto_category
 ORDER BY month DESC, total;
 
+-- Merchant spending trends (e.g., Lidl, Edeka, REWE per month)
+getMerchantSpendingByMonth:
+SELECT
+    strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+    counterparty_name,
+    auto_category,
+    SUM(amount) AS total,
+    COUNT(*) AS transaction_count
+FROM transactions
+WHERE is_duplicate = 0
+  AND amount < 0
+  AND counterparty_name IS NOT NULL
+  AND auto_category IS NOT NULL
+GROUP BY month, counterparty_name, auto_category
+ORDER BY month DESC, total;
+
+-- Top merchants overall for prioritizing trend display
+getTopMerchants:
+SELECT
+    counterparty_name,
+    auto_category,
+    SUM(amount) AS total_spent,
+    COUNT(*) AS transaction_count
+FROM transactions
+WHERE is_duplicate = 0
+  AND amount < 0
+  AND counterparty_name IS NOT NULL
+GROUP BY counterparty_name
+ORDER BY total_spent
+LIMIT 20;
+
 getMonthlySpending:
 SELECT strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
        SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS expenses,
