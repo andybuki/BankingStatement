@@ -80,6 +80,7 @@ fun TransactionListScreen(
                 tx.description.lowercase().contains(query) ||
                 tx.counterparty?.lowercase()?.contains(query) == true ||
                 tx.category.displayName.lowercase().contains(query) ||
+                tx.category.displayNameDe.lowercase().contains(query) ||
                 tx.date.contains(query) ||
                 formatAmount(tx.amount, tx.currency).contains(query)
             }
@@ -338,7 +339,7 @@ fun TransactionItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = transaction.category.displayName,
+                        text = transaction.category.getLocalizedName(),
                         style = MaterialTheme.typography.bodySmall,
                         color = parseColor(transaction.category.color)
                     )
@@ -414,6 +415,14 @@ private fun getCategoryEmoji(category: TransactionCategory): String {
         TransactionCategory.TRANSFER -> "↔️"
         TransactionCategory.CASH -> "💵"
         TransactionCategory.PAYMENT_SERVICE -> "💳"
+        TransactionCategory.EDUCATION -> "🎓"
+        TransactionCategory.PETS -> "🐾"
+        TransactionCategory.GIFTS -> "🎁"
+        TransactionCategory.INCOME -> "💵"
+        TransactionCategory.GROCERIES -> "🛒"
+        TransactionCategory.TRANSPORT -> "🚌"
+        TransactionCategory.ONLINE_SHOPPING -> "💻"
+        TransactionCategory.TAXES -> "📋"
         TransactionCategory.OTHER -> "❓"
     }
 }
@@ -474,7 +483,7 @@ fun CategoryPickerDialog(
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = category.displayName,
+                                text = category.getLocalizedName(),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isSelected) parseColor(category.color) else MaterialTheme.colorScheme.onSurface

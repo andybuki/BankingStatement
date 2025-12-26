@@ -144,3 +144,59 @@ data class MerchantMonthlyData(
     val totalAmount: Double,
     val transactionCount: Int
 )
+
+/**
+ * Merchant spending history across multiple months
+ */
+data class MerchantHistory(
+    val merchantName: String,
+    val category: TransactionCategory,
+    val monthlySpending: List<MonthSpending>,
+    val totalSpending: Double,
+    val totalTransactions: Int,
+    val averageMonthlySpending: Double
+) {
+    data class MonthSpending(
+        val month: String,
+        val amount: Double,
+        val transactionCount: Int
+    )
+}
+
+/**
+ * Calculate merchant spending history across all months
+ */
+fun calculateMerchantHistory(
+    monthlyData: List<MerchantMonthlyData>,
+    topN: Int = 10
+): List<MerchantHistory> {
+    if (monthlyData.isEmpty()) return emptyList()
+
+    // Group by merchant
+    val merchantGroups = monthlyData.groupBy { it.merchantName }
+
+    // Create history for each merchant
+    val histories = merchantGroups.map { (merchantName, data) ->
+        val monthlySpending = data
+            .sortedByDescending { it.month }
+            .map { MerchantHistory.MonthSpending(it.month, it.totalAmount, it.transactionCount) }
+
+        val totalSpending = data.sumOf { it.totalAmount }
+        val totalTransactions = data.sumOf { it.transactionCount }
+        val averageMonthlySpending = totalSpending / data.size
+
+        MerchantHistory(
+            merchantName = merchantName,
+            category = data.first().category,
+            monthlySpending = monthlySpending,
+            totalSpending = totalSpending,
+            totalTransactions = totalTransactions,
+            averageMonthlySpending = averageMonthlySpending
+        )
+    }
+
+    // Sort by total spending (most significant merchants first)
+    return histories
+        .sortedBy { it.totalSpending }  // Most negative first (highest spending)
+        .take(topN)
+}
