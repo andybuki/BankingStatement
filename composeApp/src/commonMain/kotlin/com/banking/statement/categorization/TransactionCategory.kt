@@ -120,18 +120,21 @@ enum class TransactionCategory(
     // Travel & Accommodation
     TRAVEL(
         displayName = "Travel",
+        displayNameDe = "Reisen",
         icon = "flight",
         color = "#29B6F6"
     ),
 
     // Income
     SALARY(
-        displayName = "Income",
+        displayName = "Salary",
+        displayNameDe = "Gehalt",
         icon = "payments",
         color = "#66BB6A"
     ),
     REFUND(
         displayName = "Refund",
+        displayNameDe = "Rückerstattung",
         icon = "replay",
         color = "#26A69A"
     ),
@@ -139,6 +142,7 @@ enum class TransactionCategory(
     // Transfers
     TRANSFER(
         displayName = "Transfer",
+        displayNameDe = "Überweisung",
         icon = "swap_horiz",
         color = "#78909C"
     ),
@@ -146,6 +150,7 @@ enum class TransactionCategory(
     // Cash
     CASH(
         displayName = "Cash Withdrawal",
+        displayNameDe = "Bargeldabhebung",
         icon = "atm",
         color = "#8D6E63"
     ),
@@ -153,16 +158,81 @@ enum class TransactionCategory(
     // PayPal & Payment Services
     PAYMENT_SERVICE(
         displayName = "Payment Service",
+        displayNameDe = "Zahlungsdienst",
         icon = "payment",
         color = "#5C6BC0"
     ),
 
-    // Uncategorized (default)
+    // Education
+    EDUCATION(
+        displayName = "Education",
+        displayNameDe = "Bildung",
+        icon = "school",
+        color = "#FFD54F"
+    ),
+
+    // Pets
+    PETS(
+        displayName = "Pets",
+        displayNameDe = "Haustiere",
+        icon = "pets",
+        color = "#A1887F"
+    ),
+
+    // Gifts & Donations
+    GIFTS(
+        displayName = "Gifts",
+        displayNameDe = "Geschenke",
+        icon = "card_giftcard",
+        color = "#F48FB1"
+    ),
+
+    // Income (additional)
+    INCOME(
+        displayName = "Income",
+        displayNameDe = "Einkommen",
+        icon = "attach_money",
+        color = "#AED581"
+    ),
+
+    // Generic/Unknown
     OTHER(
         displayName = "Other",
-        icon = "more_horiz",
-        color = "#BDBDBD"
+        displayNameDe = "Sonstiges",
+        icon = "category",
+        color = "#B0BEC5"
+    ),
+    GROCERIES(
+        displayName = "Groceries",
+        displayNameDe = "Lebensmittel",
+        icon = "shopping_basket",
+        color = "#4CAF50"
+    ),
+    TRANSPORT(
+        displayName = "Transport",
+        displayNameDe = "Transport",
+        icon = "directions_bus",
+        color = "#2196F3"
+    ),
+    ONLINE_SHOPPING(
+        displayName = "Online Shopping",
+        displayNameDe = "Online-Shopping",
+        icon = "computer",
+        color = "#9C27B0"
+    ),
+    TAXES(
+        displayName = "Taxes",
+        displayNameDe = "Steuern",
+        icon = "receipt_long",
+        color = "#795548"
     );
+
+    /**
+     * Get localized display name based on system language
+     */
+    fun getLocalizedName(useGerman: Boolean = true): String {
+        return if (useGerman) displayNameDe else displayName
+    }
 
     companion object {
         // Reference to external keyword database (set by MainActivity)
