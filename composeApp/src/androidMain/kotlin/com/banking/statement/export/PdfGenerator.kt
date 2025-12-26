@@ -380,15 +380,16 @@ class PdfGenerator(private val context: Context) {
 
     private fun getCategoryEmoji(categoryName: String): String {
         return when {
-            categoryName.contains("Groceries", ignoreCase = true) -> "🛒"
-            categoryName.contains("Restaurant", ignoreCase = true) -> "🍽️"
-            categoryName.contains("Transport", ignoreCase = true) -> "🚗"
-            categoryName.contains("Shopping", ignoreCase = true) -> "🛍️"
-            categoryName.contains("Health", ignoreCase = true) -> "🏥"
-            categoryName.contains("Entertainment", ignoreCase = true) -> "🎬"
-            categoryName.contains("Utilities", ignoreCase = true) -> "💡"
-            categoryName.contains("Salary", ignoreCase = true) -> "💰"
-            categoryName.contains("Rent", ignoreCase = true) -> "🏠"
+            categoryName.contains("Groceries", ignoreCase = true) || categoryName.contains("Lebensmittel", ignoreCase = true) -> "🛒"
+            categoryName.contains("Restaurant", ignoreCase = true) || categoryName.contains("Essen", ignoreCase = true) -> "🍽️"
+            categoryName.contains("Transport", ignoreCase = true) || categoryName.contains("Verkehrsmittel", ignoreCase = true) -> "🚗"
+            categoryName.contains("Shopping", ignoreCase = true) || categoryName.contains("Einkaufen", ignoreCase = true) -> "🛍️"
+            categoryName.contains("Health", ignoreCase = true) || categoryName.contains("Gesundheit", ignoreCase = true) -> "🏥"
+            categoryName.contains("Entertainment", ignoreCase = true) || categoryName.contains("Unterhaltung", ignoreCase = true) -> "🎬"
+            categoryName.contains("Utilities", ignoreCase = true) || categoryName.contains("Nebenkosten", ignoreCase = true) -> "💡"
+            categoryName.contains("Salary", ignoreCase = true) || categoryName.contains("Gehalt", ignoreCase = true) -> "💰"
+            categoryName.contains("Rent", ignoreCase = true) || categoryName.contains("Miete", ignoreCase = true) -> "🏠"
+            categoryName.contains("Supermarkt", ignoreCase = true) || categoryName.contains("Supermarket", ignoreCase = true) -> "🛒"
             else -> "📌"
         }
     }
