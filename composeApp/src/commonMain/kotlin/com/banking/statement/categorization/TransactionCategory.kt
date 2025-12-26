@@ -1,22 +1,24 @@
 package com.banking.statement.categorization
 
 /**
- * Predefined transaction categories.
- * Keywords are now loaded from external CSV files for easier maintenance and localization.
+ * Predefined transaction categories with multilingual support
  */
 enum class TransactionCategory(
     val displayName: String,
+    val displayNameDe: String,  // German translation
     val icon: String,
     val color: String
 ) {
     // Housing & Utilities
     RENT(
         displayName = "Rent",
+        displayNameDe = "Miete",
         icon = "home",
         color = "#E57373"
     ),
     UTILITIES(
         displayName = "Utilities",
+        displayNameDe = "Nebenkosten",
         icon = "bolt",
         color = "#FFB74D"
     ),
@@ -24,11 +26,13 @@ enum class TransactionCategory(
     // Transportation
     PUBLIC_TRANSPORT(
         displayName = "Public Transport",
+        displayNameDe = "Öffentliche Verkehrsmittel",
         icon = "train",
         color = "#4FC3F7"
     ),
     CAR(
         displayName = "Car & Fuel",
+        displayNameDe = "Auto & Kraftstoff",
         icon = "car",
         color = "#90A4AE"
     ),
@@ -36,11 +40,13 @@ enum class TransactionCategory(
     // Food & Groceries
     SUPERMARKET(
         displayName = "Supermarket",
+        displayNameDe = "Supermarkt",
         icon = "shopping_cart",
         color = "#81C784"
     ),
     RESTAURANT(
         displayName = "Restaurant & Food",
+        displayNameDe = "Restaurant & Essen",
         icon = "restaurant",
         color = "#FF8A65"
     ),
@@ -48,6 +54,7 @@ enum class TransactionCategory(
     // Shopping
     SHOPPING(
         displayName = "Shopping",
+        displayNameDe = "Einkaufen",
         icon = "shopping_bag",
         color = "#BA68C8"
     ),
@@ -55,11 +62,13 @@ enum class TransactionCategory(
     // Health & Insurance
     HEALTH(
         displayName = "Health",
+        displayNameDe = "Gesundheit",
         icon = "medical_services",
         color = "#F06292"
     ),
     INSURANCE(
         displayName = "Insurance",
+        displayNameDe = "Versicherung",
         icon = "security",
         color = "#7986CB"
     ),
@@ -67,11 +76,13 @@ enum class TransactionCategory(
     // Entertainment & Subscriptions
     ENTERTAINMENT(
         displayName = "Entertainment",
+        displayNameDe = "Unterhaltung",
         icon = "movie",
         color = "#9575CD"
     ),
     SUBSCRIPTIONS(
         displayName = "Subscriptions",
+        displayNameDe = "Abonnements",
         icon = "subscriptions",
         color = "#4DB6AC"
     ),
@@ -79,6 +90,7 @@ enum class TransactionCategory(
     // Communication
     PHONE_INTERNET(
         displayName = "Phone & Internet",
+        displayNameDe = "Telefon & Internet",
         icon = "phone",
         color = "#4DD0E1"
     ),
@@ -86,11 +98,13 @@ enum class TransactionCategory(
     // Financial
     BANK_FEES(
         displayName = "Bank Fees",
+        displayNameDe = "Bankgebühren",
         icon = "account_balance",
         color = "#A1887F"
     ),
     INVESTMENT(
         displayName = "Investment",
+        displayNameDe = "Investition",
         icon = "trending_up",
         color = "#AED581"
     ),
@@ -98,6 +112,7 @@ enum class TransactionCategory(
     // Sports & Fitness
     FITNESS(
         displayName = "Fitness & Sports",
+        displayNameDe = "Fitness & Sport",
         icon = "fitness_center",
         color = "#FF7043"
     ),
