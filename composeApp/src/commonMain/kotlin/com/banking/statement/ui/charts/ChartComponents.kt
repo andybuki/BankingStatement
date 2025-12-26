@@ -19,15 +19,9 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
-import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
-import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
-import com.patrykandpatrick.vico.compose.common.of
-import com.patrykandpatrick.vico.compose.common.shape.rounded
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
-import com.patrykandpatrick.vico.core.common.shape.Corner
 import kotlin.math.abs
 
 /**
@@ -158,14 +152,7 @@ fun MonthlySpendingLineChart(
 
                 CartesianChartHost(
                     chart = rememberCartesianChart(
-                        rememberLineCartesianLayer(
-                            lineProvider = {
-                                rememberLineComponent(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    thickness = 3.dp
-                                )
-                            }
-                        ),
+                        rememberLineCartesianLayer(),
                         startAxis = rememberStartAxis(),
                         bottomAxis = rememberBottomAxis(
                             valueFormatter = { value, _, _ ->
@@ -231,18 +218,7 @@ fun IncomeVsExpensesBarChart(
 
                 CartesianChartHost(
                     chart = rememberCartesianChart(
-                        rememberColumnCartesianLayer(
-                            columnProvider = {
-                                rememberLineComponent(
-                                    color = if (it % 2 == 0)
-                                        Color(0xFF66BB6A) // Income - green
-                                    else
-                                        Color(0xFFE57373), // Expenses - red
-                                    thickness = 16.dp,
-                                    shape = androidx.compose.ui.graphics.RectangleShape
-                                )
-                            }
-                        ),
+                        rememberColumnCartesianLayer(),
                         startAxis = rememberStartAxis(),
                         bottomAxis = rememberBottomAxis(
                             valueFormatter = { value, _, _ ->
