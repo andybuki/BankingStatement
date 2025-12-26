@@ -6,6 +6,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -141,7 +142,7 @@ fun MonthlySpendingLineChart(
             if (monthlySummary.isNotEmpty()) {
                 val modelProducer = remember { CartesianChartModelProducer() }
 
-                remember(monthlySummary) {
+                LaunchedEffect(monthlySummary) {
                     val expensesData = monthlySummary.reversed().map { abs(it.expenses) }
                     modelProducer.runTransaction {
                         lineSeries {
@@ -204,7 +205,7 @@ fun IncomeVsExpensesBarChart(
             if (monthlySummary.isNotEmpty()) {
                 val modelProducer = remember { CartesianChartModelProducer() }
 
-                remember(monthlySummary) {
+                LaunchedEffect(monthlySummary) {
                     val reversed = monthlySummary.reversed()
                     val incomeData = reversed.map { it.income }
                     val expensesData = reversed.map { abs(it.expenses) }
