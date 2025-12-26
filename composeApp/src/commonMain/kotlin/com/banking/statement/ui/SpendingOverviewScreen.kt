@@ -984,6 +984,14 @@ private fun getCategoryEmoji(category: TransactionCategory): String {
         TransactionCategory.TRANSFER -> "↔️"
         TransactionCategory.CASH -> "💵"
         TransactionCategory.PAYMENT_SERVICE -> "💳"
+        TransactionCategory.EDUCATION -> "🎓"
+        TransactionCategory.PETS -> "🐾"
+        TransactionCategory.GIFTS -> "🎁"
+        TransactionCategory.INCOME -> "💵"
+        TransactionCategory.GROCERIES -> "🛒"
+        TransactionCategory.TRANSPORT -> "🚌"
+        TransactionCategory.ONLINE_SHOPPING -> "💻"
+        TransactionCategory.TAXES -> "📋"
         TransactionCategory.OTHER -> "❓"
     }
 }
