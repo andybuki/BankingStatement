@@ -479,6 +479,41 @@ fun SpendingOverviewScreen(
                     }
                 }
 
+                // Merchant trends section
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "🏪 Top Merchants (Last 2 Months)",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+
+                item {
+                    val merchantTrends = remember(transactions) {
+                        calculateMerchantTrendsFromTransactions(transactions)
+                    }
+
+                    if (merchantTrends.isEmpty()) {
+                        Text(
+                            text = "Import at least 2 months of data to see trends",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            merchantTrends.take(10).forEach { trend ->
+                                MerchantTrendItem(trend)
+                            }
+                        }
+                    }
+                }
+
                 // Monthly summary title
                 if (displayMonthlySummary.isNotEmpty()) {
                     item {
@@ -486,7 +521,7 @@ fun SpendingOverviewScreen(
                             text = strings.monthlySummary,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.padding(top = 16.dp)
                         )
                     }
 
@@ -951,4 +986,104 @@ private fun getCategoryEmoji(category: TransactionCategory): String {
         TransactionCategory.PAYMENT_SERVICE -> "💳"
         TransactionCategory.OTHER -> "❓"
     }
+}
+// Add at end of SpendingOverviewScreen.kt
+
+@Composable
+fun MerchantTrendItem(trend: MerchantTrend) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Merchant name
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = trend.merchantName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "${trend.currentMonthTransactions} transactions",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Trend indicator and amount
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = formatCurrency(trend.currentMonthAmount),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "${MerchantTrendCalculator.getTrendIndicator(trend)} ${MerchantTrendCalculator.formatTrendPercentage(trend)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MerchantTrendCalculator.getTrendColor(trend, MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                }
+            }
+
+            // Comparison details
+            if (trend.direction != MerchantTrend.TrendDirection.NEW) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "vs last month: ${formatCurrency(trend.previousMonthAmount)} → ${formatCurrency(trend.currentMonthAmount)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Calculate merchant trends from transactions
+ */
+fun calculateMerchantTrendsFromTransactions(transactions: List<TransactionDisplay>): List<MerchantTrend> {
+    // Group transactions by month and merchant
+    val monthlyData = transactions
+        .filter { it.amount < 0 && !it.counterparty.isNullOrBlank() }
+        .groupBy { tx ->
+            val dateParts = tx.date.split(".")
+            if (dateParts.size >= 3) {
+                "${dateParts[2]}-${dateParts[1]}" // YYYY-MM format
+            } else {
+                null
+            }
+        }
+        .filterKeys { it != null }
+        .flatMap { (month, txs) ->
+            txs.groupBy { it.counterparty!! }
+                .map { (merchant, merchantTxs) ->
+                    MerchantMonthlyData(
+                        month = month!!,
+                        merchantName = merchant,
+                        category = merchantTxs.first().category,
+                        totalAmount = merchantTxs.sumOf { it.amount },
+                        transactionCount = merchantTxs.size
+                    )
+                }
+        }
+
+    return MerchantTrendCalculator.calculateMerchantTrends(monthlyData, topN = 10)
 }
