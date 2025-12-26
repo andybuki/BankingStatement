@@ -82,6 +82,8 @@ fun MainViewController() = ComposeUIViewController {
             // Backfill categories for existing transactions (one-time migration)
             withContext(Dispatchers.Default) {
                 repository.backfillAutoCategories()
+                // Fix miscategorized supermarket transactions (one-time migration)
+                repository.fixMiscategorizedSupermarkets()
             }
 
             // Load stats

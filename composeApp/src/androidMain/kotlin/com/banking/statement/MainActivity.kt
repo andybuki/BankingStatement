@@ -142,6 +142,11 @@ class MainActivity : ComponentActivity() {
             val backfilledCount = repository.backfillAutoCategories()
             android.util.Log.d("Migration", "✅ Backfilled $backfilledCount transactions")
 
+            // Fix miscategorized supermarket transactions (one-time migration)
+            android.util.Log.d("Migration", "🔄 Fixing miscategorized supermarket transactions...")
+            val fixedCount = repository.fixMiscategorizedSupermarkets()
+            android.util.Log.d("Migration", "✅ Fixed $fixedCount miscategorized transactions")
+
             // Debug: Check if trends data is available
             val categoryData = repository.getCategorySpendingByMonth()
             android.util.Log.d("Migration", "📊 Category trend data: ${categoryData.size} entries")
