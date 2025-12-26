@@ -440,6 +440,84 @@ class TransactionRepository(
         return transactions.size
     }
 
+    /**
+     * Fix miscategorized supermarket transactions.
+     * Due to a bug in the keyword matching algorithm, some supermarket transactions
+     * (like Lidl, REWE, Edeka) were incorrectly categorized as RESTAURANT.
+     *
+     * This migration:
+     * 1. Finds all RESTAURANT transactions containing well-known supermarket names
+     * 2. Re-categorizes them using the improved keyword matching
+     * 3. Updates the auto_category field
+     */
+    fun fixMiscategorizedSupermarkets(): Int {
+        if (transactionCategorizer == null) return 0
+
+        // Well-known supermarket keywords that should never be RESTAURANT
+        val supermarketKeywords = listOf(
+            "lidl", "rewe", "edeka", "aldi", "penny", "netto", "kaufland"
+        )
+
+        // Get all transactions categorized as RESTAURANT
+        val transactions = queries.getAllTransactions().executeAsList()
+            .filter { it.auto_category == "RESTAURANT" }
+
+        var fixed = 0
+
+        transactions.forEach { tx ->
+            // Check if description or counterparty contains any supermarket keyword
+            val searchText = "${tx.description.lowercase()} ${tx.counterparty_name?.lowercase() ?: ""}"
+            val containsSupermarket = supermarketKeywords.any { keyword ->
+                // Use word-boundary matching
+                val words = searchText
+                    .replace(Regex("[^a-z0-9äöüß]"), " ")
+                    .split(" ")
+                    .filter { it.isNotBlank() }
+                words.contains(keyword)
+            }
+
+            if (containsSupermarket) {
+                // Re-categorize using improved algorithm
+                val parsedTx = com.banking.statement.parser.ParsedTransaction(
+                    transactionId = tx.transaction_id,
+                    bookingDate = kotlinx.datetime.Instant.fromEpochSeconds(tx.booking_date)
+                        .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date,
+                    valueDate = tx.value_date?.let {
+                        kotlinx.datetime.Instant.fromEpochSeconds(it)
+                            .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date
+                    },
+                    amount = tx.amount,
+                    currency = tx.currency,
+                    balance = tx.balance,
+                    description = tx.description,
+                    counterpartyName = tx.counterparty_name,
+                    counterpartyIban = tx.counterparty_iban,
+                    remittanceInfo = tx.remittance_info,
+                    transactionType = tx.transaction_type,
+                    bankTransactionCode = tx.bank_transaction_code,
+                    rawText = tx.raw_text
+                )
+
+                val newCategory = transactionCategorizer.categorize(parsedTx)
+
+                // Only update if category actually changed
+                if (newCategory.name != tx.auto_category) {
+                    queries.updateTransactionCategory(null, newCategory.name, tx.id)
+                    println("  ✓ Fixed: ${tx.description} → ${newCategory.name}")
+                    fixed++
+                }
+            }
+        }
+
+        if (fixed > 0) {
+            println("✅ Fixed $fixed miscategorized supermarket transactions")
+        } else {
+            println("✅ No miscategorized supermarket transactions found")
+        }
+
+        return fixed
+    }
+
     // ==================== Helper Functions ====================
 
     private fun LocalDate.toEpochSeconds(): Long {

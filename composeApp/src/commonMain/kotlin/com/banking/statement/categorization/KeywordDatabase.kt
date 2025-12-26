@@ -68,23 +68,58 @@ class KeywordDatabase {
     /**
      * Find the best matching category for a transaction.
      * Returns null if no match found.
+     *
+     * Matching strategy:
+     * 1. Use word-boundary matching to avoid false positives (e.g., "miete" should not match "vermieter")
+     * 2. Prioritize longer/more specific keywords
+     * 3. Return the category with the longest matching keyword (not highest count)
      */
     fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
         if (keywordMap.isEmpty()) return null
 
         val searchText = "${description.lowercase()} ${counterparty?.lowercase() ?: ""}"
 
+        // Normalize search text: replace special chars with spaces for word boundary matching
+        val normalizedText = searchText
+            .replace(Regex("[^a-z0-9äöüß]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        // Split into words for word-boundary matching
+        val words = normalizedText.split(" ").filter { it.isNotBlank() }
+        val wordsSet = words.toSet()
+
         var bestMatch: TransactionCategory? = null
-        var bestScore = 0
+        var bestKeywordLength = 0
 
         for ((category, keywords) in keywordMap) {
-            val score = keywords.count { keyword ->
-                searchText.contains(keyword)
-            }
+            for (keyword in keywords) {
+                // Normalize keyword the same way
+                val normalizedKeyword = keyword
+                    .replace(Regex("[^a-z0-9äöüß]"), " ")
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
 
-            if (score > bestScore) {
-                bestScore = score
-                bestMatch = category
+                val keywordWords = normalizedKeyword.split(" ").filter { it.isNotBlank() }
+
+                // Check if all words of the keyword are present in the search text
+                val allWordsMatch = keywordWords.all { kw -> wordsSet.contains(kw) }
+
+                // For multi-word keywords, also verify they appear in sequence
+                val matches = if (keywordWords.size == 1) {
+                    allWordsMatch
+                } else {
+                    allWordsMatch && normalizedText.contains(normalizedKeyword)
+                }
+
+                if (matches) {
+                    // Use keyword length as priority - longer/more specific keywords win
+                    val keywordLength = normalizedKeyword.length
+                    if (keywordLength > bestKeywordLength) {
+                        bestKeywordLength = keywordLength
+                        bestMatch = category
+                    }
+                }
             }
         }
 
