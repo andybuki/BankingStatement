@@ -27,6 +27,9 @@ import com.banking.statement.LocalStrings
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
+import com.banking.statement.ui.charts.CategorySpendingDonutChart
+import com.banking.statement.ui.charts.IncomeVsExpensesBarChart
+import com.banking.statement.ui.charts.MonthlySpendingLineChart
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
 import kotlinx.datetime.Clock
@@ -446,12 +449,32 @@ fun SpendingOverviewScreen(
 
             // Chart view or list view
             if (showChartView && displayCategorySpending.isNotEmpty()) {
-                // Pie Chart
+                // Category Spending Donut Chart
                 item {
-                    SpendingPieChart(
+                    CategorySpendingDonutChart(
                         categorySpending = displayCategorySpending.filter { it.totalAmount < 0 },
-                        totalExpenses = displayExpenses
+                        modifier = Modifier.fillMaxWidth()
                     )
+                }
+
+                // Monthly Spending Line Chart
+                if (displayMonthlySummary.isNotEmpty()) {
+                    item {
+                        MonthlySpendingLineChart(
+                            monthlySummary = displayMonthlySummary,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                // Income vs Expenses Bar Chart
+                if (displayMonthlySummary.isNotEmpty()) {
+                    item {
+                        IncomeVsExpensesBarChart(
+                            monthlySummary = displayMonthlySummary,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             } else {
                 // Category breakdown title
