@@ -16,7 +16,7 @@ androidx-testExt = "1.3.0"
 composeMultiplatform = "1.9.3"
 junit = "4.13.2"
 kotlin = "2.2.21"
-vico = "2.0.0-alpha.28"
+vico = "2.4.0-beta.1"
 
 [libraries]
 pdfbox-android = { module = "com.tom-roush:pdfbox-android", version.ref = "pdfbox-android" }
