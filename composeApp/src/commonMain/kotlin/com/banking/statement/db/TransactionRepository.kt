@@ -10,6 +10,7 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Result of checking if an import matches an existing account
@@ -37,7 +38,8 @@ data class ImportResult(
 )
 
 class TransactionRepository(
-    driverFactory: DatabaseDriverFactory
+    driverFactory: DatabaseDriverFactory,
+    private val transactionCategorizer: com.banking.statement.categorization.TransactionCategorizer? = null
 ) {
     val database = BankingDatabase(driverFactory.createDriver())
     private val queries = database.bankingDatabaseQueries
@@ -266,6 +268,9 @@ class TransactionRepository(
         transaction: ParsedTransaction,
         isDuplicate: Boolean
     ) {
+        // Calculate category using categorizer if available
+        val autoCategory = transactionCategorizer?.categorize(transaction)?.name
+
         queries.insertTransaction(
             statement_id = statementId,
             account_id = accountId,
@@ -282,6 +287,7 @@ class TransactionRepository(
             transaction_type = transaction.transactionType,
             bank_transaction_code = transaction.bankTransactionCode,
             category_id = null,
+            auto_category = autoCategory,
             raw_text = transaction.rawText,
             is_duplicate = if (isDuplicate) 1L else 0L
         )
@@ -331,8 +337,8 @@ class TransactionRepository(
         return queries.getTransactionCount().executeAsOne()
     }
 
-    fun updateTransactionCategory(transactionId: Long, categoryId: Long?) {
-        queries.updateTransactionCategory(categoryId, transactionId)
+    fun updateTransactionCategory(transactionId: Long, categoryId: Long?, categoryName: String?) {
+        queries.updateTransactionCategory(categoryId, categoryName, transactionId)
     }
 
     // ==================== Category Operations ====================
@@ -361,6 +367,155 @@ class TransactionRepository(
 
     fun getTotalBalanceByAccount(accountId: Long): Double {
         return queries.getTotalBalanceByAccount(accountId).executeAsOneOrNull()?.total ?: 0.0
+    }
+
+    /**
+     * Get category spending grouped by month for trend analysis
+     */
+    fun getCategorySpendingByMonth(): List<GetCategorySpendingByMonth> {
+        return queries.getCategorySpendingByMonth().executeAsList()
+    }
+
+    /**
+     * Get category spending grouped by month for a specific account
+     */
+    fun getCategorySpendingByMonthAndAccount(accountId: Long): List<GetCategorySpendingByMonthAndAccount> {
+        return queries.getCategorySpendingByMonthAndAccount(accountId).executeAsList()
+    }
+
+    /**
+     * Get merchant spending trends (e.g., Lidl, Edeka, REWE per month)
+     */
+    fun getMerchantSpendingByMonth(): List<GetMerchantSpendingByMonth> {
+        return queries.getMerchantSpendingByMonth().executeAsList()
+    }
+
+    /**
+     * Get top merchants by total spending
+     */
+    fun getTopMerchants(): List<GetTopMerchants> {
+        return queries.getTopMerchants().executeAsList()
+    }
+
+    /**
+     * Backfill auto_category for existing transactions that don't have it set.
+     * This is needed after the category persistence feature was added.
+     */
+    fun backfillAutoCategories(): Int {
+        if (transactionCategorizer == null) return 0
+
+        // Get all transactions without auto_category
+        val transactions = queries.getAllTransactions().executeAsList()
+            .filter { it.auto_category.isNullOrBlank() }
+
+        println("🔄 Backfilling ${transactions.size} transactions without auto_category")
+
+        // Update each transaction with calculated category
+        transactions.forEach { tx ->
+            val parsedTx = com.banking.statement.parser.ParsedTransaction(
+                transactionId = tx.transaction_id,
+                bookingDate = kotlinx.datetime.Instant.fromEpochSeconds(tx.booking_date)
+                    .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date,
+                valueDate = tx.value_date?.let {
+                    kotlinx.datetime.Instant.fromEpochSeconds(it)
+                        .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date
+                },
+                amount = tx.amount,
+                currency = tx.currency,
+                balance = tx.balance,
+                description = tx.description,
+                counterpartyName = tx.counterparty_name,
+                counterpartyIban = tx.counterparty_iban,
+                remittanceInfo = tx.remittance_info,
+                transactionType = tx.transaction_type,
+                bankTransactionCode = tx.bank_transaction_code,
+                rawText = tx.raw_text
+            )
+
+            val category = transactionCategorizer.categorize(parsedTx)
+            queries.updateTransactionCategory(null, category.name, tx.id)
+        }
+
+        println("✅ Backfilled ${transactions.size} transactions")
+        return transactions.size
+    }
+
+    /**
+     * Fix miscategorized supermarket transactions.
+     * Due to a bug in the keyword matching algorithm, some supermarket transactions
+     * (like Lidl, REWE, Edeka) were incorrectly categorized as RESTAURANT.
+     *
+     * This migration:
+     * 1. Finds all RESTAURANT transactions containing well-known supermarket names
+     * 2. Re-categorizes them using the improved keyword matching
+     * 3. Updates the auto_category field
+     */
+    fun fixMiscategorizedSupermarkets(): Int {
+        if (transactionCategorizer == null) return 0
+
+        // Well-known supermarket keywords that should never be RESTAURANT
+        val supermarketKeywords = listOf(
+            "lidl", "rewe", "edeka", "aldi", "penny", "netto", "kaufland"
+        )
+
+        // Get all transactions categorized as RESTAURANT
+        val transactions = queries.getAllTransactions().executeAsList()
+            .filter { it.auto_category == "RESTAURANT" }
+
+        var fixed = 0
+
+        transactions.forEach { tx ->
+            // Check if description or counterparty contains any supermarket keyword
+            val searchText = "${tx.description.lowercase()} ${tx.counterparty_name?.lowercase() ?: ""}"
+            val containsSupermarket = supermarketKeywords.any { keyword ->
+                // Use word-boundary matching
+                val words = searchText
+                    .replace(Regex("[^a-z0-9äöüß]"), " ")
+                    .split(" ")
+                    .filter { it.isNotBlank() }
+                words.contains(keyword)
+            }
+
+            if (containsSupermarket) {
+                // Re-categorize using improved algorithm
+                val parsedTx = com.banking.statement.parser.ParsedTransaction(
+                    transactionId = tx.transaction_id,
+                    bookingDate = kotlinx.datetime.Instant.fromEpochSeconds(tx.booking_date)
+                        .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date,
+                    valueDate = tx.value_date?.let {
+                        kotlinx.datetime.Instant.fromEpochSeconds(it)
+                            .toLocalDateTime(kotlinx.datetime.TimeZone.UTC).date
+                    },
+                    amount = tx.amount,
+                    currency = tx.currency,
+                    balance = tx.balance,
+                    description = tx.description,
+                    counterpartyName = tx.counterparty_name,
+                    counterpartyIban = tx.counterparty_iban,
+                    remittanceInfo = tx.remittance_info,
+                    transactionType = tx.transaction_type,
+                    bankTransactionCode = tx.bank_transaction_code,
+                    rawText = tx.raw_text
+                )
+
+                val newCategory = transactionCategorizer.categorize(parsedTx)
+
+                // Only update if category actually changed
+                if (newCategory.name != tx.auto_category) {
+                    queries.updateTransactionCategory(null, newCategory.name, tx.id)
+                    println("  ✓ Fixed: ${tx.description} → ${newCategory.name}")
+                    fixed++
+                }
+            }
+        }
+
+        if (fixed > 0) {
+            println("✅ Fixed $fixed miscategorized supermarket transactions")
+        } else {
+            println("✅ No miscategorized supermarket transactions found")
+        }
+
+        return fixed
     }
 
     // ==================== Helper Functions ====================

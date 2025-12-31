@@ -1,22 +1,24 @@
 package com.banking.statement.categorization
 
 /**
- * Predefined transaction categories.
- * Keywords are now loaded from external CSV files for easier maintenance and localization.
+ * Predefined transaction categories with multilingual support
  */
 enum class TransactionCategory(
     val displayName: String,
+    val displayNameDe: String,  // German translation
     val icon: String,
     val color: String
 ) {
     // Housing & Utilities
     RENT(
         displayName = "Rent",
+        displayNameDe = "Miete",
         icon = "home",
         color = "#E57373"
     ),
     UTILITIES(
         displayName = "Utilities",
+        displayNameDe = "Nebenkosten",
         icon = "bolt",
         color = "#FFB74D"
     ),
@@ -24,11 +26,13 @@ enum class TransactionCategory(
     // Transportation
     PUBLIC_TRANSPORT(
         displayName = "Public Transport",
+        displayNameDe = "Öffentliche Verkehrsmittel",
         icon = "train",
         color = "#4FC3F7"
     ),
     CAR(
         displayName = "Car & Fuel",
+        displayNameDe = "Auto & Kraftstoff",
         icon = "car",
         color = "#90A4AE"
     ),
@@ -36,11 +40,13 @@ enum class TransactionCategory(
     // Food & Groceries
     SUPERMARKET(
         displayName = "Supermarket",
+        displayNameDe = "Supermarkt",
         icon = "shopping_cart",
         color = "#81C784"
     ),
     RESTAURANT(
         displayName = "Restaurant & Food",
+        displayNameDe = "Restaurant & Essen",
         icon = "restaurant",
         color = "#FF8A65"
     ),
@@ -48,6 +54,7 @@ enum class TransactionCategory(
     // Shopping
     SHOPPING(
         displayName = "Shopping",
+        displayNameDe = "Einkaufen",
         icon = "shopping_bag",
         color = "#BA68C8"
     ),
@@ -55,11 +62,13 @@ enum class TransactionCategory(
     // Health & Insurance
     HEALTH(
         displayName = "Health",
+        displayNameDe = "Gesundheit",
         icon = "medical_services",
         color = "#F06292"
     ),
     INSURANCE(
         displayName = "Insurance",
+        displayNameDe = "Versicherung",
         icon = "security",
         color = "#7986CB"
     ),
@@ -67,11 +76,13 @@ enum class TransactionCategory(
     // Entertainment & Subscriptions
     ENTERTAINMENT(
         displayName = "Entertainment",
+        displayNameDe = "Unterhaltung",
         icon = "movie",
         color = "#9575CD"
     ),
     SUBSCRIPTIONS(
         displayName = "Subscriptions",
+        displayNameDe = "Abonnements",
         icon = "subscriptions",
         color = "#4DB6AC"
     ),
@@ -79,6 +90,7 @@ enum class TransactionCategory(
     // Communication
     PHONE_INTERNET(
         displayName = "Phone & Internet",
+        displayNameDe = "Telefon & Internet",
         icon = "phone",
         color = "#4DD0E1"
     ),
@@ -86,11 +98,13 @@ enum class TransactionCategory(
     // Financial
     BANK_FEES(
         displayName = "Bank Fees",
+        displayNameDe = "Bankgebühren",
         icon = "account_balance",
         color = "#A1887F"
     ),
     INVESTMENT(
         displayName = "Investment",
+        displayNameDe = "Investition",
         icon = "trending_up",
         color = "#AED581"
     ),
@@ -98,6 +112,7 @@ enum class TransactionCategory(
     // Sports & Fitness
     FITNESS(
         displayName = "Fitness & Sports",
+        displayNameDe = "Fitness & Sport",
         icon = "fitness_center",
         color = "#FF7043"
     ),
@@ -105,18 +120,21 @@ enum class TransactionCategory(
     // Travel & Accommodation
     TRAVEL(
         displayName = "Travel",
+        displayNameDe = "Reisen",
         icon = "flight",
         color = "#29B6F6"
     ),
 
     // Income
     SALARY(
-        displayName = "Income",
+        displayName = "Salary",
+        displayNameDe = "Gehalt",
         icon = "payments",
         color = "#66BB6A"
     ),
     REFUND(
         displayName = "Refund",
+        displayNameDe = "Rückerstattung",
         icon = "replay",
         color = "#26A69A"
     ),
@@ -124,6 +142,7 @@ enum class TransactionCategory(
     // Transfers
     TRANSFER(
         displayName = "Transfer",
+        displayNameDe = "Überweisung",
         icon = "swap_horiz",
         color = "#78909C"
     ),
@@ -131,6 +150,7 @@ enum class TransactionCategory(
     // Cash
     CASH(
         displayName = "Cash Withdrawal",
+        displayNameDe = "Bargeldabhebung",
         icon = "atm",
         color = "#8D6E63"
     ),
@@ -138,16 +158,81 @@ enum class TransactionCategory(
     // PayPal & Payment Services
     PAYMENT_SERVICE(
         displayName = "Payment Service",
+        displayNameDe = "Zahlungsdienst",
         icon = "payment",
         color = "#5C6BC0"
     ),
 
-    // Uncategorized (default)
+    // Education
+    EDUCATION(
+        displayName = "Education",
+        displayNameDe = "Bildung",
+        icon = "school",
+        color = "#FFD54F"
+    ),
+
+    // Pets
+    PETS(
+        displayName = "Pets",
+        displayNameDe = "Haustiere",
+        icon = "pets",
+        color = "#A1887F"
+    ),
+
+    // Gifts & Donations
+    GIFTS(
+        displayName = "Gifts",
+        displayNameDe = "Geschenke",
+        icon = "card_giftcard",
+        color = "#F48FB1"
+    ),
+
+    // Income (additional)
+    INCOME(
+        displayName = "Income",
+        displayNameDe = "Einkommen",
+        icon = "attach_money",
+        color = "#AED581"
+    ),
+
+    // Generic/Unknown
     OTHER(
         displayName = "Other",
-        icon = "more_horiz",
-        color = "#BDBDBD"
+        displayNameDe = "Sonstiges",
+        icon = "category",
+        color = "#B0BEC5"
+    ),
+    GROCERIES(
+        displayName = "Groceries",
+        displayNameDe = "Lebensmittel",
+        icon = "shopping_basket",
+        color = "#4CAF50"
+    ),
+    TRANSPORT(
+        displayName = "Transport",
+        displayNameDe = "Transport",
+        icon = "directions_bus",
+        color = "#2196F3"
+    ),
+    ONLINE_SHOPPING(
+        displayName = "Online Shopping",
+        displayNameDe = "Online-Shopping",
+        icon = "computer",
+        color = "#9C27B0"
+    ),
+    TAXES(
+        displayName = "Taxes",
+        displayNameDe = "Steuern",
+        icon = "receipt_long",
+        color = "#795548"
     );
+
+    /**
+     * Get localized display name based on system language
+     */
+    fun getLocalizedName(useGerman: Boolean = true): String {
+        return if (useGerman) displayNameDe else displayName
+    }
 
     companion object {
         // Reference to external keyword database (set by MainActivity)
