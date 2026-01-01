@@ -1,0 +1,685 @@
+category,keyword
+RENT,miete
+RENT,rent
+RENT,wohnung
+RENT,wohnungsbau
+RENT,hausverwaltung
+RENT,gehag
+RENT,vonovia
+RENT,deutsche wohnen
+RENT,immobilien
+RENT,nettomiete
+RENT,kaltmiete
+RENT,warmmiete
+RENT,nebenkosten
+RENT,betriebskosten
+RENT,heizkosten
+RENT,mietkaution
+RENT,kaution
+RENT,courtage
+RENT,leg immobilien
+RENT,grand city properties
+RENT,covivio
+RENT,bonovia
+RENT,hausgeld
+RENT,hausverwaltung berlin
+RENT,vivawest
+RENT,adler real estate
+RENT,saga
+RENT,gewobag
+RENT,degewo
+RENT,howoge
+RENT,stadt und land
+RENT,gesobau
+RENT,gewofag
+RENT,wbm
+RENT,gewoba
+RENT,wiro
+RENT,abg frankfurt holding
+UTILITIES,strom
+UTILITIES,gas
+UTILITIES,wasser
+UTILITIES,stadtwerke
+UTILITIES,vattenfall
+UTILITIES,eon
+UTILITIES,e.on
+UTILITIES,enercity
+UTILITIES,electricity
+UTILITIES,heizung
+UTILITIES,energie
+UTILITIES,swb
+UTILITIES,mainova
+PUBLIC_TRANSPORT,bvg
+PUBLIC_TRANSPORT,berliner verkehrsbetriebe
+PUBLIC_TRANSPORT,s-bahn
+PUBLIC_TRANSPORT,sbahn
+PUBLIC_TRANSPORT,s bahn berlin
+PUBLIC_TRANSPORT,s bahn hamburg
+PUBLIC_TRANSPORT,s bahn münchen
+PUBLIC_TRANSPORT,u-bahn
+PUBLIC_TRANSPORT,ubahn
+PUBLIC_TRANSPORT,deutsche bahn
+PUBLIC_TRANSPORT,db
+PUBLIC_TRANSPORT,db vertrieb
+PUBLIC_TRANSPORT,mvv
+PUBLIC_TRANSPORT,hvv
+PUBLIC_TRANSPORT,kvb
+PUBLIC_TRANSPORT,öpnv
+PUBLIC_TRANSPORT,nahverkehr
+PUBLIC_TRANSPORT,vbb
+PUBLIC_TRANSPORT,transport
+PUBLIC_TRANSPORT,bus
+PUBLIC_TRANSPORT,zug
+PUBLIC_TRANSPORT,fernverkehr
+PUBLIC_TRANSPORT,metro
+PUBLIC_TRANSPORT,avv
+PUBLIC_TRANSPORT,rmv
+PUBLIC_TRANSPORT,vgn
+PUBLIC_TRANSPORT,ivb
+PUBLIC_TRANSPORT,svv
+PUBLIC_TRANSPORT,carsharing
+PUBLIC_TRANSPORT,flixbus
+PUBLIC_TRANSPORT,flixtrain
+PUBLIC_TRANSPORT,bike-and-ride
+PUBLIC_TRANSPORT,kvb-nextbike
+CAR,tankstelle
+CAR,shell
+CAR,aral
+CAR,esso
+CAR,jet
+CAR,total
+CAR,fuel
+CAR,benzin
+CAR,diesel
+CAR,kfz
+CAR,auto
+CAR,werkstatt
+CAR,reifen
+CAR,adac
+CAR,raststätte
+CAR,totalenergies
+CAR,startankstelle
+CAR,agip
+CAR,eni
+CAR,bfttankstelle
+CAR,oktan
+CAR,super
+CAR,superplus
+CAR,e10
+CAR,bleifrei
+CAR,kraftstoff
+CAR,sprit
+CAR,biodiesel
+CAR,autogas
+CAR,cng
+CAR,erdgastankstelle
+CAR,stromtankstelle
+CAR,ladesäule
+CAR,schnelllader
+CAR,e-autoladen
+CAR,tüv
+CAR,dekra
+CAR,kfz-steuer
+CAR,kfz-versicherung
+CAR,vollkasko
+CAR,teilkasko
+CAR,haftpflicht
+CAR,kfz-werkstatt
+CAR,meisterwerkstatt
+CAR,freiewerkstatt
+CAR,vertragshändler
+CAR,karosseriebau
+CAR,lackiererei
+CAR,felgen
+CAR,sommerreifen
+CAR,winterreifen
+CAR,ganzjahresreifen
+CAR,reifenservice
+CAR,reifenwechsel
+CAR,spurvermessung
+CAR,ölwechsel
+CAR,inspektion
+CAR,kundendienst
+CAR,wartung
+CAR,kfz-service
+CAR,panne
+CAR,abschleppdienst
+CAR,adacplusmitgliedschaft
+CAR,schutzbrief
+CAR,notruf
+CAR,rastplatz
+CAR,parkplatz
+CAR,parkhaus
+CAR,tiefgarage
+CAR,tanksäule
+CAR,zapfsäule
+CAR,vignetten
+CAR,maut
+SUPERMARKET,rewe
+SUPERMARKET,edeka
+SUPERMARKET,lidl
+SUPERMARKET,lidl sagt danke
+SUPERMARKET,lidl gmbh
+SUPERMARKET,lidl filiale
+SUPERMARKET,lidl dienstleistung
+SUPERMARKET,aldi
+SUPERMARKET,penny
+SUPERMARKET,netto
+SUPERMARKET,kaufland
+SUPERMARKET,alnatura
+SUPERMARKET,bio company
+SUPERMARKET,market
+SUPERMARKET,markt
+SUPERMARKET,laden
+SUPERMARKET,dorfladen
+SUPERMARKET,biokauf
+SUPERMARKET,real
+SUPERMARKET,supermarkt
+SUPERMARKET,dm-
+SUPERMARKET,dm drogerie
+SUPERMARKET,dm fil
+SUPERMARKET,dm markt
+SUPERMARKET,drogerie markt
+SUPERMARKET,rossmann
+SUPERMARKET,nahkauf
+SUPERMARKET,denns
+SUPERMARKET,lebensmittel
+SUPERMARKET,müller drogerie
+RESTAURANT,restaurant
+RESTAURANT,gaststätte
+RESTAURANT,bistro
+RESTAURANT,cafe
+RESTAURANT,coffee
+RESTAURANT,kaffee
+RESTAURANT,station
+RESTAURANT,stube
+RESTAURANT,treff
+RESTAURANT,casa
+RESTAURANT,kantine
+RESTAURANT,lokal
+RESTAURANT,starbucks
+RESTAURANT,mcdonald
+RESTAURANT,burger king
+RESTAURANT,subway
+RESTAURANT,pizza
+RESTAURANT,asia
+RESTAURANT,fisch
+RESTAURANT,hof
+RESTAURANT,delikatessen
+RESTAURANT,sushi
+RESTAURANT,lounge
+RESTAURANT,döner
+RESTAURANT,hotel
+RESTAURANT,lieferando
+RESTAURANT,club
+RESTAURANT,food
+RESTAURANT,beef
+RESTAURANT,haus
+RESTAURANT,lieferheld
+RESTAURANT,uber eats
+RESTAURANT,wolt
+RESTAURANT,küche
+RESTAURANT,eck
+RESTAURANT,zum
+RESTAURANT,zur
+RESTAURANT,die
+RESTAURANT,der
+RESTAURANT,das
+RESTAURANT,bei
+RESTAURANT,villa
+RESTAURANT,muelle
+RESTAURANT,kleine
+RESTAURANT,alte
+RESTAURANT,alt
+RESTAURANT,house
+RESTAURANT,gelato
+RESTAURANT,kitchen
+RESTAURANT,deliveroo
+RESTAURANT,thai
+RESTAURANT,weinstube
+RESTAURANT,weingut
+RESTAURANT,taverne
+RESTAURANT,tea
+RESTAURANT,berlin
+RESTAURANT,chicken
+RESTAURANT,kiosk
+RESTAURANT,back
+RESTAURANT,stuben
+RESTAURANT,wok
+RESTAURANT,curry
+RESTAURANT,city
+RESTAURANT,konditorei
+RESTAURANT,brot
+RESTAURANT,snack
+RESTAURANT,tante
+RESTAURANT,garden
+RESTAURANT,klause
+RESTAURANT,stübchen
+RESTAURANT,deli
+RESTAURANT,hütte
+RESTAURANT,falafel
+RESTAURANT,pasta
+RESTAURANT,china
+RESTAURANT,pho
+RESTAURANT,italia
+RESTAURANT,ramen
+RESTAURANT,stüble
+RESTAURANT,eat
+RESTAURANT,biergarten
+RESTAURANT,india
+RESTAURANT,garten
+RESTAURANT,cuisine
+RESTAURANT,keller
+RESTAURANT,cucina
+RESTAURANT,naturkost
+RESTAURANT,genuss
+RESTAURANT,brauerei
+RESTAURANT,tapas
+RESTAURANT,gelateria
+RESTAURANT,bakery
+RESTAURANT,bowl
+RESTAURANT,gourmet
+RESTAURANT,cantina
+RESTAURANT,saal
+RESTAURANT,manufaktur
+RESTAURANT,raststätte
+RESTAURANT,salon
+RESTAURANT,herr
+RESTAURANT,gastwirtschaft
+RESTAURANT,vietnam
+RESTAURANT,bbq
+RESTAURANT,heim
+RESTAURANT,diner
+RESTAURANT,mühle
+RESTAURANT,bella
+RESTAURANT,little
+RESTAURANT,feinkost
+RESTAURANT,spezialitäten
+RESTAURANT,viet
+RESTAURANT,palace
+RESTAURANT,stüberl
+RESTAURANT,schänke
+RESTAURANT,cafè
+RESTAURANT,express
+RESTAURANT,mama
+SHOPPING,amazon
+SHOPPING,ebay
+SHOPPING,store
+SHOPPING,zalando
+SHOPPING,otto
+SHOPPING,h&m
+SHOPPING,zara
+SHOPPING,mediamarkt
+SHOPPING,mode
+SHOPPING,saturn
+SHOPPING,shop
+SHOPPING,ikea
+SHOPPING,bauhaus
+SHOPPING,bauhaus gmbh
+SHOPPING,baumarkt
+SHOPPING,obi
+SHOPPING,hornbach
+SHOPPING,hagebau
+SHOPPING,toom
+SHOPPING,handy
+SHOPPING,möbel
+SHOPPING,jeans
+SHOPPING,fashion
+SHOPPING,kleidung
+SHOPPING,boutique
+SHOPPING,center
+SHOPPING,service
+SHOPPING,kleider
+SHOPPING,electronics
+SHOPPING,elektro
+SHOPPING,outlet
+SHOPPING,nails
+SHOPPING,gmbh
+SHOPPING,phone
+SHOPPING,mobile
+SHOPPING,moda
+SHOPPING,radio
+SHOPPING,design
+SHOPPING,euronics
+SHOPPING,studio
+SHOPPING,second
+SHOPPING,media
+SHOPPING,electronic
+SHOPPING,textilien
+SHOPPING,secondhand
+SHOPPING,clothing
+HEALTH,apotheke
+HEALTH,pharmacy
+HEALTH,arzt
+HEALTH,doctor
+HEALTH,krankenhaus
+HEALTH,hospital
+HEALTH,zahnarzt
+HEALTH,dentist
+HEALTH,optiker
+HEALTH,brille
+INSURANCE,versicherung
+INSURANCE,insurance
+INSURANCE,allianz
+INSURANCE,axa
+INSURANCE,huk
+INSURANCE,ergo
+INSURANCE,generali
+INSURANCE,krankenversicherung
+INSURANCE,haftpflicht
+INSURANCE,kfz-versicherung
+ENTERTAINMENT,netflix
+ENTERTAINMENT,spotify
+ENTERTAINMENT,spotify ab
+ENTERTAINMENT,spotify technology
+ENTERTAINMENT,disney
+ENTERTAINMENT,amazon prime
+ENTERTAINMENT,kino
+ENTERTAINMENT,cinema
+ENTERTAINMENT,theater
+ENTERTAINMENT,konzert
+ENTERTAINMENT,ticket
+ENTERTAINMENT,eventim
+SUBSCRIPTIONS,abo
+SUBSCRIPTIONS,subscription
+SUBSCRIPTIONS,mitgliedschaft
+SUBSCRIPTIONS,membership
+SUBSCRIPTIONS,patreon
+SUBSCRIPTIONS,youtube premium
+SUBSCRIPTIONS,apple
+SUBSCRIPTIONS,google one
+SUBSCRIPTIONS,google storage
+SUBSCRIPTIONS,google*one
+SUBSCRIPTIONS,googleone
+SUBSCRIPTIONS,cloud
+SUBSCRIPTIONS,icloud
+SUBSCRIPTIONS,abonnement
+SUBSCRIPTIONS,patreon creator
+SUBSCRIPTIONS,youtube music
+SUBSCRIPTIONS,spotify premium
+SUBSCRIPTIONS,disney+
+SUBSCRIPTIONS,prime video
+SUBSCRIPTIONS,apple music
+SUBSCRIPTIONS,apple tv+
+SUBSCRIPTIONS,icloud+
+SUBSCRIPTIONS,google drive
+SUBSCRIPTIONS,google play pass
+SUBSCRIPTIONS,microsoft 365
+SUBSCRIPTIONS,onedrive
+SUBSCRIPTIONS,dropbox
+SUBSCRIPTIONS,cloud speicher
+SUBSCRIPTIONS,cloud storage
+SUBSCRIPTIONS,streaming abo
+SUBSCRIPTIONS,gaming abo
+SUBSCRIPTIONS,xbox game pass
+SUBSCRIPTIONS,playstation plus
+SUBSCRIPTIONS,nintendo switch online
+SUBSCRIPTIONS,audible
+SUBSCRIPTIONS,zeit abo
+SUBSCRIPTIONS,bild plus
+SUBSCRIPTIONS,spiegel+
+SUBSCRIPTIONS,onlyfans
+SUBSCRIPTIONS,twitch sub
+SUBSCRIPTIONS,twitch subscription
+SUBSCRIPTIONS,deezer
+SUBSCRIPTIONS,tidal
+SUBSCRIPTIONS,soundcloud go+
+SUBSCRIPTIONS,amazon music
+SUBSCRIPTIONS,kindle unlimited
+SUBSCRIPTIONS,scribd
+SUBSCRIPTIONS,linkedin premium
+SUBSCRIPTIONS,adobe creative cloud
+SUBSCRIPTIONS,canva pro
+SUBSCRIPTIONS,grammarly premium
+SUBSCRIPTIONS,nordvpn
+SUBSCRIPTIONS,expressvpn
+SUBSCRIPTIONS,surfshark
+SUBSCRIPTIONS,bitwarden premium
+SUBSCRIPTIONS,lastpass
+SUBSCRIPTIONS,1password
+SUBSCRIPTIONS,strava summit
+SUBSCRIPTIONS,myfitnesspal premium
+SUBSCRIPTIONS,calm
+SUBSCRIPTIONS,headspace
+SUBSCRIPTIONS,duolingo super
+SUBSCRIPTIONS,babbel
+SUBSCRIPTIONS,busuu premium
+SUBSCRIPTIONS,sky ticket
+SUBSCRIPTIONS,magzter
+SUBSCRIPTIONS,readly
+SUBSCRIPTIONS,kobo plus
+PHONE_INTERNET,telekom
+PHONE_INTERNET,vodafone
+PHONE_INTERNET,o2
+PHONE_INTERNET,telefonica
+PHONE_INTERNET,1&1
+PHONE_INTERNET,congstar
+PHONE_INTERNET,mobilfunk
+PHONE_INTERNET,internet
+PHONE_INTERNET,dsl
+PHONE_INTERNET,kabel deutschland
+PHONE_INTERNET,unity media
+PHONE_INTERNET,deutsche telekom
+PHONE_INTERNET,t-mobile
+PHONE_INTERNET,magenta
+PHONE_INTERNET,magenta tv
+PHONE_INTERNET,speedport
+PHONE_INTERNET,vodafone cable
+PHONE_INTERNET,gigacube
+PHONE_INTERNET,o2 mobilfunk
+PHONE_INTERNET,o2 community
+PHONE_INTERNET,1und1
+PHONE_INTERNET,drillisch
+PHONE_INTERNET,smartmobil
+PHONE_INTERNET,klarmobil
+PHONE_INTERNET,mobilcom-debitel
+PHONE_INTERNET,otelo
+PHONE_INTERNET,simply
+PHONE_INTERNET,freenet
+PHONE_INTERNET,handyvertrag
+PHONE_INTERNET,prepaid
+PHONE_INTERNET,vertrag
+PHONE_INTERNET,sim only
+PHONE_INTERNET,e-sim
+PHONE_INTERNET,ftth
+PHONE_INTERNET,unitymedia
+PHONE_INTERNET,unity
+PHONE_INTERNET,netcologne
+BANK_FEES,kontoführung
+BANK_FEES,bankgebühr
+BANK_FEES,entgelt
+BANK_FEES,gebühr
+BANK_FEES,bank fee
+INVESTMENT,depot
+INVESTMENT,aktien
+INVESTMENT,etf
+INVESTMENT,fond
+INVESTMENT,wertpapier
+INVESTMENT,trade republic
+INVESTMENT,scalable
+INVESTMENT,investment
+INVESTMENT,dividende
+INVESTMENT,wertpapierdepot
+INVESTMENT,broker
+INVESTMENT,trading app
+INVESTMENT,aktienkauf
+INVESTMENT,daytrading
+INVESTMENT,swing trading
+INVESTMENT,etf sparplan
+INVESTMENT,indexfonds
+INVESTMENT,investmentfonds
+INVESTMENT,themenfonds
+INVESTMENT,scalable capital
+INVESTMENT,scalable broker
+INVESTMENT,consorsbank
+INVESTMENT,comdirect
+INVESTMENT,ing depot
+INVESTMENT,dkb depot
+INVESTMENT,smartbroker
+INVESTMENT,finanzen net zero
+INVESTMENT,justtrade
+INVESTMENT,investieren
+INVESTMENT,ausschüttung
+INVESTMENT,thesaurierend
+INVESTMENT,sparplan
+INVESTMENT,robo advisor
+INVESTMENT,long term investing
+INVESTMENT,value investing
+INVESTMENT,growth stocks
+INVESTMENT,krypto
+INVESTMENT,bitcoin etf
+INVESTMENT,nachhaltig etf
+FITNESS,fitness
+FITNESS,gym
+FITNESS,mcfit
+FITNESS,fitx
+FITNESS,urban sports
+FITNESS,yoga
+FITNESS,sport
+FITNESS,schwimmbad
+FITNESS,pool
+FITNESS,verein
+FITNESS,fitnessstudio
+FITNESS,urban sports club
+FITNESS,clever fit
+FITNESS,john reed
+FITNESS,high5 fitness
+FITNESS,easyfitness
+FITNESS,rsg group
+FITNESS,lifefit group
+FITNESS,pfitzenmeier
+FITNESS,kieser training
+FITNESS,mrs sporty
+FITNESS,bodystreet
+FITNESS,fitbox
+FITNESS,körperformen
+FITNESS,25minutes
+FITNESS,fitness first
+FITNESS,yogastudio
+FITNESS,pilates
+FITNESS,spinning
+FITNESS,crossfit
+FITNESS,bootcamp
+FITNESS,sportschule
+FITNESS,freibad
+FITNESS,hallenbad
+FITNESS,sportverein
+FITNESS,tsv
+FITNESS,fitness abo
+FITNESS,monatskarte fitness
+FITNESS,probetraining
+TRAVEL,hotel
+TRAVEL,hostel
+TRAVEL,airbnb
+TRAVEL,booking.com
+TRAVEL,expedia
+TRAVEL,trivago
+TRAVEL,airline
+TRAVEL,lufthansa
+TRAVEL,ryanair
+TRAVEL,easyjet
+TRAVEL,flug
+TRAVEL,flight
+TRAVEL,car rental
+TRAVEL,sixt
+TRAVEL,europcar
+TRAVEL,hertz
+TRAVEL,avis
+TRAVEL,holidaycheck
+TRAVEL,kayak
+TRAVEL,hotels.com
+TRAVEL,agoda
+TRAVEL,fewo-direkt
+TRAVEL,hrs
+TRAVEL,momondo
+TRAVEL,eurowings
+TRAVEL,condor
+TRAVEL,tuifly
+TRAVEL,check-in
+TRAVEL,boarding
+TRAVEL,layover
+TRAVEL,budget rent a car
+TRAVEL,enterprise
+TRAVEL,flizzr
+TRAVEL,sunexpress deutschland
+TRAVEL,sundair
+TRAVEL,hahn air
+TRAVEL,luftfahrtgesellschaft walter
+TRAVEL,air dolomiti
+TRAVEL,discover airlines
+TRAVEL,lufthansa cityline
+TRAVEL,norwegian
+TRAVEL,vueling
+TRAVEL,wizz air
+TRAVEL,volotea
+SALARY,gehalt
+SALARY,lohn
+SALARY,salary
+SALARY,wage
+SALARY,vergütung
+SALARY,arbeitgeber
+SALARY,rente
+SALARY,pension
+SALARY,ruhestand
+SALARY,bundeskasse
+SALARY,rentenversicherung
+SALARY,altersvorsorge
+SALARY,betriebsrente
+SALARY,riester
+SALARY,rürup
+REFUND,erstattung
+REFUND,refund
+REFUND,rückzahlung
+REFUND,gutschrift
+REFUND,storno
+TRANSFER,überweisung
+TRANSFER,transfer
+TRANSFER,umbuchung
+CASH,bargeld
+CASH,cash
+CASH,geldautomat
+CASH,atm
+CASH,auszahlung
+CASH,geldabhebung
+CASH,bar abheben
+CASH,cashpoint
+CASH,ec-karte abheben
+CASH,girocard auszahlung
+CASH,cash group
+CASH,cashpool
+CASH,sparkassen automaten
+CASH,volksbank geldautomat
+CASH,commerzbank atm
+CASH,deutsche bank geldautomat
+CASH,postbank auszahlung
+CASH,shell tankstelle geldautomat
+CASH,rewe cashback
+CASH,dm bargeld
+CASH,netto geldabheben
+CASH,penny cashpoint
+CASH,kostenlose geldautomaten
+CASH,gebührenfreie auszahlung
+CASH,geldautomaten suche
+CASH,atm locator
+CASH,bargeldcode
+CASH,postbank bargeldcode
+PAYMENT_SERVICE,paypal
+PAYMENT_SERVICE,klarna
+PAYMENT_SERVICE,sofort
+PAYMENT_SERVICE,giropay
+PAYMENT_SERVICE,apple pay
+PAYMENT_SERVICE,google pay
+PAYMENT_SERVICE,sofortüberweisung
+PAYMENT_SERVICE,amazon pay
+PAYMENT_SERVICE,stripe
+PAYMENT_SERVICE,mollie
+PAYMENT_SERVICE,adyen
+PAYMENT_SERVICE,multisafepay
+PAYMENT_SERVICE,payone
+PAYMENT_SERVICE,ratepay
+PAYMENT_SERVICE,paydirekt
+PAYMENT_SERVICE,ideal
+PAYMENT_SERVICE,eps
+PAYMENT_SERVICE,twint
+PAYMENT_SERVICE,alipay
+PAYMENT_SERVICE,wechat pay
