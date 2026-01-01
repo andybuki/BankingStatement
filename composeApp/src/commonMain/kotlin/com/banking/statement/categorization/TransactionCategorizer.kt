@@ -7,16 +7,22 @@ import com.banking.statement.parser.ParsedTransaction
  * Priority order:
  * 1) User overrides (manual corrections)
  * 2) Keyword matching from TransactionCategory (rent, salary, utilities, etc.)
- * 3) Merchant database (only for unknowns - shops/restaurants not in keywords)
+ * 3) Amount-based rules for income (positive amounts)
+ * 4) Merchant database (only for unknowns - shops/restaurants not in keywords)
  */
 class TransactionCategorizer(
     private val merchantDatabase: MerchantDatabase? = null,
     private val categoryOverrideManager: CategoryOverrideManager? = null
 ) {
 
+    companion object {
+        /** Threshold for categorizing income as SALARY vs REFUND */
+        const val SALARY_THRESHOLD = 300.0
+    }
+
     /**
      * Categorize a single transaction.
-     * Priority: 1) User overrides, 2) Keywords, 3) Merchant DB (for unknowns)
+     * Priority: 1) User overrides, 2) Keywords, 3) Income amount rules, 4) Merchant DB
      */
     fun categorize(transaction: ParsedTransaction): TransactionCategory {
         // 1) Check user overrides first (highest priority)
@@ -41,7 +47,16 @@ class TransactionCategorizer(
             return keywordCategory
         }
 
-        // 3) For unknowns, try merchant database (expenses only)
+        // 3) For positive amounts (income), apply amount-based rules
+        if (transaction.amount > 0) {
+            return if (transaction.amount > SALARY_THRESHOLD) {
+                TransactionCategory.SALARY
+            } else {
+                TransactionCategory.REFUND
+            }
+        }
+
+        // 4) For expenses, try merchant database
         if (transaction.amount < 0) {
             merchantDatabase?.let { db ->
                 val merchantCategory = db.findCategory(
