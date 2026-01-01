@@ -1,5 +1,7 @@
 package com.banking.statement.categorization
 
+import com.banking.statement.AppStrings
+
 /**
  * Predefined transaction categories with multilingual support
  */
@@ -228,10 +230,48 @@ enum class TransactionCategory(
     );
 
     /**
-     * Get localized display name based on system language
+     * Get localized display name based on system language (legacy method)
      */
     fun getLocalizedName(useGerman: Boolean = true): String {
         return if (useGerman) displayNameDe else displayName
+    }
+
+    /**
+     * Get localized display name from AppStrings
+     */
+    fun getLocalizedName(strings: AppStrings): String {
+        return when (this) {
+            RENT -> strings.categoryRent
+            UTILITIES -> strings.categoryUtilities
+            PUBLIC_TRANSPORT -> strings.categoryPublicTransport
+            CAR -> strings.categoryCar
+            SUPERMARKET -> strings.categorySupermarket
+            RESTAURANT -> strings.categoryRestaurant
+            SHOPPING -> strings.categoryShopping
+            HEALTH -> strings.categoryHealth
+            INSURANCE -> strings.categoryInsurance
+            ENTERTAINMENT -> strings.categoryEntertainment
+            SUBSCRIPTIONS -> strings.categorySubscriptions
+            PHONE_INTERNET -> strings.categoryPhoneInternet
+            BANK_FEES -> strings.categoryBankFees
+            INVESTMENT -> strings.categoryInvestment
+            FITNESS -> strings.categoryFitness
+            TRAVEL -> strings.categoryTravel
+            SALARY -> strings.categorySalary
+            REFUND -> strings.categoryRefund
+            TRANSFER -> strings.categoryTransfer
+            CASH -> strings.categoryCash
+            PAYMENT_SERVICE -> strings.categoryPaymentService
+            EDUCATION -> strings.categoryEducation
+            PETS -> strings.categoryPets
+            GIFTS -> strings.categoryGifts
+            INCOME -> strings.categoryIncome
+            OTHER -> strings.categoryOther
+            GROCERIES -> strings.categoryGroceries
+            TRANSPORT -> strings.categoryTransport
+            ONLINE_SHOPPING -> strings.categoryOnlineShopping
+            TAXES -> strings.categoryTaxes
+        }
     }
 
     companion object {
