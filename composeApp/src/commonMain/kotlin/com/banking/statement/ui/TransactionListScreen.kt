@@ -289,6 +289,7 @@ fun TransactionItem(
     transaction: TransactionDisplay,
     onClick: (() -> Unit)? = null
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -339,7 +340,7 @@ fun TransactionItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = transaction.category.getLocalizedName(),
+                        text = transaction.category.getLocalizedName(strings),
                         style = MaterialTheme.typography.bodySmall,
                         color = parseColor(transaction.category.color)
                     )
@@ -483,7 +484,7 @@ fun CategoryPickerDialog(
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = category.getLocalizedName(),
+                                text = category.getLocalizedName(strings),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isSelected) parseColor(category.color) else MaterialTheme.colorScheme.onSurface

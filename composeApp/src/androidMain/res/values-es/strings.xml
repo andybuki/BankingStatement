@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Analizador de Extractos</string>
+    <string name="app_name">Bank++</string>
 
     <!-- Home Screen -->
     <string name="home_title">Analizador de Extractos</string>
@@ -66,25 +66,34 @@
     <!-- Categories -->
     <string name="category_rent">Alquiler</string>
     <string name="category_utilities">Servicios</string>
-    <string name="category_groceries">Comestibles</string>
+    <string name="category_public_transport">Transporte público</string>
+    <string name="category_car">Coche &amp; Combustible</string>
     <string name="category_supermarket">Supermercado</string>
-    <string name="category_restaurants">Restaurantes</string>
-    <string name="category_transport">Transporte</string>
-    <string name="category_entertainment">Entretenimiento</string>
+    <string name="category_restaurant">Restaurante &amp; Comida</string>
     <string name="category_shopping">Compras</string>
     <string name="category_health">Salud</string>
     <string name="category_insurance">Seguros</string>
+    <string name="category_entertainment">Entretenimiento</string>
     <string name="category_subscriptions">Suscripciones</string>
-    <string name="category_salary">Salario</string>
-    <string name="category_transfers">Transferencias</string>
-    <string name="category_cash">Efectivo</string>
-    <string name="category_fees">Comisiones</string>
+    <string name="category_phone_internet">Teléfono &amp; Internet</string>
+    <string name="category_bank_fees">Comisiones bancarias</string>
+    <string name="category_investment">Inversión</string>
+    <string name="category_fitness">Fitness &amp; Deporte</string>
     <string name="category_travel">Viajes</string>
+    <string name="category_salary">Salario</string>
+    <string name="category_refund">Reembolso</string>
+    <string name="category_transfer">Transferencia</string>
+    <string name="category_cash">Retiro de efectivo</string>
+    <string name="category_payment_service">Servicio de pago</string>
     <string name="category_education">Educación</string>
+    <string name="category_pets">Mascotas</string>
     <string name="category_gifts">Regalos</string>
-    <string name="category_investments">Inversiones</string>
-    <string name="category_taxes">Impuestos</string>
+    <string name="category_income">Ingresos</string>
     <string name="category_other">Otros</string>
+    <string name="category_groceries">Comestibles</string>
+    <string name="category_transport">Transporte</string>
+    <string name="category_online_shopping">Compras en línea</string>
+    <string name="category_taxes">Impuestos</string>
 
     <!-- Account Management -->
     <string name="manage_accounts">Gestionar Cuentas</string>

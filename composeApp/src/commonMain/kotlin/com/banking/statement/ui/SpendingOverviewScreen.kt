@@ -662,7 +662,7 @@ private fun SpendingPieChart(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = spending.category.getLocalizedName(),
+                            text = spending.category.getLocalizedName(strings),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
@@ -788,6 +788,7 @@ fun SummaryCard(
 
 @Composable
 fun CategorySpendingItem(spending: CategorySpending) {
+    val strings = LocalStrings.current
     val categoryColor = parseHexColor(spending.category.color)
 
     Card(
@@ -814,12 +815,12 @@ fun CategorySpendingItem(spending: CategorySpending) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = spending.category.getLocalizedName(),
+                            text = spending.category.getLocalizedName(strings),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "${spending.transactionCount} transactions",
+                            text = "${spending.transactionCount} ${strings.transactions}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1156,6 +1157,7 @@ fun calculateMerchantHistoryFromTransactions(transactions: List<TransactionDispl
  */
 @Composable
 fun MerchantHistoryItem(history: MerchantHistory) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1180,7 +1182,7 @@ fun MerchantHistoryItem(history: MerchantHistory) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${getCategoryEmoji(history.category)} ${history.category.getLocalizedName()} • ${history.totalTransactions} transactions",
+                        text = "${getCategoryEmoji(history.category)} ${history.category.getLocalizedName(strings)} • ${history.totalTransactions} ${strings.transactions}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

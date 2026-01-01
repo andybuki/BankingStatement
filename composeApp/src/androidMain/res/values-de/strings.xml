@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Kontoauszug Analysator</string>
+    <string name="app_name">Bank++</string>
 
     <!-- Home Screen -->
     <string name="home_title">Kontoauszug Analysator</string>
@@ -66,25 +66,34 @@
     <!-- Categories -->
     <string name="category_rent">Miete</string>
     <string name="category_utilities">Nebenkosten</string>
-    <string name="category_groceries">Lebensmittel</string>
+    <string name="category_public_transport">Öffentliche Verkehrsmittel</string>
+    <string name="category_car">Auto &amp; Kraftstoff</string>
     <string name="category_supermarket">Supermarkt</string>
-    <string name="category_restaurants">Restaurants</string>
-    <string name="category_transport">Verkehr</string>
-    <string name="category_entertainment">Unterhaltung</string>
+    <string name="category_restaurant">Restaurant &amp; Essen</string>
     <string name="category_shopping">Einkaufen</string>
     <string name="category_health">Gesundheit</string>
     <string name="category_insurance">Versicherung</string>
+    <string name="category_entertainment">Unterhaltung</string>
     <string name="category_subscriptions">Abonnements</string>
-    <string name="category_salary">Gehalt</string>
-    <string name="category_transfers">Überweisungen</string>
-    <string name="category_cash">Bargeld</string>
-    <string name="category_fees">Gebühren</string>
+    <string name="category_phone_internet">Telefon &amp; Internet</string>
+    <string name="category_bank_fees">Bankgebühren</string>
+    <string name="category_investment">Investition</string>
+    <string name="category_fitness">Fitness &amp; Sport</string>
     <string name="category_travel">Reisen</string>
+    <string name="category_salary">Gehalt</string>
+    <string name="category_refund">Rückerstattung</string>
+    <string name="category_transfer">Überweisung</string>
+    <string name="category_cash">Bargeldabhebung</string>
+    <string name="category_payment_service">Zahlungsdienst</string>
     <string name="category_education">Bildung</string>
+    <string name="category_pets">Haustiere</string>
     <string name="category_gifts">Geschenke</string>
-    <string name="category_investments">Investitionen</string>
-    <string name="category_taxes">Steuern</string>
+    <string name="category_income">Einkommen</string>
     <string name="category_other">Sonstiges</string>
+    <string name="category_groceries">Lebensmittel</string>
+    <string name="category_transport">Transport</string>
+    <string name="category_online_shopping">Online-Shopping</string>
+    <string name="category_taxes">Steuern</string>
 
     <!-- Account Management -->
     <string name="manage_accounts">Konten verwalten</string>

@@ -116,7 +116,39 @@ data class AppStrings(
     val periodAll: String,
 
     // Category Override
-    val changeCategory: String
+    val changeCategory: String,
+
+    // Categories
+    val categoryRent: String,
+    val categoryUtilities: String,
+    val categoryPublicTransport: String,
+    val categoryCar: String,
+    val categorySupermarket: String,
+    val categoryRestaurant: String,
+    val categoryShopping: String,
+    val categoryHealth: String,
+    val categoryInsurance: String,
+    val categoryEntertainment: String,
+    val categorySubscriptions: String,
+    val categoryPhoneInternet: String,
+    val categoryBankFees: String,
+    val categoryInvestment: String,
+    val categoryFitness: String,
+    val categoryTravel: String,
+    val categorySalary: String,
+    val categoryRefund: String,
+    val categoryTransfer: String,
+    val categoryCash: String,
+    val categoryPaymentService: String,
+    val categoryEducation: String,
+    val categoryPets: String,
+    val categoryGifts: String,
+    val categoryIncome: String,
+    val categoryOther: String,
+    val categoryGroceries: String,
+    val categoryTransport: String,
+    val categoryOnlineShopping: String,
+    val categoryTaxes: String
 )
 
 /**
@@ -129,7 +161,7 @@ expect fun provideStrings(): AppStrings
  * Default English strings for fallback
  */
 fun defaultEnglishStrings() = AppStrings(
-    appName = "Bank Statement Analyzer",
+    appName = "Bank++",
     homeTitle = "Bank Statement Analyzer",
     homeSubtitle = "Import your bank statements to analyze",
     importButton = "Import Statement",
@@ -225,5 +257,37 @@ fun defaultEnglishStrings() = AppStrings(
     periodYear = "Year",
     periodAll = "All",
 
-    changeCategory = "Change Category"
+    changeCategory = "Change Category",
+
+    // Categories
+    categoryRent = "Rent",
+    categoryUtilities = "Utilities",
+    categoryPublicTransport = "Public Transport",
+    categoryCar = "Car & Fuel",
+    categorySupermarket = "Supermarket",
+    categoryRestaurant = "Restaurant & Food",
+    categoryShopping = "Shopping",
+    categoryHealth = "Health",
+    categoryInsurance = "Insurance",
+    categoryEntertainment = "Entertainment",
+    categorySubscriptions = "Subscriptions",
+    categoryPhoneInternet = "Phone & Internet",
+    categoryBankFees = "Bank Fees",
+    categoryInvestment = "Investment",
+    categoryFitness = "Fitness & Sports",
+    categoryTravel = "Travel",
+    categorySalary = "Salary",
+    categoryRefund = "Refund",
+    categoryTransfer = "Transfer",
+    categoryCash = "Cash Withdrawal",
+    categoryPaymentService = "Payment Service",
+    categoryEducation = "Education",
+    categoryPets = "Pets",
+    categoryGifts = "Gifts",
+    categoryIncome = "Income",
+    categoryOther = "Other",
+    categoryGroceries = "Groceries",
+    categoryTransport = "Transport",
+    categoryOnlineShopping = "Online Shopping",
+    categoryTaxes = "Taxes"
 )

@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.banking.statement.LocalStrings
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.MonthlySummary
@@ -33,6 +34,7 @@ fun CategorySpendingDonutChart(
     categorySpending: List<CategorySpending>,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
@@ -43,7 +45,7 @@ fun CategorySpendingDonutChart(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Spending by Category",
+                text = strings.spendingByCategory,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -82,7 +84,7 @@ fun CategoryBarsChart(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = spending.category.displayName,
+                    text = spending.category.getLocalizedName(strings),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(0.3f)
                 )
@@ -269,6 +271,7 @@ fun CategoryLegend(
     categorySpending: List<CategorySpending>,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
     Column(modifier = modifier) {
         val sortedSpending = categorySpending.sortedByDescending { abs(it.totalAmount) }
 
@@ -282,7 +285,7 @@ fun CategoryLegend(
                 row.forEach { spending ->
                     LegendItem(
                         color = parseColor(spending.category.color),
-                        label = spending.category.displayName,
+                        label = spending.category.getLocalizedName(strings),
                         modifier = Modifier.weight(1f)
                     )
                 }
