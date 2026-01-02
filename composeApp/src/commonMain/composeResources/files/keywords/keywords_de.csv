@@ -36,125 +36,125 @@ RENT,wbm
 RENT,gewoba
 RENT,wiro
 RENT,abg frankfurt holding
-UTILITIES,strom
-UTILITIES,gas
-UTILITIES,wasser
-UTILITIES,stadtwerke
-UTILITIES,vattenfall
-UTILITIES,eon
-UTILITIES,e.on
-UTILITIES,enercity
-UTILITIES,electricity
-UTILITIES,heizung
-UTILITIES,energie
-UTILITIES,swb
-UTILITIES,mainova
-PUBLIC_TRANSPORT,bvg
-PUBLIC_TRANSPORT,berliner verkehrsbetriebe
-PUBLIC_TRANSPORT,s-bahn
-PUBLIC_TRANSPORT,sbahn
-PUBLIC_TRANSPORT,s bahn berlin
-PUBLIC_TRANSPORT,s bahn hamburg
-PUBLIC_TRANSPORT,s bahn münchen
-PUBLIC_TRANSPORT,u-bahn
-PUBLIC_TRANSPORT,ubahn
-PUBLIC_TRANSPORT,deutsche bahn
-PUBLIC_TRANSPORT,db
-PUBLIC_TRANSPORT,db vertrieb
-PUBLIC_TRANSPORT,mvv
-PUBLIC_TRANSPORT,hvv
-PUBLIC_TRANSPORT,kvb
-PUBLIC_TRANSPORT,öpnv
-PUBLIC_TRANSPORT,nahverkehr
-PUBLIC_TRANSPORT,vbb
-PUBLIC_TRANSPORT,transport
-PUBLIC_TRANSPORT,bus
-PUBLIC_TRANSPORT,zug
-PUBLIC_TRANSPORT,fernverkehr
-PUBLIC_TRANSPORT,metro
-PUBLIC_TRANSPORT,avv
-PUBLIC_TRANSPORT,rmv
-PUBLIC_TRANSPORT,vgn
-PUBLIC_TRANSPORT,ivb
-PUBLIC_TRANSPORT,svv
-PUBLIC_TRANSPORT,carsharing
-PUBLIC_TRANSPORT,flixbus
-PUBLIC_TRANSPORT,flixtrain
-PUBLIC_TRANSPORT,bike-and-ride
-PUBLIC_TRANSPORT,kvb-nextbike
-CAR,tankstelle
-CAR,shell
-CAR,aral
-CAR,esso
-CAR,jet
-CAR,total
-CAR,fuel
-CAR,benzin
-CAR,diesel
-CAR,kfz
-CAR,auto
-CAR,werkstatt
-CAR,reifen
-CAR,adac
-CAR,raststätte
-CAR,totalenergies
-CAR,startankstelle
-CAR,agip
-CAR,eni
-CAR,bfttankstelle
-CAR,oktan
-CAR,super
-CAR,superplus
-CAR,e10
-CAR,bleifrei
-CAR,kraftstoff
-CAR,sprit
-CAR,biodiesel
-CAR,autogas
-CAR,cng
-CAR,erdgastankstelle
-CAR,stromtankstelle
-CAR,ladesäule
-CAR,schnelllader
-CAR,e-autoladen
-CAR,tüv
-CAR,dekra
-CAR,kfz-steuer
-CAR,kfz-versicherung
-CAR,vollkasko
-CAR,teilkasko
-CAR,haftpflicht
-CAR,kfz-werkstatt
-CAR,meisterwerkstatt
-CAR,freiewerkstatt
-CAR,vertragshändler
-CAR,karosseriebau
-CAR,lackiererei
-CAR,felgen
-CAR,sommerreifen
-CAR,winterreifen
-CAR,ganzjahresreifen
-CAR,reifenservice
-CAR,reifenwechsel
-CAR,spurvermessung
-CAR,ölwechsel
-CAR,inspektion
-CAR,kundendienst
-CAR,wartung
-CAR,kfz-service
-CAR,panne
-CAR,abschleppdienst
-CAR,adacplusmitgliedschaft
-CAR,schutzbrief
-CAR,notruf
-CAR,rastplatz
-CAR,parkplatz
-CAR,parkhaus
-CAR,tiefgarage
-CAR,tanksäule
-CAR,zapfsäule
-CAR,vignetten
-CAR,maut
+RENT,strom
+RENT,gas
+RENT,wasser
+RENT,stadtwerke
+RENT,vattenfall
+RENT,eon
+RENT,e.on
+RENT,enercity
+RENT,electricity
+RENT,heizung
+RENT,energie
+RENT,swb
+RENT,mainova
+TRANSPORT,bvg
+TRANSPORT,berliner verkehrsbetriebe
+TRANSPORT,s-bahn
+TRANSPORT,sbahn
+TRANSPORT,s bahn berlin
+TRANSPORT,s bahn hamburg
+TRANSPORT,s bahn münchen
+TRANSPORT,u-bahn
+TRANSPORT,ubahn
+TRANSPORT,deutsche bahn
+TRANSPORT,db
+TRANSPORT,db vertrieb
+TRANSPORT,mvv
+TRANSPORT,hvv
+TRANSPORT,kvb
+TRANSPORT,öpnv
+TRANSPORT,nahverkehr
+TRANSPORT,vbb
+TRANSPORT,transport
+TRANSPORT,bus
+TRANSPORT,zug
+TRANSPORT,fernverkehr
+TRANSPORT,metro
+TRANSPORT,avv
+TRANSPORT,rmv
+TRANSPORT,vgn
+TRANSPORT,ivb
+TRANSPORT,svv
+TRANSPORT,carsharing
+TRANSPORT,flixbus
+TRANSPORT,flixtrain
+TRANSPORT,bike-and-ride
+TRANSPORT,kvb-nextbike
+TRANSPORT,tankstelle
+TRANSPORT,shell
+TRANSPORT,aral
+TRANSPORT,esso
+TRANSPORT,jet
+TRANSPORT,total
+TRANSPORT,fuel
+TRANSPORT,benzin
+TRANSPORT,diesel
+TRANSPORT,kfz
+TRANSPORT,auto
+TRANSPORT,werkstatt
+TRANSPORT,reifen
+TRANSPORT,adac
+TRANSPORT,raststätte
+TRANSPORT,totalenergies
+TRANSPORT,startankstelle
+TRANSPORT,agip
+TRANSPORT,eni
+TRANSPORT,bfttankstelle
+TRANSPORT,oktan
+TRANSPORT,super
+TRANSPORT,superplus
+TRANSPORT,e10
+TRANSPORT,bleifrei
+TRANSPORT,kraftstoff
+TRANSPORT,sprit
+TRANSPORT,biodiesel
+TRANSPORT,autogas
+TRANSPORT,cng
+TRANSPORT,erdgastankstelle
+TRANSPORT,stromtankstelle
+TRANSPORT,ladesäule
+TRANSPORT,schnelllader
+TRANSPORT,e-autoladen
+TRANSPORT,tüv
+TRANSPORT,dekra
+TRANSPORT,kfz-steuer
+TRANSPORT,kfz-versicherung
+TRANSPORT,vollkasko
+TRANSPORT,teilkasko
+TRANSPORT,haftpflicht
+TRANSPORT,kfz-werkstatt
+TRANSPORT,meisterwerkstatt
+TRANSPORT,freiewerkstatt
+TRANSPORT,vertragshändler
+TRANSPORT,karosseriebau
+TRANSPORT,lackiererei
+TRANSPORT,felgen
+TRANSPORT,sommerreifen
+TRANSPORT,winterreifen
+TRANSPORT,ganzjahresreifen
+TRANSPORT,reifenservice
+TRANSPORT,reifenwechsel
+TRANSPORT,spurvermessung
+TRANSPORT,ölwechsel
+TRANSPORT,inspektion
+TRANSPORT,kundendienst
+TRANSPORT,wartung
+TRANSPORT,kfz-service
+TRANSPORT,panne
+TRANSPORT,abschleppdienst
+TRANSPORT,adacplusmitgliedschaft
+TRANSPORT,schutzbrief
+TRANSPORT,notruf
+TRANSPORT,rastplatz
+TRANSPORT,parkplatz
+TRANSPORT,parkhaus
+TRANSPORT,tiefgarage
+TRANSPORT,tanksäule
+TRANSPORT,zapfsäule
+TRANSPORT,vignetten
+TRANSPORT,maut
 SUPERMARKET,rewe
 SUPERMARKET,edeka
 SUPERMARKET,lidl
@@ -209,7 +209,6 @@ RESTAURANT,delikatessen
 RESTAURANT,sushi
 RESTAURANT,lounge
 RESTAURANT,döner
-RESTAURANT,hotel
 RESTAURANT,lieferando
 RESTAURANT,club
 RESTAURANT,food
@@ -348,6 +347,7 @@ SHOPPING,electronic
 SHOPPING,textilien
 SHOPPING,secondhand
 SHOPPING,clothing
+SHOPPING,online
 HEALTH,apotheke
 HEALTH,pharmacy
 HEALTH,arzt
@@ -367,7 +367,6 @@ INSURANCE,ergo
 INSURANCE,generali
 INSURANCE,krankenversicherung
 INSURANCE,haftpflicht
-INSURANCE,kfz-versicherung
 ENTERTAINMENT,netflix
 ENTERTAINMENT,spotify
 ENTERTAINMENT,spotify ab
@@ -448,48 +447,82 @@ SUBSCRIPTIONS,sky ticket
 SUBSCRIPTIONS,magzter
 SUBSCRIPTIONS,readly
 SUBSCRIPTIONS,kobo plus
-PHONE_INTERNET,telekom
-PHONE_INTERNET,vodafone
-PHONE_INTERNET,o2
-PHONE_INTERNET,telefonica
-PHONE_INTERNET,1&1
-PHONE_INTERNET,congstar
-PHONE_INTERNET,mobilfunk
-PHONE_INTERNET,internet
-PHONE_INTERNET,dsl
-PHONE_INTERNET,kabel deutschland
-PHONE_INTERNET,unity media
-PHONE_INTERNET,deutsche telekom
-PHONE_INTERNET,t-mobile
-PHONE_INTERNET,magenta
-PHONE_INTERNET,magenta tv
-PHONE_INTERNET,speedport
-PHONE_INTERNET,vodafone cable
-PHONE_INTERNET,gigacube
-PHONE_INTERNET,o2 mobilfunk
-PHONE_INTERNET,o2 community
-PHONE_INTERNET,1und1
-PHONE_INTERNET,drillisch
-PHONE_INTERNET,smartmobil
-PHONE_INTERNET,klarmobil
-PHONE_INTERNET,mobilcom-debitel
-PHONE_INTERNET,otelo
-PHONE_INTERNET,simply
-PHONE_INTERNET,freenet
-PHONE_INTERNET,handyvertrag
-PHONE_INTERNET,prepaid
-PHONE_INTERNET,vertrag
-PHONE_INTERNET,sim only
-PHONE_INTERNET,e-sim
-PHONE_INTERNET,ftth
-PHONE_INTERNET,unitymedia
-PHONE_INTERNET,unity
-PHONE_INTERNET,netcologne
-BANK_FEES,kontoführung
-BANK_FEES,bankgebühr
-BANK_FEES,entgelt
-BANK_FEES,gebühr
-BANK_FEES,bank fee
+SUBSCRIPTIONS,telekom
+SUBSCRIPTIONS,vodafone
+SUBSCRIPTIONS,o2
+SUBSCRIPTIONS,telefonica
+SUBSCRIPTIONS,1&1
+SUBSCRIPTIONS,congstar
+SUBSCRIPTIONS,mobilfunk
+SUBSCRIPTIONS,internet
+SUBSCRIPTIONS,dsl
+SUBSCRIPTIONS,kabel deutschland
+SUBSCRIPTIONS,unity media
+SUBSCRIPTIONS,deutsche telekom
+SUBSCRIPTIONS,t-mobile
+SUBSCRIPTIONS,magenta
+SUBSCRIPTIONS,magenta tv
+SUBSCRIPTIONS,speedport
+SUBSCRIPTIONS,vodafone cable
+SUBSCRIPTIONS,gigacube
+SUBSCRIPTIONS,o2 mobilfunk
+SUBSCRIPTIONS,o2 community
+SUBSCRIPTIONS,1und1
+SUBSCRIPTIONS,drillisch
+SUBSCRIPTIONS,smartmobil
+SUBSCRIPTIONS,klarmobil
+SUBSCRIPTIONS,mobilcom-debitel
+SUBSCRIPTIONS,otelo
+SUBSCRIPTIONS,simply
+SUBSCRIPTIONS,freenet
+SUBSCRIPTIONS,handyvertrag
+SUBSCRIPTIONS,prepaid
+SUBSCRIPTIONS,vertrag
+SUBSCRIPTIONS,sim only
+SUBSCRIPTIONS,e-sim
+SUBSCRIPTIONS,ftth
+SUBSCRIPTIONS,unitymedia
+SUBSCRIPTIONS,unity
+SUBSCRIPTIONS,netcologne
+SUBSCRIPTIONS,fitness
+SUBSCRIPTIONS,gym
+SUBSCRIPTIONS,mcfit
+SUBSCRIPTIONS,fitx
+SUBSCRIPTIONS,urban sports
+SUBSCRIPTIONS,yoga
+SUBSCRIPTIONS,sport
+SUBSCRIPTIONS,schwimmbad
+SUBSCRIPTIONS,pool
+SUBSCRIPTIONS,verein
+SUBSCRIPTIONS,fitnessstudio
+SUBSCRIPTIONS,urban sports club
+SUBSCRIPTIONS,clever fit
+SUBSCRIPTIONS,john reed
+SUBSCRIPTIONS,high5 fitness
+SUBSCRIPTIONS,easyfitness
+SUBSCRIPTIONS,rsg group
+SUBSCRIPTIONS,lifefit group
+SUBSCRIPTIONS,pfitzenmeier
+SUBSCRIPTIONS,kieser training
+SUBSCRIPTIONS,mrs sporty
+SUBSCRIPTIONS,bodystreet
+SUBSCRIPTIONS,fitbox
+SUBSCRIPTIONS,körperformen
+SUBSCRIPTIONS,25minutes
+SUBSCRIPTIONS,fitness first
+SUBSCRIPTIONS,yogastudio
+SUBSCRIPTIONS,pilates
+SUBSCRIPTIONS,spinning
+SUBSCRIPTIONS,crossfit
+SUBSCRIPTIONS,bootcamp
+SUBSCRIPTIONS,sportschule
+SUBSCRIPTIONS,freibad
+SUBSCRIPTIONS,hallenbad
+SUBSCRIPTIONS,sportverein
+SUBSCRIPTIONS,tsv
+SUBSCRIPTIONS,fitness abo
+SUBSCRIPTIONS,monatskarte fitness
+SUBSCRIPTIONS,probetraining
 INVESTMENT,depot
 INVESTMENT,aktien
 INVESTMENT,etf
@@ -529,45 +562,6 @@ INVESTMENT,growth stocks
 INVESTMENT,krypto
 INVESTMENT,bitcoin etf
 INVESTMENT,nachhaltig etf
-FITNESS,fitness
-FITNESS,gym
-FITNESS,mcfit
-FITNESS,fitx
-FITNESS,urban sports
-FITNESS,yoga
-FITNESS,sport
-FITNESS,schwimmbad
-FITNESS,pool
-FITNESS,verein
-FITNESS,fitnessstudio
-FITNESS,urban sports club
-FITNESS,clever fit
-FITNESS,john reed
-FITNESS,high5 fitness
-FITNESS,easyfitness
-FITNESS,rsg group
-FITNESS,lifefit group
-FITNESS,pfitzenmeier
-FITNESS,kieser training
-FITNESS,mrs sporty
-FITNESS,bodystreet
-FITNESS,fitbox
-FITNESS,körperformen
-FITNESS,25minutes
-FITNESS,fitness first
-FITNESS,yogastudio
-FITNESS,pilates
-FITNESS,spinning
-FITNESS,crossfit
-FITNESS,bootcamp
-FITNESS,sportschule
-FITNESS,freibad
-FITNESS,hallenbad
-FITNESS,sportverein
-FITNESS,tsv
-FITNESS,fitness abo
-FITNESS,monatskarte fitness
-FITNESS,probetraining
 TRAVEL,hotel
 TRAVEL,hostel
 TRAVEL,airbnb
@@ -627,6 +621,8 @@ SALARY,altersvorsorge
 SALARY,betriebsrente
 SALARY,riester
 SALARY,rürup
+SALARY,einkommen
+SALARY,income
 REFUND,erstattung
 REFUND,refund
 REFUND,rückzahlung
@@ -635,51 +631,27 @@ REFUND,storno
 TRANSFER,überweisung
 TRANSFER,transfer
 TRANSFER,umbuchung
-CASH,bargeld
-CASH,cash
-CASH,geldautomat
-CASH,atm
-CASH,auszahlung
-CASH,geldabhebung
-CASH,bar abheben
-CASH,cashpoint
-CASH,ec-karte abheben
-CASH,girocard auszahlung
-CASH,cash group
-CASH,cashpool
-CASH,sparkassen automaten
-CASH,volksbank geldautomat
-CASH,commerzbank atm
-CASH,deutsche bank geldautomat
-CASH,postbank auszahlung
-CASH,shell tankstelle geldautomat
-CASH,rewe cashback
-CASH,dm bargeld
-CASH,netto geldabheben
-CASH,penny cashpoint
-CASH,kostenlose geldautomaten
-CASH,gebührenfreie auszahlung
-CASH,geldautomaten suche
-CASH,atm locator
-CASH,bargeldcode
-CASH,postbank bargeldcode
-PAYMENT_SERVICE,paypal
-PAYMENT_SERVICE,klarna
-PAYMENT_SERVICE,sofort
-PAYMENT_SERVICE,giropay
-PAYMENT_SERVICE,apple pay
-PAYMENT_SERVICE,google pay
-PAYMENT_SERVICE,sofortüberweisung
-PAYMENT_SERVICE,amazon pay
-PAYMENT_SERVICE,stripe
-PAYMENT_SERVICE,mollie
-PAYMENT_SERVICE,adyen
-PAYMENT_SERVICE,multisafepay
-PAYMENT_SERVICE,payone
-PAYMENT_SERVICE,ratepay
-PAYMENT_SERVICE,paydirekt
-PAYMENT_SERVICE,ideal
-PAYMENT_SERVICE,eps
-PAYMENT_SERVICE,twint
-PAYMENT_SERVICE,alipay
-PAYMENT_SERVICE,wechat pay
+TRANSFER,paypal
+TRANSFER,klarna
+TRANSFER,sofort
+TRANSFER,giropay
+TRANSFER,apple pay
+TRANSFER,google pay
+TRANSFER,sofortüberweisung
+TRANSFER,amazon pay
+EDUCATION,schule
+EDUCATION,universität
+EDUCATION,hochschule
+EDUCATION,studium
+EDUCATION,kurs
+EDUCATION,weiterbildung
+EDUCATION,volkshochschule
+EDUCATION,vhs
+EDUCATION,seminar
+EDUCATION,workshop
+TAXES,finanzamt
+TAXES,steuer
+TAXES,steuererklärung
+TAXES,einkommensteuer
+TAXES,umsatzsteuer
+TAXES,gewerbesteuer

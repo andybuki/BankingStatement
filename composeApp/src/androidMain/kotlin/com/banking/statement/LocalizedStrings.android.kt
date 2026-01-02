@@ -103,11 +103,9 @@ actual fun provideStrings(): AppStrings = AppStrings(
 
     changeCategory = stringResource(R.string.change_category),
 
-    // Categories
+    // Categories (17 consolidated categories)
     categoryRent = stringResource(R.string.category_rent),
-    categoryUtilities = stringResource(R.string.category_utilities),
-    categoryPublicTransport = stringResource(R.string.category_public_transport),
-    categoryCar = stringResource(R.string.category_car),
+    categoryTransport = stringResource(R.string.category_transport),
     categorySupermarket = stringResource(R.string.category_supermarket),
     categoryRestaurant = stringResource(R.string.category_restaurant),
     categoryShopping = stringResource(R.string.category_shopping),
@@ -115,23 +113,12 @@ actual fun provideStrings(): AppStrings = AppStrings(
     categoryInsurance = stringResource(R.string.category_insurance),
     categoryEntertainment = stringResource(R.string.category_entertainment),
     categorySubscriptions = stringResource(R.string.category_subscriptions),
-    categoryPhoneInternet = stringResource(R.string.category_phone_internet),
-    categoryBankFees = stringResource(R.string.category_bank_fees),
     categoryInvestment = stringResource(R.string.category_investment),
-    categoryFitness = stringResource(R.string.category_fitness),
     categoryTravel = stringResource(R.string.category_travel),
     categorySalary = stringResource(R.string.category_salary),
     categoryRefund = stringResource(R.string.category_refund),
     categoryTransfer = stringResource(R.string.category_transfer),
-    categoryCash = stringResource(R.string.category_cash),
-    categoryPaymentService = stringResource(R.string.category_payment_service),
     categoryEducation = stringResource(R.string.category_education),
-    categoryPets = stringResource(R.string.category_pets),
-    categoryGifts = stringResource(R.string.category_gifts),
-    categoryIncome = stringResource(R.string.category_income),
-    categoryOther = stringResource(R.string.category_other),
-    categoryGroceries = stringResource(R.string.category_groceries),
-    categoryTransport = stringResource(R.string.category_transport),
-    categoryOnlineShopping = stringResource(R.string.category_online_shopping),
-    categoryTaxes = stringResource(R.string.category_taxes)
+    categoryTaxes = stringResource(R.string.category_taxes),
+    categoryOther = stringResource(R.string.category_other)
 )

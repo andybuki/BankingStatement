@@ -4,39 +4,28 @@ import com.banking.statement.AppStrings
 
 /**
  * Predefined transaction categories with multilingual support
+ * Consolidated to 17 essential categories
  */
 enum class TransactionCategory(
     val displayName: String,
-    val displayNameDe: String,  // German translation
+    val displayNameDe: String,
     val icon: String,
     val color: String
 ) {
-    // Housing & Utilities
+    // Housing (includes utilities)
     RENT(
-        displayName = "Rent",
-        displayNameDe = "Miete",
+        displayName = "Rent & Utilities",
+        displayNameDe = "Miete & Nebenkosten",
         icon = "home",
         color = "#E57373"
     ),
-    UTILITIES(
-        displayName = "Utilities",
-        displayNameDe = "Nebenkosten",
-        icon = "bolt",
-        color = "#FFB74D"
-    ),
 
-    // Transportation
-    PUBLIC_TRANSPORT(
-        displayName = "Public Transport",
-        displayNameDe = "Öffentliche Verkehrsmittel",
-        icon = "train",
-        color = "#4FC3F7"
-    ),
-    CAR(
-        displayName = "Car & Fuel",
-        displayNameDe = "Auto & Kraftstoff",
-        icon = "car",
-        color = "#90A4AE"
+    // Transportation (includes public transport, car, fuel)
+    TRANSPORT(
+        displayName = "Transport",
+        displayNameDe = "Transport",
+        icon = "directions_bus",
+        color = "#2196F3"
     ),
 
     // Food & Groceries
@@ -47,13 +36,13 @@ enum class TransactionCategory(
         color = "#81C784"
     ),
     RESTAURANT(
-        displayName = "Restaurant & Food",
-        displayNameDe = "Restaurant & Essen",
+        displayName = "Restaurant",
+        displayNameDe = "Restaurant",
         icon = "restaurant",
         color = "#FF8A65"
     ),
 
-    // Shopping
+    // Shopping (includes online shopping)
     SHOPPING(
         displayName = "Shopping",
         displayNameDe = "Einkaufen",
@@ -61,13 +50,15 @@ enum class TransactionCategory(
         color = "#BA68C8"
     ),
 
-    // Health & Insurance
+    // Health
     HEALTH(
         displayName = "Health",
         displayNameDe = "Gesundheit",
         icon = "medical_services",
         color = "#F06292"
     ),
+
+    // Insurance
     INSURANCE(
         displayName = "Insurance",
         displayNameDe = "Versicherung",
@@ -75,13 +66,15 @@ enum class TransactionCategory(
         color = "#7986CB"
     ),
 
-    // Entertainment & Subscriptions
+    // Entertainment
     ENTERTAINMENT(
         displayName = "Entertainment",
         displayNameDe = "Unterhaltung",
         icon = "movie",
         color = "#9575CD"
     ),
+
+    // Subscriptions (includes fitness, phone & internet)
     SUBSCRIPTIONS(
         displayName = "Subscriptions",
         displayNameDe = "Abonnements",
@@ -89,21 +82,7 @@ enum class TransactionCategory(
         color = "#4DB6AC"
     ),
 
-    // Communication
-    PHONE_INTERNET(
-        displayName = "Phone & Internet",
-        displayNameDe = "Telefon & Internet",
-        icon = "phone",
-        color = "#4DD0E1"
-    ),
-
-    // Financial
-    BANK_FEES(
-        displayName = "Bank Fees",
-        displayNameDe = "Bankgebühren",
-        icon = "account_balance",
-        color = "#A1887F"
-    ),
+    // Investment
     INVESTMENT(
         displayName = "Investment",
         displayNameDe = "Investition",
@@ -111,15 +90,7 @@ enum class TransactionCategory(
         color = "#AED581"
     ),
 
-    // Sports & Fitness
-    FITNESS(
-        displayName = "Fitness & Sports",
-        displayNameDe = "Fitness & Sport",
-        icon = "fitness_center",
-        color = "#FF7043"
-    ),
-
-    // Travel & Accommodation
+    // Travel
     TRAVEL(
         displayName = "Travel",
         displayNameDe = "Reisen",
@@ -149,22 +120,6 @@ enum class TransactionCategory(
         color = "#78909C"
     ),
 
-    // Cash
-    CASH(
-        displayName = "Cash Withdrawal",
-        displayNameDe = "Bargeldabhebung",
-        icon = "atm",
-        color = "#8D6E63"
-    ),
-
-    // PayPal & Payment Services
-    PAYMENT_SERVICE(
-        displayName = "Payment Service",
-        displayNameDe = "Zahlungsdienst",
-        icon = "payment",
-        color = "#5C6BC0"
-    ),
-
     // Education
     EDUCATION(
         displayName = "Education",
@@ -173,60 +128,20 @@ enum class TransactionCategory(
         color = "#FFD54F"
     ),
 
-    // Pets
-    PETS(
-        displayName = "Pets",
-        displayNameDe = "Haustiere",
-        icon = "pets",
-        color = "#A1887F"
-    ),
-
-    // Gifts & Donations
-    GIFTS(
-        displayName = "Gifts",
-        displayNameDe = "Geschenke",
-        icon = "card_giftcard",
-        color = "#F48FB1"
-    ),
-
-    // Income (additional)
-    INCOME(
-        displayName = "Income",
-        displayNameDe = "Einkommen",
-        icon = "attach_money",
-        color = "#AED581"
-    ),
-
-    // Generic/Unknown
-    OTHER(
-        displayName = "Other",
-        displayNameDe = "Sonstiges",
-        icon = "category",
-        color = "#B0BEC5"
-    ),
-    GROCERIES(
-        displayName = "Groceries",
-        displayNameDe = "Lebensmittel",
-        icon = "shopping_basket",
-        color = "#4CAF50"
-    ),
-    TRANSPORT(
-        displayName = "Transport",
-        displayNameDe = "Transport",
-        icon = "directions_bus",
-        color = "#2196F3"
-    ),
-    ONLINE_SHOPPING(
-        displayName = "Online Shopping",
-        displayNameDe = "Online-Shopping",
-        icon = "computer",
-        color = "#9C27B0"
-    ),
+    // Taxes
     TAXES(
         displayName = "Taxes",
         displayNameDe = "Steuern",
         icon = "receipt_long",
         color = "#795548"
+    ),
+
+    // Other/Unknown
+    OTHER(
+        displayName = "Other",
+        displayNameDe = "Sonstiges",
+        icon = "category",
+        color = "#B0BEC5"
     );
 
     /**
@@ -242,9 +157,7 @@ enum class TransactionCategory(
     fun getLocalizedName(strings: AppStrings): String {
         return when (this) {
             RENT -> strings.categoryRent
-            UTILITIES -> strings.categoryUtilities
-            PUBLIC_TRANSPORT -> strings.categoryPublicTransport
-            CAR -> strings.categoryCar
+            TRANSPORT -> strings.categoryTransport
             SUPERMARKET -> strings.categorySupermarket
             RESTAURANT -> strings.categoryRestaurant
             SHOPPING -> strings.categoryShopping
@@ -252,25 +165,14 @@ enum class TransactionCategory(
             INSURANCE -> strings.categoryInsurance
             ENTERTAINMENT -> strings.categoryEntertainment
             SUBSCRIPTIONS -> strings.categorySubscriptions
-            PHONE_INTERNET -> strings.categoryPhoneInternet
-            BANK_FEES -> strings.categoryBankFees
             INVESTMENT -> strings.categoryInvestment
-            FITNESS -> strings.categoryFitness
             TRAVEL -> strings.categoryTravel
             SALARY -> strings.categorySalary
             REFUND -> strings.categoryRefund
             TRANSFER -> strings.categoryTransfer
-            CASH -> strings.categoryCash
-            PAYMENT_SERVICE -> strings.categoryPaymentService
             EDUCATION -> strings.categoryEducation
-            PETS -> strings.categoryPets
-            GIFTS -> strings.categoryGifts
-            INCOME -> strings.categoryIncome
-            OTHER -> strings.categoryOther
-            GROCERIES -> strings.categoryGroceries
-            TRANSPORT -> strings.categoryTransport
-            ONLINE_SHOPPING -> strings.categoryOnlineShopping
             TAXES -> strings.categoryTaxes
+            OTHER -> strings.categoryOther
         }
     }
 
