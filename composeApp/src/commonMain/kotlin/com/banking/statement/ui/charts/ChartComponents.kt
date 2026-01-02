@@ -73,6 +73,7 @@ fun CategoryBarsChart(
     categorySpending: List<CategorySpending>,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
     Column(modifier = modifier) {
         val sortedSpending = categorySpending.sortedByDescending { abs(it.totalAmount) }
 
