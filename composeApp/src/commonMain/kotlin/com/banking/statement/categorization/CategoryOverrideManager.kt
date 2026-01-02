@@ -1,6 +1,7 @@
 package com.banking.statement.categorization
 
 import com.banking.statement.db.BankingDatabase
+import com.banking.statement.ui.TransactionDisplay
 
 /**
  * Manages user category overrides - manual corrections that take priority
@@ -22,11 +23,24 @@ class CategoryOverrideManager(
     }
 
     /**
-     * Extract primary pattern - prefer counterparty for stability
+     * Extract primary pattern - prefer counterparty for stability.
+     * For PayPal transactions, uses extracted merchant name instead of generic PayPal name.
      */
-    private fun extractPrimaryPattern(counterparty: String?): String? {
-        if (counterparty.isNullOrBlank()) return null
-        val normalized = normalizePattern(counterparty)
+    private fun extractPrimaryPattern(description: String, counterparty: String?): String? {
+        if (counterparty.isNullOrBlank() && !description.lowercase().contains("paypal")) return null
+
+        val counterpartyLower = counterparty?.lowercase() ?: ""
+        val descriptionLower = description.lowercase()
+
+        // For PayPal, use the smart display name (e.g., "PayPal · Wolt")
+        val effectiveCounterparty = if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
+            TransactionDisplay.extractDisplayName(counterparty, description)
+        } else {
+            counterparty
+        }
+
+        if (effectiveCounterparty.isNullOrBlank()) return null
+        val normalized = normalizePattern(effectiveCounterparty)
         return if (normalized.isNotBlank()) normalized else null
     }
 
@@ -44,7 +58,7 @@ class CategoryOverrideManager(
      */
     fun saveOverride(description: String, counterparty: String?, category: TransactionCategory) {
         // Try to save counterparty-only pattern first (more stable)
-        val primaryPattern = extractPrimaryPattern(counterparty)
+        val primaryPattern = extractPrimaryPattern(description, counterparty)
         if (!primaryPattern.isNullOrBlank()) {
             database.bankingDatabaseQueries.insertCategoryOverride(primaryPattern, category.name)
             val cache = overrideCache ?: mutableMapOf()
@@ -68,7 +82,7 @@ class CategoryOverrideManager(
      */
     fun findOverride(description: String, counterparty: String?): TransactionCategory? {
         // First try counterparty-only pattern (most reliable)
-        val primaryPattern = extractPrimaryPattern(counterparty)
+        val primaryPattern = extractPrimaryPattern(description, counterparty)
         if (!primaryPattern.isNullOrBlank()) {
             // Check cache first
             overrideCache?.get(primaryPattern)?.let { return it }
@@ -135,7 +149,7 @@ class CategoryOverrideManager(
      */
     fun deleteOverride(description: String, counterparty: String?) {
         // Try to delete both patterns
-        val primaryPattern = extractPrimaryPattern(counterparty)
+        val primaryPattern = extractPrimaryPattern(description, counterparty)
         if (!primaryPattern.isNullOrBlank()) {
             database.bankingDatabaseQueries.deleteCategoryOverride(primaryPattern)
             overrideCache?.remove(primaryPattern)

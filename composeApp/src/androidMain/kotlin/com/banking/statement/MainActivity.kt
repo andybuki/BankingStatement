@@ -820,12 +820,22 @@ class MainActivity : ComponentActivity() {
         // Also update category spending for immediate visual feedback
         updateCategorySpending()
 
-        // Save to database in background - use the full pattern for storage
+        // Save to database in background
+        // For PayPal, use the extracted display name so each merchant gets its own category
+        val counterpartyLower = transaction.counterparty?.lowercase() ?: ""
+        val descriptionLower = transaction.description.lowercase()
+        val effectiveCounterparty = if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
+            // Use the smart display name (e.g., "PayPal · Wolt") for PayPal transactions
+            TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description)
+        } else {
+            transaction.counterparty
+        }
+
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
                 categoryOverrideManager.saveOverride(
                     description = transaction.description,
-                    counterparty = transaction.counterparty,
+                    counterparty = effectiveCounterparty,
                     category = newCategory
                 )
             }
