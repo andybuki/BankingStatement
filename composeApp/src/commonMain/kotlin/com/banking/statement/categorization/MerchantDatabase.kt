@@ -15,7 +15,7 @@ class MerchantDatabase(
     private val categoryCodeMap = mapOf(
         "fd" to TransactionCategory.RESTAURANT,    // food/dining
         "en" to TransactionCategory.ENTERTAINMENT, // entertainment
-        "ft" to TransactionCategory.FITNESS,       // fitness
+        "ft" to TransactionCategory.SUBSCRIPTIONS, // fitness -> subscriptions
         "md" to TransactionCategory.HEALTH,        // medical/health
         "sm" to TransactionCategory.SUPERMARKET,   // supermarket
         "el" to TransactionCategory.SHOPPING,      // electronics
@@ -227,7 +227,7 @@ class MerchantDatabase(
             return when (code) {
                 "fd" -> TransactionCategory.RESTAURANT
                 "en" -> TransactionCategory.ENTERTAINMENT
-                "ft" -> TransactionCategory.FITNESS
+                "ft" -> TransactionCategory.SUBSCRIPTIONS // fitness -> subscriptions
                 "md" -> TransactionCategory.HEALTH
                 "sm" -> TransactionCategory.SUPERMARKET
                 "el" -> TransactionCategory.SHOPPING

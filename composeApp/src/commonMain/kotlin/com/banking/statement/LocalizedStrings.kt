@@ -118,11 +118,9 @@ data class AppStrings(
     // Category Override
     val changeCategory: String,
 
-    // Categories
+    // Categories (17 consolidated categories)
     val categoryRent: String,
-    val categoryUtilities: String,
-    val categoryPublicTransport: String,
-    val categoryCar: String,
+    val categoryTransport: String,
     val categorySupermarket: String,
     val categoryRestaurant: String,
     val categoryShopping: String,
@@ -130,25 +128,14 @@ data class AppStrings(
     val categoryInsurance: String,
     val categoryEntertainment: String,
     val categorySubscriptions: String,
-    val categoryPhoneInternet: String,
-    val categoryBankFees: String,
     val categoryInvestment: String,
-    val categoryFitness: String,
     val categoryTravel: String,
     val categorySalary: String,
     val categoryRefund: String,
     val categoryTransfer: String,
-    val categoryCash: String,
-    val categoryPaymentService: String,
     val categoryEducation: String,
-    val categoryPets: String,
-    val categoryGifts: String,
-    val categoryIncome: String,
-    val categoryOther: String,
-    val categoryGroceries: String,
-    val categoryTransport: String,
-    val categoryOnlineShopping: String,
-    val categoryTaxes: String
+    val categoryTaxes: String,
+    val categoryOther: String
 )
 
 /**
@@ -259,35 +246,22 @@ fun defaultEnglishStrings() = AppStrings(
 
     changeCategory = "Change Category",
 
-    // Categories
-    categoryRent = "Rent",
-    categoryUtilities = "Utilities",
-    categoryPublicTransport = "Public Transport",
-    categoryCar = "Car & Fuel",
+    // Categories (17 consolidated categories)
+    categoryRent = "Rent & Utilities",
+    categoryTransport = "Transport",
     categorySupermarket = "Supermarket",
-    categoryRestaurant = "Restaurant & Food",
+    categoryRestaurant = "Restaurant",
     categoryShopping = "Shopping",
     categoryHealth = "Health",
     categoryInsurance = "Insurance",
     categoryEntertainment = "Entertainment",
     categorySubscriptions = "Subscriptions",
-    categoryPhoneInternet = "Phone & Internet",
-    categoryBankFees = "Bank Fees",
     categoryInvestment = "Investment",
-    categoryFitness = "Fitness & Sports",
     categoryTravel = "Travel",
     categorySalary = "Salary",
     categoryRefund = "Refund",
     categoryTransfer = "Transfer",
-    categoryCash = "Cash Withdrawal",
-    categoryPaymentService = "Payment Service",
     categoryEducation = "Education",
-    categoryPets = "Pets",
-    categoryGifts = "Gifts",
-    categoryIncome = "Income",
-    categoryOther = "Other",
-    categoryGroceries = "Groceries",
-    categoryTransport = "Transport",
-    categoryOnlineShopping = "Online Shopping",
-    categoryTaxes = "Taxes"
+    categoryTaxes = "Taxes",
+    categoryOther = "Other"
 )

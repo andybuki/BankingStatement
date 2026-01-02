@@ -63,37 +63,24 @@
     <string name="done">Terminé</string>
     <string name="add">Ajouter</string>
 
-    <!-- Categories -->
-    <string name="category_rent">Loyer</string>
-    <string name="category_utilities">Services publics</string>
-    <string name="category_public_transport">Transports en commun</string>
-    <string name="category_car">Voiture &amp; Carburant</string>
+    <!-- Categories (17 consolidated categories) -->
+    <string name="category_rent">Loyer &amp; Charges</string>
+    <string name="category_transport">Transport</string>
     <string name="category_supermarket">Supermarché</string>
-    <string name="category_restaurant">Restaurant &amp; Alimentation</string>
+    <string name="category_restaurant">Restaurant</string>
     <string name="category_shopping">Shopping</string>
     <string name="category_health">Santé</string>
     <string name="category_insurance">Assurance</string>
     <string name="category_entertainment">Divertissement</string>
     <string name="category_subscriptions">Abonnements</string>
-    <string name="category_phone_internet">Téléphone &amp; Internet</string>
-    <string name="category_bank_fees">Frais bancaires</string>
     <string name="category_investment">Investissement</string>
-    <string name="category_fitness">Fitness &amp; Sport</string>
     <string name="category_travel">Voyages</string>
     <string name="category_salary">Salaire</string>
     <string name="category_refund">Remboursement</string>
     <string name="category_transfer">Virement</string>
-    <string name="category_cash">Retrait d\'espèces</string>
-    <string name="category_payment_service">Service de paiement</string>
     <string name="category_education">Éducation</string>
-    <string name="category_pets">Animaux</string>
-    <string name="category_gifts">Cadeaux</string>
-    <string name="category_income">Revenus</string>
-    <string name="category_other">Autres</string>
-    <string name="category_groceries">Alimentation</string>
-    <string name="category_transport">Transport</string>
-    <string name="category_online_shopping">Shopping en ligne</string>
     <string name="category_taxes">Impôts</string>
+    <string name="category_other">Autres</string>
 
     <!-- Account Management -->
     <string name="manage_accounts">Gérer les Comptes</string>
