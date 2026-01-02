@@ -136,12 +136,9 @@ data class TransactionDisplay(
 
             // Use remittance info if available and meaningful
             if (!remittanceInfo.isNullOrBlank() && remittanceInfo.length > 5) {
-                // Skip if it's just reference numbers
-                val textRatio = remittanceInfo.count { it.isLetter() }.toFloat() / remittanceInfo.length
-                if (textRatio > 0.3) {
-                    return remittanceInfo.take(60).let {
-                        if (remittanceInfo.length > 60) "$it…" else it
-                    }
+                val cleaned = cleanDetailText(remittanceInfo)
+                if (cleaned != null) {
+                    return cleaned
                 }
             }
 
@@ -150,16 +147,43 @@ data class TransactionDisplay(
             if (lines.size > 1) {
                 val secondLine = lines[1].trim()
                 if (secondLine.length > 5) {
-                    val textRatio = secondLine.count { it.isLetter() }.toFloat() / secondLine.length
-                    if (textRatio > 0.3) {
-                        return secondLine.take(60).let {
-                            if (secondLine.length > 60) "$it…" else it
-                        }
+                    val cleaned = cleanDetailText(secondLine)
+                    if (cleaned != null) {
+                        return cleaned
                     }
                 }
             }
 
             return null
+        }
+
+        /**
+         * Cleans detail text by removing reference codes and validating content.
+         * Returns null if the text is not meaningful for display.
+         */
+        private fun cleanDetailText(text: String): String? {
+            // Remove Mandat:, Referenz:, and similar reference patterns
+            val cleaned = text
+                .replace(Regex("""Mandat:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""Referenz:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""Mandatsref\.?:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""Gläubiger-?ID:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""Creditor-?ID:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""End-to-End-?Ref\.?:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""EREF:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""MREF:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""CRED:\s*\S+""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""\s+"""), " ")
+                .trim()
+
+            // Check if remaining text is meaningful (>30% letters, at least 5 chars)
+            if (cleaned.length < 5) return null
+            val textRatio = cleaned.count { it.isLetter() }.toFloat() / cleaned.length
+            if (textRatio < 0.3) return null
+
+            return cleaned.take(60).let {
+                if (cleaned.length > 60) "$it…" else it
+            }
         }
 
         private fun extractPayPalPurchaseDetail(description: String): String? {

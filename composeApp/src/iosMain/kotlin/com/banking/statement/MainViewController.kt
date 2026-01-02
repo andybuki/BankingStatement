@@ -205,10 +205,20 @@ fun MainViewController() = ComposeUIViewController {
                 }
 
                 // Save to database in background
+                // For PayPal, use the extracted display name so each merchant gets its own category
+                val counterpartyLower = transaction.counterparty?.lowercase() ?: ""
+                val descriptionLower = transaction.description.lowercase()
+                val effectiveCounterparty = if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
+                    // Use the smart display name (e.g., "PayPal · Wolt") for PayPal transactions
+                    TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description)
+                } else {
+                    transaction.counterparty
+                }
+
                 withContext(Dispatchers.Default) {
                     categoryOverrideManager.saveOverride(
                         description = transaction.description,
-                        counterparty = transaction.counterparty,
+                        counterparty = effectiveCounterparty,
                         category = newCategory
                     )
                 }
@@ -393,7 +403,7 @@ private fun formatMonth(yearMonth: String): String {
 
 /**
  * Get a matching key for grouping identical transactions.
- * Uses the full normalized counterparty or description - exact match only.
+ * Uses smart extraction for PayPal to differentiate by merchant.
  */
 private fun getTransactionMatchKey(transaction: TransactionDisplay): String {
     // Normalize function - remove special chars, lowercase, trim
@@ -404,12 +414,23 @@ private fun getTransactionMatchKey(transaction: TransactionDisplay): String {
             .trim()
     }
 
-    // Use counterparty if available, otherwise description
     val counterparty = transaction.counterparty
+    val description = transaction.description
+    val counterpartyLower = counterparty?.lowercase() ?: ""
+    val descriptionLower = description.lowercase()
+
+    // PayPal special handling - use the merchant name as the key
+    if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
+        // Extract merchant from the display name (which already contains extracted merchant)
+        val displayName = TransactionDisplay.extractDisplayName(counterparty, description)
+        return normalize(displayName)
+    }
+
+    // Use counterparty if available, otherwise description
     return if (!counterparty.isNullOrBlank()) {
         normalize(counterparty)
     } else {
-        normalize(transaction.description)
+        normalize(description)
     }
 }
 
