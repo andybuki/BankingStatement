@@ -673,6 +673,11 @@ class MainActivity : ComponentActivity() {
                         currency = tx.currency,
                         category = category,
                         counterparty = tx.counterparty_name,
+                        detailText = TransactionDisplay.extractDetailText(
+                            description = tx.description,
+                            remittanceInfo = tx.remittance_info,
+                            counterparty = tx.counterparty_name
+                        ),
                         accountId = tx.account_id ?: 0L,
                         accountName = tx.account_id?.let { accountNames[it] } ?: ""
                     )

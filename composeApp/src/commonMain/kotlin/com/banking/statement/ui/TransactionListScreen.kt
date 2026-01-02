@@ -37,9 +37,143 @@ data class TransactionDisplay(
     val currency: String,
     val category: TransactionCategory,
     val counterparty: String?,
+    val detailText: String? = null,
     val accountId: Long = 0,
     val accountName: String = ""
-)
+) {
+    companion object {
+        /**
+         * Extracts a clean display name from the counterparty and description.
+         * Special handling for PayPal and other payment processors.
+         */
+        fun extractDisplayName(counterparty: String?, description: String): String {
+            val counterpartyLower = counterparty?.lowercase() ?: ""
+            val descriptionLower = description.lowercase()
+
+            // PayPal special handling - extract merchant name
+            if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
+                val merchantName = extractPayPalMerchant(description)
+                if (merchantName != null) {
+                    return "PayPal · $merchantName"
+                }
+                return "PayPal"
+            }
+
+            // Use counterparty if available and meaningful
+            if (!counterparty.isNullOrBlank() && counterparty.length > 2) {
+                return counterparty.take(50)
+            }
+
+            // Clean up description for display
+            return cleanDescriptionForDisplay(description)
+        }
+
+        /**
+         * Extracts merchant name from PayPal transaction descriptions.
+         * Example: "PayPal Europe S.a.r.l. ... Preply, Inc., Ihr Einkauf bei Preply, Inc."
+         * Returns: "Preply, Inc."
+         */
+        private fun extractPayPalMerchant(description: String): String? {
+            // Common patterns for merchant names in PayPal transactions
+            val patterns = listOf(
+                // German: "Ihr Einkauf bei [Merchant]"
+                Regex("""[Ii]hr [Ee]inkauf bei\s+(.+?)(?:\s*,\s*Ihr|\s*$)"""),
+                // "bei [Merchant]" pattern
+                Regex("""bei\s+([A-Z][^,]{2,30})"""),
+                // Look for company patterns after PP reference numbers
+                Regex("""/PP\.[^/]+/\.?\s*([A-Z][^,]{2,40})"""),
+                // Look for merchant after long reference codes
+                Regex("""\d{10,}/[^,]+,\s*([A-Z][^,]{2,40})""")
+            )
+
+            for (pattern in patterns) {
+                val match = pattern.find(description)
+                if (match != null) {
+                    val merchant = match.groupValues[1].trim()
+                        .replace(Regex("""\s+"""), " ")
+                        .take(35)
+                    if (merchant.length >= 3 && !merchant.all { it.isDigit() || it == '.' }) {
+                        return merchant
+                    }
+                }
+            }
+
+            return null
+        }
+
+        /**
+         * Cleans up a description for display, prioritizing readable text over numbers.
+         */
+        private fun cleanDescriptionForDisplay(description: String): String {
+            // Remove common verbose prefixes
+            val cleaned = description
+                .replace(Regex("""^(SEPA-?|ÜBERWEISUNG|LASTSCHRIFT|KARTENZAHLUNG)\s*""", RegexOption.IGNORE_CASE), "")
+                .replace(Regex("""^(Card payment|Transfer|Direct debit)\s*""", RegexOption.IGNORE_CASE), "")
+                .trim()
+
+            // If mostly numbers/codes, keep it short; otherwise allow longer text
+            val textRatio = cleaned.count { it.isLetter() }.toFloat() / cleaned.length.coerceAtLeast(1)
+            val maxLength = if (textRatio > 0.5) 55 else 35
+
+            return if (cleaned.length <= maxLength) cleaned else cleaned.take(maxLength) + "…"
+        }
+
+        /**
+         * Extracts additional detail text from remittance info or description.
+         * This is shown as a secondary line in the UI.
+         */
+        fun extractDetailText(description: String, remittanceInfo: String?, counterparty: String?): String? {
+            val counterpartyLower = counterparty?.lowercase() ?: ""
+            val descriptionLower = description.lowercase()
+
+            // For PayPal, try to extract the purchase description
+            if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
+                val purchaseDetail = extractPayPalPurchaseDetail(description)
+                if (purchaseDetail != null) {
+                    return purchaseDetail
+                }
+            }
+
+            // Use remittance info if available and meaningful
+            if (!remittanceInfo.isNullOrBlank() && remittanceInfo.length > 5) {
+                // Skip if it's just reference numbers
+                val textRatio = remittanceInfo.count { it.isLetter() }.toFloat() / remittanceInfo.length
+                if (textRatio > 0.3) {
+                    return remittanceInfo.take(60).let {
+                        if (remittanceInfo.length > 60) "$it…" else it
+                    }
+                }
+            }
+
+            // Extract second line info from description if present
+            val lines = description.split(Regex("""[\n\r]+"""))
+            if (lines.size > 1) {
+                val secondLine = lines[1].trim()
+                if (secondLine.length > 5) {
+                    val textRatio = secondLine.count { it.isLetter() }.toFloat() / secondLine.length
+                    if (textRatio > 0.3) {
+                        return secondLine.take(60).let {
+                            if (secondLine.length > 60) "$it…" else it
+                        }
+                    }
+                }
+            }
+
+            return null
+        }
+
+        private fun extractPayPalPurchaseDetail(description: String): String? {
+            // Look for "Ihr Einkauf bei" pattern and extract the full context
+            val match = Regex("""[Ii]hr [Ee]inkauf bei\s+(.+)""").find(description)
+            if (match != null) {
+                return match.groupValues[1].take(50).let {
+                    if (match.groupValues[1].length > 50) "$it…" else it
+                }
+            }
+            return null
+        }
+    }
+}
 
 /**
  * Filter option for account dropdown
@@ -329,13 +463,25 @@ fun TransactionItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
+                // Primary line: smart display name (PayPal handling, longer text for readable content)
                 Text(
-                    text = transaction.counterparty ?: transaction.description.take(30),
+                    text = TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                // Secondary line: detail text if available
+                transaction.detailText?.let { detail ->
+                    Text(
+                        text = detail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                // Category and date
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
