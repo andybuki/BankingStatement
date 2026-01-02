@@ -30,7 +30,9 @@ data class ImportState(
     val parseResult: ParseResult? = null,
     val savedToDatabase: Boolean = false,
     val transactionCount: Int = 0,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val progress: Int = 0,  // 0-100 percentage
+    val progressMessage: String = ""  // Current step description
 )
 
 data class DatabaseStats(
@@ -218,20 +220,19 @@ fun HomeScreen(
             enabled = !importState.isProcessing && onPickFile != null,
             shape = RoundedCornerShape(12.dp)
         ) {
-            if (importState.isProcessing) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(strings.processing)
-            } else {
-                Text(
-                    text = strings.importButton,
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
+            Text(
+                text = strings.importButton,
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+
+        // Processing Overlay
+        if (importState.isProcessing) {
+            Spacer(modifier = Modifier.height(16.dp))
+            ProcessingCard(
+                progress = importState.progress,
+                message = importState.progressMessage.ifEmpty { strings.processing }
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -535,5 +536,56 @@ fun DetailRow(label: String, value: String) {
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onPrimaryContainer
         )
+    }
+}
+
+@Composable
+fun ProcessingCard(
+    progress: Int,
+    message: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Progress percentage
+            Text(
+                text = "$progress%",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Progress bar
+            LinearProgressIndicator(
+                progress = { progress / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Status message
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

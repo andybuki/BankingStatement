@@ -7,6 +7,15 @@
     <string name="home_subtitle">Importa tus extractos bancarios para analizar</string>
     <string name="import_button">Importar Extracto</string>
     <string name="processing">Procesando…</string>
+    <string name="processing_reading">Leyendo archivo…</string>
+    <string name="processing_detecting">Detectando formato…</string>
+    <string name="processing_parsing">Analizando datos…</string>
+    <string name="processing_csv">Procesando CSV…</string>
+    <string name="processing_excel">Procesando Excel…</string>
+    <string name="processing_pdf">Procesando PDF…</string>
+    <string name="processing_categorizing">Categorizando transacciones…</string>
+    <string name="processing_saving">Guardando en base de datos…</string>
+    <string name="processing_finalizing">Finalizando importación…</string>
     <string name="supported_formats">PDF • CSV</string>
 
     <!-- Stats -->

@@ -2,7 +2,10 @@ package com.banking.statement.parser.banks
 
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.parser.ParsedTransaction
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Parser for Revolut PDF statements
@@ -324,7 +327,7 @@ class RevolutPdfParser : BankPdfParser {
                 groups.size >= 4 && groups[2].length >= 3 -> {
                     val day = groups[1].toIntOrNull() ?: return null
                     val monthStr = groups[2].lowercase().take(3)
-                    val year = groups[3].toIntOrNull() ?: kotlinx.datetime.Clock.System.now().toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).year
+                    val year = groups[3].toIntOrNull() ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
                     val month = months[monthStr] ?: return null
                     LocalDate(year, month, day)
                 }

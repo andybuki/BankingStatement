@@ -219,29 +219,61 @@ class MainActivity : ComponentActivity() {
 
     private fun processFile(uri: Uri) {
         coroutineScope.launch {
-            importState = ImportState(isProcessing = true)
+            importState = ImportState(
+                isProcessing = true,
+                progress = 0,
+                progressMessage = getString(R.string.processing_reading)
+            )
 
             try {
+                // Step 1: Read file (10%)
                 val fileName = getFileName(uri) ?: "document"
+                importState = importState.copy(progress = 10, progressMessage = getString(R.string.processing_reading))
+
                 val bytes = readFileBytes(uri) ?: throw Exception("Could not read file")
+                importState = importState.copy(progress = 20, progressMessage = getString(R.string.processing_detecting))
+
+                // Step 2: Detect file type (20%)
                 val fileType = ImportFileType.fromFileName(fileName)
                     ?: detectFileType(bytes)
                     ?: throw Exception("Unsupported file format")
+                importState = importState.copy(progress = 30, progressMessage = getString(R.string.processing_parsing))
 
+                // Step 3: Parse file (30-70%)
                 val parseResult = withContext(Dispatchers.IO) {
                     when (fileType) {
-                        ImportFileType.CSV -> parseCsv(bytes, fileName)
-                        ImportFileType.EXCEL -> parseExcel(bytes, fileName)
-                        ImportFileType.PDF -> parsePdf(bytes, fileName, uri)
+                        ImportFileType.CSV -> {
+                            withContext(Dispatchers.Main) {
+                                importState = importState.copy(progress = 40, progressMessage = getString(R.string.processing_csv))
+                            }
+                            parseCsv(bytes, fileName)
+                        }
+                        ImportFileType.EXCEL -> {
+                            withContext(Dispatchers.Main) {
+                                importState = importState.copy(progress = 40, progressMessage = getString(R.string.processing_excel))
+                            }
+                            parseExcel(bytes, fileName)
+                        }
+                        ImportFileType.PDF -> {
+                            withContext(Dispatchers.Main) {
+                                importState = importState.copy(progress = 40, progressMessage = getString(R.string.processing_pdf))
+                            }
+                            parsePdf(bytes, fileName, uri)
+                        }
                     }
                 }
+                importState = importState.copy(progress = 70, progressMessage = getString(R.string.processing_categorizing))
 
+                // Step 4: Process result (70-90%)
                 if (parseResult.success && parseResult.transactions.isNotEmpty()) {
+                    importState = importState.copy(progress = 80, progressMessage = getString(R.string.processing_saving))
+
                     // Check if we need to show a dialog
                     val filePath = if (fileType == ImportFileType.PDF) {
                         savePdfToStorage(uri, fileName)
                     } else null
 
+                    importState = importState.copy(progress = 90, progressMessage = getString(R.string.processing_finalizing))
                     handleSuccessfulParse(parseResult, fileName, filePath, fileType)
                 } else {
                     importState = ImportState(
@@ -344,7 +376,7 @@ class MainActivity : ComponentActivity() {
             when (choice) {
                 is ImportChoice.CreateNew -> {
                     dialogState = dialogState.copy(showAccountDialog = false)
-                    importState = ImportState(isProcessing = true)
+                    importState = ImportState(isProcessing = true, progress = 80, progressMessage = getString(R.string.processing_saving))
 
                     val result = withContext(Dispatchers.IO) {
                         repository.saveImportWithNewAccount(
@@ -360,7 +392,8 @@ class MainActivity : ComponentActivity() {
                         isProcessing = false,
                         parseResult = pending.parseResult,
                         savedToDatabase = true,
-                        transactionCount = result.transactionsImported
+                        transactionCount = result.transactionsImported,
+                        progress = 100
                     )
 
                     dialogState = ImportDialogState(
@@ -373,7 +406,7 @@ class MainActivity : ComponentActivity() {
 
                 is ImportChoice.AddToExisting -> {
                     dialogState = dialogState.copy(showAccountDialog = false)
-                    importState = ImportState(isProcessing = true)
+                    importState = ImportState(isProcessing = true, progress = 80, progressMessage = getString(R.string.processing_saving))
 
                     val result = withContext(Dispatchers.IO) {
                         repository.saveImportToAccount(
@@ -389,7 +422,8 @@ class MainActivity : ComponentActivity() {
                         isProcessing = false,
                         parseResult = pending.parseResult,
                         savedToDatabase = true,
-                        transactionCount = result.transactionsImported
+                        transactionCount = result.transactionsImported,
+                        progress = 100
                     )
 
                     dialogState = ImportDialogState(
