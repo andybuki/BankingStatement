@@ -840,7 +840,7 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Get a matching key for grouping identical transactions.
-     * Uses the full normalized counterparty or description - exact match only.
+     * Uses smart extraction for PayPal to differentiate by merchant.
      */
     private fun getTransactionMatchKey(transaction: TransactionDisplay): String {
         // Normalize function - remove special chars, lowercase, trim
@@ -851,12 +851,23 @@ class MainActivity : ComponentActivity() {
                 .trim()
         }
 
-        // Use counterparty if available, otherwise description
         val counterparty = transaction.counterparty
+        val description = transaction.description
+        val counterpartyLower = counterparty?.lowercase() ?: ""
+        val descriptionLower = description.lowercase()
+
+        // PayPal special handling - use the merchant name as the key
+        if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
+            // Extract merchant from the display name (which already contains extracted merchant)
+            val displayName = TransactionDisplay.extractDisplayName(counterparty, description)
+            return normalize(displayName)
+        }
+
+        // Use counterparty if available, otherwise description
         return if (!counterparty.isNullOrBlank()) {
             normalize(counterparty)
         } else {
-            normalize(transaction.description)
+            normalize(description)
         }
     }
 
