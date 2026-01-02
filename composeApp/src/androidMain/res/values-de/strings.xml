@@ -7,6 +7,15 @@
     <string name="home_subtitle">Importieren Sie Ihre Kontoauszüge zur Analyse</string>
     <string name="import_button">Auszug importieren</string>
     <string name="processing">Verarbeitung…</string>
+    <string name="processing_reading">Datei wird gelesen…</string>
+    <string name="processing_detecting">Format wird erkannt…</string>
+    <string name="processing_parsing">Daten werden analysiert…</string>
+    <string name="processing_csv">CSV wird verarbeitet…</string>
+    <string name="processing_excel">Excel wird verarbeitet…</string>
+    <string name="processing_pdf">PDF wird verarbeitet…</string>
+    <string name="processing_categorizing">Buchungen werden kategorisiert…</string>
+    <string name="processing_saving">In Datenbank speichern…</string>
+    <string name="processing_finalizing">Import wird abgeschlossen…</string>
     <string name="supported_formats">PDF • CSV</string>
 
     <!-- Stats -->

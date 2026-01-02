@@ -7,6 +7,15 @@
     <string name="home_subtitle">Import your bank statements to analyze</string>
     <string name="import_button">Import Statement</string>
     <string name="processing">Processing…</string>
+    <string name="processing_reading">Reading file…</string>
+    <string name="processing_detecting">Detecting format…</string>
+    <string name="processing_parsing">Parsing data…</string>
+    <string name="processing_csv">Processing CSV…</string>
+    <string name="processing_excel">Processing Excel…</string>
+    <string name="processing_pdf">Processing PDF…</string>
+    <string name="processing_categorizing">Categorizing transactions…</string>
+    <string name="processing_saving">Saving to database…</string>
+    <string name="processing_finalizing">Finalizing import…</string>
     <string name="supported_formats">PDF • CSV</string>
 
     <!-- Stats -->

@@ -7,6 +7,15 @@
     <string name="home_subtitle">Importez vos relevés bancaires pour les analyser</string>
     <string name="import_button">Importer un Relevé</string>
     <string name="processing">Traitement…</string>
+    <string name="processing_reading">Lecture du fichier…</string>
+    <string name="processing_detecting">Détection du format…</string>
+    <string name="processing_parsing">Analyse des données…</string>
+    <string name="processing_csv">Traitement CSV…</string>
+    <string name="processing_excel">Traitement Excel…</string>
+    <string name="processing_pdf">Traitement PDF…</string>
+    <string name="processing_categorizing">Catégorisation des transactions…</string>
+    <string name="processing_saving">Enregistrement en base…</string>
+    <string name="processing_finalizing">Finalisation de l\'import…</string>
     <string name="supported_formats">PDF • CSV</string>
 
     <!-- Stats -->
