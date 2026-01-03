@@ -111,9 +111,9 @@ data class TransactionDisplay(
                 .replace(Regex("""^(Card payment|Transfer|Direct debit)\s*""", RegexOption.IGNORE_CASE), "")
                 .trim()
 
-            // If mostly numbers/codes, keep it short; otherwise allow longer text
+            // If mostly numbers/codes, keep it shorter; otherwise allow longer text
             val textRatio = cleaned.count { it.isLetter() }.toFloat() / cleaned.length.coerceAtLeast(1)
-            val maxLength = if (textRatio > 0.5) 55 else 35
+            val maxLength = if (textRatio > 0.5) 70 else 50
 
             return if (cleaned.length <= maxLength) cleaned else cleaned.take(maxLength) + "…"
         }
@@ -490,7 +490,7 @@ fun TransactionItem(
                 // Primary line: smart display name (PayPal handling, longer text for readable content)
                 Text(
                     text = TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
