@@ -166,6 +166,7 @@ class TransactionRepository(
 
     /**
      * Save import to an existing account
+     * Optimized with batch processing for better performance
      */
     fun saveImportToAccount(
         accountId: Long,
@@ -176,34 +177,43 @@ class TransactionRepository(
     ): ImportResult {
         val importDate = kotlinx.datetime.Clock.System.now().epochSeconds
 
+        // Pre-categorize all transactions in batch (faster than one-by-one)
+        val categorizedTransactions = parseResult.transactions.map { transaction ->
+            val category = transactionCategorizer?.categorize(transaction)?.name
+            transaction to category
+        }
 
-        // Insert statement record
-        queries.insertStatement(
-            account_id = accountId,
-            file_name = fileName,
-            file_path = filePath,
-            source_type = sourceType,
-            bank_name = parseResult.bankName,
-            account_iban = parseResult.accountIban,
-            import_date = importDate,
-            statement_period = parseResult.statementPeriod
-        )
-
-        val statementId = queries.getLastInsertedStatementId().executeAsOne()
-
-        // Insert all transactions with duplicate detection
+        var statementId: Long = 0
         var imported = 0
         var duplicates = 0
 
-        parseResult.transactions.forEach { transaction ->
-            val isDuplicate = checkDuplicate(accountId, transaction)
-            if (!isDuplicate) {
-                insertTransaction(statementId, accountId, transaction, isDuplicate = false)
-                imported++
-            } else {
-                // Still insert but mark as duplicate for reference
-                insertTransaction(statementId, accountId, transaction, isDuplicate = true)
-                duplicates++
+        // Use single database transaction for all operations (much faster)
+        queries.transaction {
+            // Insert statement record
+            queries.insertStatement(
+                account_id = accountId,
+                file_name = fileName,
+                file_path = filePath,
+                source_type = sourceType,
+                bank_name = parseResult.bankName,
+                account_iban = parseResult.accountIban,
+                import_date = importDate,
+                statement_period = parseResult.statementPeriod
+            )
+
+            statementId = queries.getLastInsertedStatementId().executeAsOne()
+
+            // Insert all transactions with duplicate detection
+            categorizedTransactions.forEach { (transaction, autoCategory) ->
+                val isDuplicate = checkDuplicate(accountId, transaction)
+                if (!isDuplicate) {
+                    insertTransactionWithCategory(statementId, accountId, transaction, autoCategory, isDuplicate = false)
+                    imported++
+                } else {
+                    // Still insert but mark as duplicate for reference
+                    insertTransactionWithCategory(statementId, accountId, transaction, autoCategory, isDuplicate = true)
+                    duplicates++
+                }
             }
         }
 
@@ -270,7 +280,19 @@ class TransactionRepository(
     ) {
         // Calculate category using categorizer if available
         val autoCategory = transactionCategorizer?.categorize(transaction)?.name
+        insertTransactionWithCategory(statementId, accountId, transaction, autoCategory, isDuplicate)
+    }
 
+    /**
+     * Insert transaction with pre-calculated category (for batch processing)
+     */
+    private fun insertTransactionWithCategory(
+        statementId: Long,
+        accountId: Long,
+        transaction: ParsedTransaction,
+        autoCategory: String?,
+        isDuplicate: Boolean
+    ) {
         queries.insertTransaction(
             statement_id = statementId,
             account_id = accountId,

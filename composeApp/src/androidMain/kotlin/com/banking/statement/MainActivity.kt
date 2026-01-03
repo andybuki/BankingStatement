@@ -22,7 +22,7 @@ import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.categorization.CategoryOverrideManager
-import com.banking.statement.categorization.KeywordDatabase
+import com.banking.statement.categorization.KeywordDatabaseOptimized
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.categorization.TransactionCategorizer
@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var merchantDatabase: MerchantDatabase
     private lateinit var categoryOverrideManager: CategoryOverrideManager
     private lateinit var transactionCategorizer: TransactionCategorizer
-    private lateinit var keywordDatabase: KeywordDatabase
+    private lateinit var keywordDatabase: KeywordDatabaseOptimized
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private val filePickerLauncher = registerForActivityResult(
@@ -114,8 +114,8 @@ class MainActivity : ComponentActivity() {
         // Initialize database
         val driverFactory = DatabaseDriverFactory(applicationContext)
 
-        // Initialize keyword database first
-        keywordDatabase = KeywordDatabase()
+        // Initialize keyword database first (using optimized version)
+        keywordDatabase = KeywordDatabaseOptimized()
         loadKeywordDatabase()
 
         // Initialize temporary repository to get database instance

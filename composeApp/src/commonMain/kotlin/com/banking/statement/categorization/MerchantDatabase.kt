@@ -28,6 +28,9 @@ class MerchantDatabase(
     // In-memory cache of merchants for fast contains matching
     private var merchantCache: List<Pair<String, String>>? = null // (normalized_name, category_code)
 
+    // Word-based index for O(1) lookups: word -> list of (merchantName, categoryCode)
+    private var wordIndex: Map<String, List<Pair<String, String>>>? = null
+
     /**
      * Check if merchant database is loaded
      */
@@ -106,13 +109,34 @@ class MerchantDatabase(
 
         // Sort cache by name length descending (longer matches first)
         merchantCache = cacheBuilder.sortedByDescending { it.first.length }
+
+        // Build word-based index for fast lookups
+        buildWordIndex()
+    }
+
+    /**
+     * Build word-based index for O(1) lookups.
+     * Maps each word in merchant names to the list of merchants containing that word.
+     */
+    private fun buildWordIndex() {
+        val cache = merchantCache ?: return
+        val index = mutableMapOf<String, MutableList<Pair<String, String>>>()
+
+        for ((merchantName, categoryCode) in cache) {
+            val words = merchantName.split(" ").filter { it.isNotBlank() }
+            for (word in words) {
+                index.getOrPut(word) { mutableListOf() }.add(merchantName to categoryCode)
+            }
+        }
+
+        wordIndex = index
     }
 
     /**
      * Ensure cache is loaded - rebuild from database if needed
      */
     fun ensureCacheLoaded() {
-        if (merchantCache != null) return
+        if (merchantCache != null && wordIndex != null) return
         if (!isLoaded()) return
 
         try {
@@ -123,6 +147,9 @@ class MerchantDatabase(
             merchantCache = merchants
                 .map { it.name_normalized to it.category_code }
                 .sortedByDescending { it.first.length }
+
+            // Build word index for fast lookups
+            buildWordIndex()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -131,6 +158,7 @@ class MerchantDatabase(
     /**
      * Find category for a transaction description/counterparty.
      * Returns null if no match found.
+     * Uses word-based indexing for O(1) lookups instead of linear search.
      */
     fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
         // Skip if no merchants loaded
@@ -144,14 +172,22 @@ class MerchantDatabase(
 
         // Split search text into words for word-boundary matching
         val searchWords = searchText.split(" ").filter { it.isNotBlank() }
+        val searchWordsSet = searchWords.toSet()
 
-        // Use in-memory cache for matching
-        val cache = merchantCache
-        if (cache != null) {
-            // Find first merchant name that matches as complete word(s)
-            // Cache is sorted by length desc, so longer matches are found first
-            for ((merchantName, categoryCode) in cache) {
-                if (matchesAsWord(searchText, searchWords, merchantName)) {
+        // Use word index for fast candidate lookup
+        val index = wordIndex
+        if (index != null) {
+            // Collect candidate merchants that share at least one word with search text
+            val candidates = mutableSetOf<Pair<String, String>>()
+            for (word in searchWords) {
+                index[word]?.let { candidates.addAll(it) }
+            }
+
+            // Find best match among candidates (longest first since cache is sorted)
+            // Sort candidates by length descending for consistent behavior
+            val sortedCandidates = candidates.sortedByDescending { it.first.length }
+            for ((merchantName, categoryCode) in sortedCandidates) {
+                if (matchesAsWord(searchText, searchWordsSet, merchantName)) {
                     return categoryCodeMap[categoryCode]
                 }
             }
@@ -164,17 +200,17 @@ class MerchantDatabase(
      * Check if merchant name matches as complete word(s) in search text.
      * "lidl" matches "lidl sagt danke" but "mie" does NOT match "miete"
      */
-    private fun matchesAsWord(searchText: String, searchWords: List<String>, merchantName: String): Boolean {
+    private fun matchesAsWord(searchText: String, searchWordsSet: Set<String>, merchantName: String): Boolean {
         val merchantWords = merchantName.split(" ").filter { it.isNotBlank() }
 
         // Single word merchant - must match a complete word in search
         if (merchantWords.size == 1) {
-            return searchWords.contains(merchantName)
+            return searchWordsSet.contains(merchantName)
         }
 
         // Multi-word merchant - all words must be present as complete words
         // and the phrase should appear in order
-        if (merchantWords.all { word -> searchWords.contains(word) }) {
+        if (merchantWords.all { word -> searchWordsSet.contains(word) }) {
             // Also verify the words appear in sequence
             return searchText.contains(merchantName)
         }

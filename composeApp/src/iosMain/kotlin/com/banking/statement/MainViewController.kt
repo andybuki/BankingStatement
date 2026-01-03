@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.window.ComposeUIViewController
 import com.banking.statement.categorization.CategoryOverrideManager
-import com.banking.statement.categorization.KeywordDatabase
+import com.banking.statement.categorization.KeywordDatabaseOptimized
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.db.DatabaseDriverFactory
@@ -48,8 +48,8 @@ fun MainViewController() = ComposeUIViewController {
     // Initialize database driver
     val driverFactory = remember { DatabaseDriverFactory() }
 
-    // Initialize keyword database for category matching
-    val keywordDatabase = remember { KeywordDatabase() }
+    // Initialize keyword database for category matching (using optimized version)
+    val keywordDatabase = remember { KeywordDatabaseOptimized() }
 
     // Initialize temporary repository to access database
     val tempRepository = remember { TransactionRepository(driverFactory) }
