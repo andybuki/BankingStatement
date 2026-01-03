@@ -185,6 +185,35 @@ SUPERMARKET,nahkauf
 SUPERMARKET,denns
 SUPERMARKET,lebensmittel
 SUPERMARKET,müller drogerie
+SUPERMARKET,trader joe’s
+SUPERMARKET,hofer
+SUPERMARKET,citti
+SUPERMARKET,famila nordost
+SUPERMARKET,markant
+SUPERMARKET,nah & frisch
+SUPERMARKET,combi
+SUPERMARKET,famila nordwest
+SUPERMARKET,markant nordwest
+SUPERMARKET,cactus
+SUPERMARKET,carrefour
+SUPERMARKET,hit
+SUPERMARKET,diska
+SUPERMARKET,Marktkauf
+SUPERMARKET,nah & gut
+SUPERMARKET,np-markt
+SUPERMARKET,v-markt
+SUPERMARKET,globus
+SUPERMARKET,k+k klaas & kock
+SUPERMARKET,mere
+SUPERMARKET,migros
+SUPERMARKET,tegut
+SUPERMARKET,norma
+SUPERMARKET,billa
+SUPERMARKET,iki
+SUPERMARKET,bilka
+SUPERMARKET,føtex
+SUPERMARKET,spar
+SUPERMARKET,tesco
 RESTAURANT,restaurant
 RESTAURANT,gaststätte
 RESTAURANT,bistro
@@ -304,15 +333,153 @@ RESTAURANT,mama
 SHOPPING,amazon
 SHOPPING,ebay
 SHOPPING,store
+SHOPPING,shop
+SHOPPING,shopping
+SHOPPING,online shop
+SHOPPING,webshop
+SHOPPING,marktplatz
+SHOPPING,ecommerce
+SHOPPING,handel
+SHOPPING,einzelhandel
+SHOPPING,großhandel
 SHOPPING,zalando
 SHOPPING,otto
+SHOPPING,about you
+SHOPPING,asos
+SHOPPING,shein
+SHOPPING,boohoo
+SHOPPING,peek & cloppenburg
+SHOPPING,breuninger
+SHOPPING,galeria
+SHOPPING,karstadt
+SHOPPING,kaufhof
+SHOPPING,tk maxx
+SHOPPING,primark
+SHOPPING,c&a
 SHOPPING,h&m
 SHOPPING,zara
-SHOPPING,mediamarkt
+SHOPPING,bershka
+SHOPPING,pull&bear
+SHOPPING,stradivarius
+SHOPPING,reserved
+SHOPPING,only
+SHOPPING,vero moda
+SHOPPING,jack & jones
+SHOPPING,tom tailor
+SHOPPING,esprit
+SHOPPING,s.oliver
+SHOPPING,mango
+SHOPPING,uniqlo
+SHOPPING,levi’s
+SHOPPING,wrangler
+SHOPPING,lee
 SHOPPING,mode
+SHOPPING,fashion
+SHOPPING,kleidung
+SHOPPING,clothing
+SHOPPING,apparel
+SHOPPING,textilien
+SHOPPING,outfit
+SHOPPING,streetwear
+SHOPPING,sportswear
+SHOPPING,underwear
+SHOPPING,wäsche
+SHOPPING,dessous
+SHOPPING,bademode
+SHOPPING,schuhe
+SHOPPING,sneaker
+SHOPPING,boots
+SHOPPING,sandalen
+SHOPPING,taschen
+SHOPPING,accessoires
+SHOPPING,schmuck
+SHOPPING,uhren
+SHOPPING,jeans
+SHOPPING,denim
+SHOPPING,jacke
+SHOPPING,mantel
+SHOPPING,pullover
+SHOPPING,hoodie
+SHOPPING,t-shirt
+SHOPPING,hemd
+SHOPPING,bluse
+SHOPPING,kleid
+SHOPPING,rock
+SHOPPING,anzug
+SHOPPING,sakko
+SHOPPING,boutique
+SHOPPING,concept store
+SHOPPING,flagship store
+SHOPPING,factory store
+SHOPPING,outlet
+SHOPPING,designer outlet
+SHOPPING,luxus
+SHOPPING,premium
+SHOPPING,high fashion
+SHOPPING,mediamarkt
 SHOPPING,saturn
-SHOPPING,shop
+SHOPPING,expert
+SHOPPING,euronics
+SHOPPING,conrad
+SHOPPING,reichelts
+SHOPPING,alternate
+SHOPPING,notebooksbilliger
+SHOPPING,cyberport
+SHOPPING,coolblue
+SHOPPING,electronics
+SHOPPING,electronic
+SHOPPING,elektro
+SHOPPING,elektronik
+SHOPPING,consumer electronics
+SHOPPING,haushaltsgeräte
+SHOPPING,weiße ware
+SHOPPING,kühlschrank
+SHOPPING,waschmaschine
+SHOPPING,fernseher
+SHOPPING,tv
+SHOPPING,radio
+SHOPPING,hi-fi
+SHOPPING,audio
+SHOPPING,video
+SHOPPING,kamera
+SHOPPING,foto
+SHOPPING,gaming
+SHOPPING,konsole
+SHOPPING,playstation
+SHOPPING,xbox
+SHOPPING,nintendo
+SHOPPING,handy
+SHOPPING,phone
+SHOPPING,mobile
+SHOPPING,smartphone
+SHOPPING,tablet
+SHOPPING,laptop
+SHOPPING,pc
+SHOPPING,computer
+SHOPPING,zubehör
+SHOPPING,kopfhörer
+SHOPPING,earbuds
+SHOPPING,ladegerät
+SHOPPING,powerbank
 SHOPPING,ikea
+SHOPPING,möbel
+SHOPPING,furniture
+SHOPPING,home
+SHOPPING,home & living
+SHOPPING,wohnen
+SHOPPING,einrichtung
+SHOPPING,interior
+SHOPPING,design
+SHOPPING,wohnaccessoires
+SHOPPING,deko
+SHOPPING,dekoration
+SHOPPING,lampe
+SHOPPING,leuchte
+SHOPPING,teppich
+SHOPPING,sofa
+SHOPPING,bett
+SHOPPING,schrank
+SHOPPING,küche
 SHOPPING,bauhaus
 SHOPPING,bauhaus gmbh
 SHOPPING,baumarkt
@@ -320,34 +487,76 @@ SHOPPING,obi
 SHOPPING,hornbach
 SHOPPING,hagebau
 SHOPPING,toom
-SHOPPING,handy
-SHOPPING,möbel
-SHOPPING,jeans
-SHOPPING,fashion
-SHOPPING,kleidung
-SHOPPING,boutique
+SHOPPING,globus baumarkt
+SHOPPING,sonderpreis baumarkt
+SHOPPING,hellweg
+SHOPPING,garten
+SHOPPING,gartenmarkt
+SHOPPING,pflanzen
+SHOPPING,blumen
+SHOPPING,grill
+SHOPPING,werkzeug
+SHOPPING,heimwerken
+SHOPPING,diy
 SHOPPING,center
+SHOPPING,shoppingcenter
+SHOPPING,mall
+SHOPPING,einkaufszentrum
+SHOPPING,passage
+SHOPPING,arkaden
 SHOPPING,service
-SHOPPING,kleider
-SHOPPING,electronics
-SHOPPING,elektro
-SHOPPING,outlet
-SHOPPING,nails
-SHOPPING,gmbh
-SHOPPING,phone
-SHOPPING,mobile
-SHOPPING,moda
-SHOPPING,radio
-SHOPPING,design
-SHOPPING,euronics
-SHOPPING,studio
+SHOPPING,kundenservice
+SHOPPING,lieferung
+SHOPPING,versand
+SHOPPING,retoure
+SHOPPING,click & collect
+SHOPPING,abholung
+SHOPPING,zahlung
+SHOPPING,kasse
+SHOPPING,rabatt
+SHOPPING,sale
+SHOPPING,angebot
+SHOPPING,gutschein
+SHOPPING,coupon
 SHOPPING,second
-SHOPPING,media
-SHOPPING,electronic
-SHOPPING,textilien
 SHOPPING,secondhand
-SHOPPING,clothing
-SHOPPING,online
+SHOPPING,preloved
+SHOPPING,vintage
+SHOPPING,resale
+SHOPPING,thrift
+SHOPPING,flohmärkte
+SHOPPING,rebuy
+SHOPPING,momox
+SHOPPING,vestiaire collective
+SHOPPING,vinted
+SHOPPING,kleiderkreisel
+SHOPPING,nails
+SHOPPING,beauty
+SHOPPING,kosmetik
+SHOPPING,make-up
+SHOPPING,skincare
+SHOPPING,parfum
+SHOPPING,drogerie
+SHOPPING,dm
+SHOPPING,rossmann
+SHOPPING,müller
+SHOPPING,media
+SHOPPING,digital
+SHOPPING,download
+SHOPPING,streaming
+SHOPPING,abo
+SHOPPING,subscription
+SHOPPING,gmbh
+SHOPPING,ag
+SHOPPING,kg
+SHOPPING,ohg
+SHOPPING,moda
+SHOPPING,tienda
+SHOPPING,boutique online
+SHOPPING,fashion store
+SHOPPING,outlet center
+SHOPPING,factory outlet
+SHOPPING,warehouse sale
 HEALTH,apotheke
 HEALTH,pharmacy
 HEALTH,arzt
@@ -358,27 +567,231 @@ HEALTH,zahnarzt
 HEALTH,dentist
 HEALTH,optiker
 HEALTH,brille
+HEALTH,öffentliche apotheke
+HEALTH,online-apotheke
+HEALTH,versandapotheke
+HEALTH,docmorris
+HEALTH,shop-apotheke
+HEALTH,shop apotheke
+HEALTH,medpex
+HEALTH,apotal
+HEALTH,zur rose
+HEALTH,europa apotheek
+HEALTH,sanicare
+HEALTH,apo-rot
+HEALTH,aponeo
+HEALTH,juvalis
+HEALTH,besamex
+HEALTH,krankenhaus
+HEALTH,klinikum
+HEALTH,universitätsklinikum
+HEALTH,uniklinik
+HEALTH,charité
+HEALTH,helios kliniken
+HEALTH,asklepios kliniken
+HEALTH,sana kliniken
+HEALTH,ameos
+HEALTH,agaplesion
+HEALTH,schön klinik
+HEALTH,srh kliniken
+HEALTH,rhön-klinikum
+HEALTH,kplus gruppe
+HEALTH,vivantes
+HEALTH,diakonie kliniken
+HEALTH,alexianer
+HEALTH,johanniter kliniken
+HEALTH,malteser krankenhäuser
+HEALTH,arzt
+HEALTH,hausarzt
+HEALTH,allgemeinmediziner
+HEALTH,facharzt
+HEALTH,internist
+HEALTH,kardiologe
+HEALTH,neurologe
+HEALTH,orthopäde
+HEALTH,chirurg
+HEALTH,dermatologe
+HEALTH,hautärztin
+HEALTH,gynäkologe
+HEALTH,urologe
+HEALTH,hno-arzt
+HEALTH,augenarzt
+HEALTH,pädiater
+HEALTH,kinderarzt
+HEALTH,psychotherapeut
+HEALTH,psychiater
+HEALTH,radiologe
+HEALTH,anästhesist
+HEALTH,onkologe
+HEALTH,endokrinologe
+HEALTH,nephrologe
+HEALTH,rheumatologe
+HEALTH,zahnarzt
+HEALTH,zahnärztin
+HEALTH,kieferorthopäde
+HEALTH,oralchirurg
+HEALTH,zahnarztpraxis
+HEALTH,zahnarztzentrum
+HEALTH,dentallabor
+HEALTH,zahnklinik
+HEALTH,implantologe
+HEALTH,parodontologe
+HEALTH,optiker
+HEALTH,augenoptiker
+HEALTH,optiker kette
+HEALTH,fielmann
+HEALTH,apollo optik
+HEALTH,mister spex
+HEALTH,eyes + more
+HEALTH,pro optik
+HEALTH,aktiv optik
+HEALTH,brillen.de
+HEALTH,kind optik
+HEALTH,krass optik
+HEALTH,binder optik
+HEALTH,optiker bode
+HEALTH,smile optic
+HEALTH,neusehland
+HEALTH,optovision
+HEALTH,brille
+HEALTH,brillenfassung
+HEALTH,sonnenbrille
+HEALTH,lesebrille
+HEALTH,gleitsichtbrille
+HEALTH,kontaktlinsen
+HEALTH,tageslinsen
+HEALTH,monatslinsen
+HEALTH,brillenversicherung
+HEALTH,sehhilfe
+HEALTH,lupe
+HEALTH,fernglas
+HEALTH,optische gläser
 INSURANCE,versicherung
 INSURANCE,insurance
 INSURANCE,allianz
 INSURANCE,axa
 INSURANCE,huk
+INSURANCE,huk-coburg
 INSURANCE,ergo
 INSURANCE,generali
+INSURANCE,r+v
+INSURANCE,debeka
+INSURANCE,signal iduna
+INSURANCE,signal
+INSURANCE,iduna
+INSURANCE,devk
+INSURANCE,aragon
+INSURANCE,gothaer
+INSURANCE,württembergische
+INSURANCE,lv 1871
+INSURANCE,alte leipziger
+INSURANCE,continentale
+INSURANCE,barmenia
+INSURANCE,interrisk
+INSURANCE,helvetia
+INSURANCE,basler
+INSURANCE,zürich
+INSURANCE,zurich
+INSURANCE,aig
+INSURANCE,chubb
+INSURANCE,hansemerkur
+INSURANCE,hansemerkur krankenversicherung
+INSURANCE,ottonova
+INSURANCE,dkv
+INSURANCE,central
+INSURANCE,sdk
+INSURANCE,universa
+INSURANCE,inter
+INSURANCE,vkb
+INSURANCE,versicherungskammer bayern
+INSURANCE,lvm
+INSURANCE,provinzial
+INSURANCE,provinzial nord
+INSURANCE,provinzial rheinland
+INSURANCE,sparkassen versicherung
+INSURANCE,sv sparkassenversicherung
+INSURANCE,baden-badener
+INSURANCE,dialog
+INSURANCE,condor
+INSURANCE,cosmosdirekt
+INSURANCE,cosmos
+INSURANCE,direct line
+INSURANCE,advigon
+INSURANCE,janitos
+INSURANCE,die bayerische
+INSURANCE,bayerische beamtenversicherung
+INSURANCE,bbv
+INSURANCE,ideal versicherung
+INSURANCE,neodigital
+INSURANCE,element insurance
+INSURANCE,element
+INSURANCE,getsafe
+INSURANCE,wefox
+INSURANCE,friday insurance
+INSURANCE,coya
+INSURANCE,adam ries
+INSURANCE,hepster
+INSURANCE,mailo
+INSURANCE,one insurance
 INSURANCE,krankenversicherung
+INSURANCE,private krankenversicherung
+INSURANCE,gesetzliche krankenversicherung
+INSURANCE,pkv
+INSURANCE,gkv
+INSURANCE,aok
+INSURANCE,aok plus
+INSURANCE,aok nordost
+INSURANCE,tk
+INSURANCE,techniker krankenkasse
+INSURANCE,barmer
+INSURANCE,dak
+INSURANCE,dak-gesundheit
+INSURANCE,ikk classic
+INSURANCE,ikk gesund plus
+INSURANCE,kkh
+INSURANCE,sbk
+INSURANCE,mhplus
+INSURANCE,pronova bkk
+INSURANCE,vivida bkk
+INSURANCE,bkk mobil oil
+INSURANCE,bkk firmus
+INSURANCE,bkk vbu
+INSURANCE,bkk akzo nobel
 INSURANCE,haftpflicht
-ENTERTAINMENT,netflix
-ENTERTAINMENT,spotify
-ENTERTAINMENT,spotify ab
-ENTERTAINMENT,spotify technology
-ENTERTAINMENT,disney
-ENTERTAINMENT,amazon prime
+INSURANCE,haftpflichtversicherung
+INSURANCE,privathaftpflicht
+INSURANCE,berufshaftpflicht
+INSURANCE,betriebshaftpflicht
+INSURANCE,tierhalterhaftpflicht
+INSURANCE,hausrat
+INSURANCE,hausratversicherung
+INSURANCE,wohngebäudeversicherung
+INSURANCE,rechtsschutz
+INSURANCE,rechtsschutzversicherung
+INSURANCE,kfz-versicherung
+INSURANCE,autoversicherung
+INSURANCE,lebensversicherung
+INSURANCE,risikolebensversicherung
+INSURANCE,rentenvorsorge
+INSURANCE,unfallversicherung
+INSURANCE,reiseversicherung
+INSURANCE,auslandskrankenversicherung
+INSURANCE,pflegeversicherung
 ENTERTAINMENT,kino
 ENTERTAINMENT,cinema
 ENTERTAINMENT,theater
 ENTERTAINMENT,konzert
 ENTERTAINMENT,ticket
 ENTERTAINMENT,eventim
+ENTERTAINMENT,kulturzentrum
+ENTERTAINMENT,buehne
+ENTERTAINMENT,movie
+ENTERTAINMENT,discothek
+ENTERTAINMENT,halle
+ENTERTAINMENT,spielbank
+ENTERTAINMENT,galerie
+ENTERTAINMENT,spielothek
+ENTERTAINMENT,variete
 SUBSCRIPTIONS,abo
 SUBSCRIPTIONS,subscription
 SUBSCRIPTIONS,mitgliedschaft
