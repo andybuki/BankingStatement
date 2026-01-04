@@ -588,7 +588,11 @@ private fun getCategoryEmoji(category: TransactionCategory): String {
 @Composable
 fun CategoryPickerDialog(
     currentCategory: TransactionCategory,
+    customCategories: List<com.banking.statement.categorization.CustomCategory> = emptyList(),
+    currentCustomCategoryId: Long? = null,
     onCategorySelected: (TransactionCategory) -> Unit,
+    onCustomCategorySelected: ((Long) -> Unit)? = null,
+    onManageCategories: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val strings = LocalStrings.current
@@ -596,18 +600,106 @@ fun CategoryPickerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = strings.changeCategory,
-                style = MaterialTheme.typography.titleLarge
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = strings.changeCategory,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                if (onManageCategories != null) {
+                    TextButton(onClick = onManageCategories) {
+                        Text(
+                            text = "⚙️",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+            }
         },
         text = {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                // Custom Categories Section (if any)
+                if (customCategories.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = strings.customCategories,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+
+                    items(customCategories) { customCategory ->
+                        val isSelected = currentCustomCategoryId == customCategory.id
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onCustomCategorySelected?.invoke(customCategory.id)
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) {
+                                    parseColor(customCategory.color).copy(alpha = 0.3f)
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                }
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(parseColor(customCategory.color).copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = customCategory.icon,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = customCategory.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) parseColor(customCategory.color) else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+                    item {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                }
+
+                // Predefined Categories Section
+                item {
+                    Text(
+                        text = if (customCategories.isNotEmpty()) strings.predefinedCategories else "",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = if (customCategories.isNotEmpty()) 8.dp else 0.dp)
+                    )
+                }
+
                 items(TransactionCategory.entries.filter { it != TransactionCategory.OTHER }) { category ->
-                    val isSelected = category == currentCategory
+                    val isSelected = category == currentCategory && currentCustomCategoryId == null
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -351,6 +351,42 @@ class TransactionRepository(
         queries.insertCategory(name, icon, color, null)
     }
 
+    /**
+     * Insert a new custom category and return its ID
+     */
+    fun insertCategoryAndGetId(name: String, icon: String?, color: String?): Long {
+        queries.insertCategory(name, icon, color, null)
+        return queries.getLastInsertedCategoryId().executeAsOne()
+    }
+
+    /**
+     * Get a category by ID
+     */
+    fun getCategoryById(id: Long): Categories? {
+        return queries.getCategoryById(id).executeAsOneOrNull()
+    }
+
+    /**
+     * Get a category by name
+     */
+    fun getCategoryByName(name: String): Categories? {
+        return queries.getCategoryByName(name).executeAsOneOrNull()
+    }
+
+    /**
+     * Update an existing category
+     */
+    fun updateCategory(id: Long, name: String, icon: String?, color: String?) {
+        queries.updateCategory(name, icon, color, id)
+    }
+
+    /**
+     * Delete a custom category
+     */
+    fun deleteCategory(id: Long) {
+        queries.deleteCategory(id)
+    }
+
     // ==================== Summary Operations ====================
 
     fun getMonthlySpending(): List<GetMonthlySpending> {

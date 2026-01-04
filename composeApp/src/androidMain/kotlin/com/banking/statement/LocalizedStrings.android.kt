@@ -113,6 +113,19 @@ actual fun provideStrings(): AppStrings = AppStrings(
 
     changeCategory = stringResource(R.string.change_category),
 
+    manageCategories = stringResource(R.string.manage_categories),
+    customCategories = stringResource(R.string.custom_categories),
+    predefinedCategories = stringResource(R.string.predefined_categories),
+    addCategory = stringResource(R.string.add_category),
+    editCategory = stringResource(R.string.edit_category),
+    deleteCategory = stringResource(R.string.delete_category_action),
+    categoryName = stringResource(R.string.category_name),
+    categoryIcon = stringResource(R.string.category_icon),
+    categoryColor = stringResource(R.string.category_color),
+    deleteCategoryConfirm = stringResource(R.string.delete_category_confirm),
+    noCategoriesYet = stringResource(R.string.no_categories_yet),
+    createFirstCategory = stringResource(R.string.create_first_category),
+
     // Categories (17 consolidated categories)
     categoryRent = stringResource(R.string.category_rent),
     categoryTransport = stringResource(R.string.category_transport),

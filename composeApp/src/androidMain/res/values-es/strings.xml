@@ -155,4 +155,18 @@
 
     <!-- Category Override -->
     <string name="change_category">Cambiar categoría</string>
+
+    <!-- Custom Categories -->
+    <string name="manage_categories">Gestionar categorías</string>
+    <string name="custom_categories">Categorías personalizadas</string>
+    <string name="predefined_categories">Categorías predefinidas</string>
+    <string name="add_category">Añadir categoría</string>
+    <string name="edit_category">Editar categoría</string>
+    <string name="delete_category_action">Eliminar categoría</string>
+    <string name="category_name">Nombre de categoría</string>
+    <string name="category_icon">Icono</string>
+    <string name="category_color">Color</string>
+    <string name="delete_category_confirm">¿Está seguro de que desea eliminar esta categoría?</string>
+    <string name="no_categories_yet">Aún no hay categorías personalizadas</string>
+    <string name="create_first_category">Cree su primera categoría personalizada</string>
 </resources>
