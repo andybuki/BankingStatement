@@ -22,6 +22,7 @@ import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.categorization.CategoryOverrideManager
+import com.banking.statement.categorization.CustomCategory
 import com.banking.statement.categorization.KeywordDatabase
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
@@ -87,6 +88,7 @@ class MainActivity : ComponentActivity() {
     private var dialogState by mutableStateOf(ImportDialogState())
     private var accountsForManagement by mutableStateOf<List<AccountManagementItem>>(emptyList())
     private var currentThemeMode by mutableStateOf(ThemeMode.SYSTEM)
+    private var customCategories by mutableStateOf<List<CustomCategory>>(emptyList())
 
     private lateinit var repository: TransactionRepository
     private lateinit var fileExporter: FileExporter
@@ -176,6 +178,7 @@ class MainActivity : ComponentActivity() {
         updateStats()
         loadTransactionData()
         loadAccountsData()
+        loadCustomCategories()
 
         setContent {
             App(
@@ -212,7 +215,11 @@ class MainActivity : ComponentActivity() {
                 },
                 onCategoryChange = { transaction, newCategory ->
                     handleCategoryChange(transaction, newCategory)
-                }
+                },
+                customCategories = customCategories,
+                onAddCategory = { name, icon, color -> addCategory(name, icon, color) },
+                onEditCategory = { id, name, icon, color -> editCategory(id, name, icon, color) },
+                onDeleteCategory = { id -> deleteCategory(id) }
             )
         }
     }
@@ -1080,6 +1087,49 @@ class MainActivity : ComponentActivity() {
                 android.util.Log.e("MerchantDB", "Error loading merchant database: ${e.message}")
                 e.printStackTrace()
             }
+        }
+    }
+
+    private fun loadCustomCategories() {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                val dbCategories = repository.getAllCategories()
+                customCategories = dbCategories.map { cat ->
+                    CustomCategory(
+                        id = cat.id,
+                        name = cat.name,
+                        icon = cat.icon ?: CustomCategory.DEFAULT_ICONS.first(),
+                        color = cat.color ?: CustomCategory.DEFAULT_COLORS.first()
+                    )
+                }
+            }
+        }
+    }
+
+    private fun addCategory(name: String, icon: String, color: String) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.insertCategoryAndGetId(name, icon, color)
+            }
+            loadCustomCategories()
+        }
+    }
+
+    private fun editCategory(id: Long, name: String, icon: String, color: String) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.updateCategory(id, name, icon, color)
+            }
+            loadCustomCategories()
+        }
+    }
+
+    private fun deleteCategory(id: Long) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.deleteCategory(id)
+            }
+            loadCustomCategories()
         }
     }
 }

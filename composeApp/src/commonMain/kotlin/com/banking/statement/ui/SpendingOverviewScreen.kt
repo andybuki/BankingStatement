@@ -113,7 +113,8 @@ fun SpendingOverviewScreen(
     transactions: List<TransactionDisplay> = emptyList(),
     accounts: List<AccountFilterOption> = emptyList(),
     onBackClick: () -> Unit,
-    onShare: ((ExportFormat, SpendingExportData) -> Unit)? = null
+    onShare: ((ExportFormat, SpendingExportData) -> Unit)? = null,
+    onManageCategories: (() -> Unit)? = null
 ) {
     val strings = LocalStrings.current
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
@@ -225,6 +226,16 @@ fun SpendingOverviewScreen(
                     }
                 },
                 actions = {
+                    // Manage Categories button
+                    if (onManageCategories != null) {
+                        IconButton(onClick = onManageCategories) {
+                            Text(
+                                text = "⚙️",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+
                     // Chart toggle button
                     if (displayCategorySpending.isNotEmpty()) {
                         IconButton(onClick = { showChartView = !showChartView }) {

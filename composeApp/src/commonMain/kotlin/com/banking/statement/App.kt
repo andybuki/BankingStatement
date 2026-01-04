@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.banking.statement.categorization.CustomCategory
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
@@ -45,7 +46,8 @@ enum class Screen {
     HOME,
     TRANSACTIONS,
     SPENDING,
-    ACCOUNTS
+    ACCOUNTS,
+    CATEGORY_MANAGEMENT
 }
 
 /**
@@ -94,7 +96,12 @@ fun App(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     onThemeModeChange: ((ThemeMode) -> Unit)? = null,
     // Category override
-    onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null
+    onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null,
+    // Custom categories
+    customCategories: List<CustomCategory> = emptyList(),
+    onAddCategory: ((name: String, icon: String, color: String) -> Unit)? = null,
+    onEditCategory: ((id: Long, name: String, icon: String, color: String) -> Unit)? = null,
+    onDeleteCategory: ((id: Long) -> Unit)? = null
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
     val strings = provideStrings()
@@ -129,7 +136,8 @@ fun App(
                         transactions = transactions,
                         accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
                         onBackClick = { currentScreen = Screen.HOME },
-                        onShare = onShareSpending
+                        onShare = onShareSpending,
+                        onManageCategories = { currentScreen = Screen.CATEGORY_MANAGEMENT }
                     )
                     Screen.ACCOUNTS -> AccountManagementScreen(
                         accounts = accountsForManagement,
@@ -139,6 +147,13 @@ fun App(
                         onClearAllData = { onClearAllData?.invoke() },
                         currentThemeMode = themeMode,
                         onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) }
+                    )
+                    Screen.CATEGORY_MANAGEMENT -> CategoryManagementScreen(
+                        customCategories = customCategories,
+                        onBackClick = { currentScreen = Screen.SPENDING },
+                        onAddCategory = { name, icon, color -> onAddCategory?.invoke(name, icon, color) },
+                        onEditCategory = { id, name, icon, color -> onEditCategory?.invoke(id, name, icon, color) },
+                        onDeleteCategory = { id -> onDeleteCategory?.invoke(id) }
                     )
                 }
 
