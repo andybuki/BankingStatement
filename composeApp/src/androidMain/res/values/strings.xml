@@ -141,6 +141,17 @@
     <string name="period_month">Month</string>
     <string name="period_year">Year</string>
     <string name="period_all">All</string>
+    <string name="period_custom">Custom</string>
+    <string name="select_date_range">Select Date Range</string>
+    <string name="start_date">Start Date</string>
+    <string name="end_date">End Date</string>
+    <string name="apply">Apply</string>
+
+    <!-- Category Details -->
+    <string name="top_transactions">Top Transactions</string>
+    <string name="view_details">View Details</string>
+    <string name="category_details">Category Details</string>
+    <string name="close">Close</string>
 
     <!-- Category Override -->
     <string name="change_category">Change Category</string>
