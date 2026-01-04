@@ -114,6 +114,17 @@ data class AppStrings(
     val periodMonth: String,
     val periodYear: String,
     val periodAll: String,
+    val periodCustom: String,
+    val selectDateRange: String,
+    val startDate: String,
+    val endDate: String,
+    val apply: String,
+
+    // Category Details
+    val topTransactions: String,
+    val viewDetails: String,
+    val categoryDetails: String,
+    val close: String,
 
     // Category Override
     val changeCategory: String,
@@ -243,6 +254,16 @@ fun defaultEnglishStrings() = AppStrings(
     periodMonth = "Month",
     periodYear = "Year",
     periodAll = "All",
+    periodCustom = "Custom",
+    selectDateRange = "Select Date Range",
+    startDate = "Start Date",
+    endDate = "End Date",
+    apply = "Apply",
+
+    topTransactions = "Top Transactions",
+    viewDetails = "View Details",
+    categoryDetails = "Category Details",
+    close = "Close",
 
     changeCategory = "Change Category",
 

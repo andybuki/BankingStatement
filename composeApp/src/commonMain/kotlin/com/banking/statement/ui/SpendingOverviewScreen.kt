@@ -3,10 +3,12 @@ package com.banking.statement.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +21,9 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import bankingstatement.composeapp.generated.resources.share
@@ -40,8 +44,16 @@ import kotlinx.datetime.todayIn
  * Time period for filtering spending
  */
 enum class TimePeriod {
-    WEEK, MONTH, YEAR, ALL
+    WEEK, MONTH, YEAR, ALL, CUSTOM
 }
+
+/**
+ * Custom date range for filtering
+ */
+data class CustomDateRange(
+    val startDate: String? = null, // DD.MM.YYYY format
+    val endDate: String? = null    // DD.MM.YYYY format
+)
 
 /**
  * Category spending data for display
@@ -110,8 +122,15 @@ fun SpendingOverviewScreen(
     var dropdownExpanded by remember { mutableStateOf(false) }
     var shareMenuExpanded by remember { mutableStateOf(false) }
 
+    // Custom date range state
+    var customDateRange by remember { mutableStateOf(CustomDateRange()) }
+    var showDateRangeDialog by remember { mutableStateOf(false) }
+
+    // Category drill-down state
+    var selectedCategoryForDetails by remember { mutableStateOf<TransactionCategory?>(null) }
+
     // Filter transactions based on selected account and time period
-    val filteredData = remember(transactions, selectedAccountId, selectedPeriod) {
+    val filteredData = remember(transactions, selectedAccountId, selectedPeriod, customDateRange) {
         var filtered = if (selectedAccountId == null) {
             transactions
         } else {
@@ -119,7 +138,7 @@ fun SpendingOverviewScreen(
         }
 
         // Apply time period filter
-        filtered = filterByTimePeriod(filtered, selectedPeriod)
+        filtered = filterByTimePeriod(filtered, selectedPeriod, customDateRange)
 
         val income = filtered.filter { it.amount > 0 }.sumOf { it.amount }
         val expenses = filtered.filter { it.amount < 0 }.sumOf { it.amount }
@@ -371,7 +390,12 @@ fun SpendingOverviewScreen(
                     TimePeriod.entries.forEachIndexed { index, period ->
                         SegmentedButton(
                             selected = selectedPeriod == period,
-                            onClick = { selectedPeriod = period },
+                            onClick = {
+                                if (period == TimePeriod.CUSTOM) {
+                                    showDateRangeDialog = true
+                                }
+                                selectedPeriod = period
+                            },
                             shape = SegmentedButtonDefaults.itemShape(
                                 index = index,
                                 count = TimePeriod.entries.size
@@ -383,10 +407,32 @@ fun SpendingOverviewScreen(
                                     TimePeriod.MONTH -> strings.periodMonth
                                     TimePeriod.YEAR -> strings.periodYear
                                     TimePeriod.ALL -> strings.periodAll
+                                    TimePeriod.CUSTOM -> strings.periodCustom
                                 },
                                 style = MaterialTheme.typography.labelMedium
                             )
                         }
+                    }
+                }
+
+                // Show selected custom date range
+                if (selectedPeriod == TimePeriod.CUSTOM && customDateRange.startDate != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                            .clickable { showDateRangeDialog = true }
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "📅 ${customDateRange.startDate ?: ""} - ${customDateRange.endDate ?: ""}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -498,7 +544,10 @@ fun SpendingOverviewScreen(
                     }
                 } else {
                     items(displayCategorySpending.filter { it.totalAmount < 0 }.sortedBy { it.totalAmount }) { spending ->
-                        CategorySpendingItem(spending)
+                        CategorySpendingItem(
+                            spending = spending,
+                            onClick = { selectedCategoryForDetails = spending.category }
+                        )
                     }
                 }
 
@@ -557,6 +606,277 @@ fun SpendingOverviewScreen(
             // Bottom spacing
             item {
                 Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+
+    // Custom Date Range Dialog
+    if (showDateRangeDialog) {
+        DateRangePickerDialog(
+            currentRange = customDateRange,
+            onDismiss = { showDateRangeDialog = false },
+            onApply = { range ->
+                customDateRange = range
+                showDateRangeDialog = false
+            }
+        )
+    }
+
+    // Category Details Dialog
+    selectedCategoryForDetails?.let { category ->
+        val categoryTransactions = remember(transactions, category, selectedPeriod, customDateRange) {
+            filterByTimePeriod(transactions, selectedPeriod, customDateRange)
+                .filter { it.category == category && it.amount < 0 }
+                .sortedBy { it.amount }
+                .take(10)
+        }
+
+        CategoryDetailsDialog(
+            category = category,
+            transactions = categoryTransactions,
+            onDismiss = { selectedCategoryForDetails = null }
+        )
+    }
+}
+
+/**
+ * Date Range Picker Dialog
+ */
+@Composable
+private fun DateRangePickerDialog(
+    currentRange: CustomDateRange,
+    onDismiss: () -> Unit,
+    onApply: (CustomDateRange) -> Unit
+) {
+    val strings = LocalStrings.current
+    var startDate by remember { mutableStateOf(currentRange.startDate ?: "") }
+    var endDate by remember { mutableStateOf(currentRange.endDate ?: "") }
+    var startDateError by remember { mutableStateOf(false) }
+    var endDateError by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ) {
+                Text(
+                    text = strings.selectDateRange,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Start Date
+                OutlinedTextField(
+                    value = startDate,
+                    onValueChange = {
+                        startDate = it
+                        startDateError = !isValidDate(it) && it.isNotEmpty()
+                    },
+                    label = { Text(strings.startDate) },
+                    placeholder = { Text("DD.MM.YYYY") },
+                    isError = startDateError,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // End Date
+                OutlinedTextField(
+                    value = endDate,
+                    onValueChange = {
+                        endDate = it
+                        endDateError = !isValidDate(it) && it.isNotEmpty()
+                    },
+                    label = { Text(strings.endDate) },
+                    placeholder = { Text("DD.MM.YYYY") },
+                    isError = endDateError,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (startDateError || endDateError) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Format: DD.MM.YYYY (e.g., 01.01.2024)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(strings.cancel)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (isValidDate(startDate) && isValidDate(endDate)) {
+                                onApply(CustomDateRange(startDate, endDate))
+                            }
+                        },
+                        enabled = isValidDate(startDate) && isValidDate(endDate)
+                    ) {
+                        Text(strings.apply)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Validate date string format DD.MM.YYYY
+ */
+private fun isValidDate(date: String): Boolean {
+    if (date.isBlank()) return false
+    val parts = date.split(".")
+    if (parts.size != 3) return false
+    val day = parts[0].toIntOrNull() ?: return false
+    val month = parts[1].toIntOrNull() ?: return false
+    val year = parts[2].toIntOrNull() ?: return false
+    return day in 1..31 && month in 1..12 && year in 1900..2100
+}
+
+/**
+ * Category Details Dialog showing top transactions
+ */
+@Composable
+private fun CategoryDetailsDialog(
+    category: TransactionCategory,
+    transactions: List<TransactionDisplay>,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = getCategoryEmoji(category),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = category.getLocalizedName(strings),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = strings.topTransactions,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (transactions.isEmpty()) {
+                    Text(
+                        text = strings.noSpendingData,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    // Transaction list
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        transactions.forEachIndexed { index, tx ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "${index + 1}. ${tx.counterparty ?: tx.description}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        text = tx.date,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    text = formatCurrency(tx.amount),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE57373)
+                                )
+                            }
+                        }
+                    }
+
+                    // Total
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Total (${transactions.size} shown)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = formatCurrency(transactions.sumOf { it.amount }),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE57373)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Close button
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(strings.close)
+                }
             }
         }
     }
@@ -689,7 +1009,8 @@ private fun SpendingPieChart(
  */
 private fun filterByTimePeriod(
     transactions: List<TransactionDisplay>,
-    period: TimePeriod
+    period: TimePeriod,
+    customRange: CustomDateRange = CustomDateRange()
 ): List<TransactionDisplay> {
     if (period == TimePeriod.ALL) return transactions
 
@@ -710,16 +1031,43 @@ private fun filterByTimePeriod(
             val month = parts[1].toIntOrNull() ?: return@filter true
             val year = parts[2].toIntOrNull() ?: return@filter true
 
-            // Calculate days ago (simplified - assumes 30 days per month)
-            val txDays = year * 365 + month * 30 + day
-            val currentDays = currentYear * 365 + currentMonth * 30 + currentDay
-            val daysAgo = currentDays - txDays
-
             when (period) {
-                TimePeriod.WEEK -> daysAgo in 0..7
-                TimePeriod.MONTH -> daysAgo in 0..30
-                TimePeriod.YEAR -> daysAgo in 0..365
-                TimePeriod.ALL -> true
+                TimePeriod.CUSTOM -> {
+                    // Filter by custom date range
+                    if (customRange.startDate == null || customRange.endDate == null) {
+                        return@filter true
+                    }
+
+                    val txDayValue = year * 10000 + month * 100 + day
+
+                    val startParts = customRange.startDate.split(".")
+                    val startDay = startParts[0].toIntOrNull() ?: return@filter true
+                    val startMonth = startParts[1].toIntOrNull() ?: return@filter true
+                    val startYear = startParts[2].toIntOrNull() ?: return@filter true
+                    val startDayValue = startYear * 10000 + startMonth * 100 + startDay
+
+                    val endParts = customRange.endDate.split(".")
+                    val endDay = endParts[0].toIntOrNull() ?: return@filter true
+                    val endMonth = endParts[1].toIntOrNull() ?: return@filter true
+                    val endYear = endParts[2].toIntOrNull() ?: return@filter true
+                    val endDayValue = endYear * 10000 + endMonth * 100 + endDay
+
+                    txDayValue in startDayValue..endDayValue
+                }
+                else -> {
+                    // Calculate days ago (simplified - assumes 30 days per month)
+                    val txDays = year * 365 + month * 30 + day
+                    val currentDays = currentYear * 365 + currentMonth * 30 + currentDay
+                    val daysAgo = currentDays - txDays
+
+                    when (period) {
+                        TimePeriod.WEEK -> daysAgo in 0..7
+                        TimePeriod.MONTH -> daysAgo in 0..30
+                        TimePeriod.YEAR -> daysAgo in 0..365
+                        TimePeriod.ALL -> true
+                        TimePeriod.CUSTOM -> true // Already handled above
+                    }
+                }
             }
         } catch (e: Exception) {
             true // Include transaction if date parsing fails
@@ -787,12 +1135,20 @@ fun SummaryCard(
 }
 
 @Composable
-fun CategorySpendingItem(spending: CategorySpending) {
+fun CategorySpendingItem(
+    spending: CategorySpending,
+    onClick: (() -> Unit)? = null
+) {
     val strings = LocalStrings.current
     val categoryColor = parseHexColor(spending.category.color)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier.clickable(onClick = onClick)
+                else Modifier
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -893,6 +1249,17 @@ fun CategorySpendingItem(spending: CategorySpending) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+
+            // Clickable hint
+            if (onClick != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "👆 Tap to view top transactions",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

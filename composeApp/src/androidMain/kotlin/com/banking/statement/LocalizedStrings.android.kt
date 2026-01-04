@@ -100,6 +100,16 @@ actual fun provideStrings(): AppStrings = AppStrings(
     periodMonth = stringResource(R.string.period_month),
     periodYear = stringResource(R.string.period_year),
     periodAll = stringResource(R.string.period_all),
+    periodCustom = stringResource(R.string.period_custom),
+    selectDateRange = stringResource(R.string.select_date_range),
+    startDate = stringResource(R.string.start_date),
+    endDate = stringResource(R.string.end_date),
+    apply = stringResource(R.string.apply),
+
+    topTransactions = stringResource(R.string.top_transactions),
+    viewDetails = stringResource(R.string.view_details),
+    categoryDetails = stringResource(R.string.category_details),
+    close = stringResource(R.string.close),
 
     changeCategory = stringResource(R.string.change_category),
 
