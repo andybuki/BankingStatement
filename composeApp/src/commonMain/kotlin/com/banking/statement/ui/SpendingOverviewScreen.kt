@@ -1336,7 +1336,7 @@ fun MonthlyItem(summary: MonthlySummary) {
     }
 }
 
-private fun formatCurrency(amount: Double): String {
+internal fun formatCurrency(amount: Double): String {
     val absAmount = amount.absoluteValue
     val formatted = "%.2f".format(absAmount).replace(".", ",")
     return if (amount >= 0) "+$formatted €" else "-$formatted €"
