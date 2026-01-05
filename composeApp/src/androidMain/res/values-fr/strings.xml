@@ -172,4 +172,18 @@
     <string name="this_month">Ce mois</string>
     <string name="last_month">Mois dernier</string>
     <string name="trend">Tendance</string>
+
+    <!-- Custom Categories -->
+    <string name="manage_categories">Gérer les catégories</string>
+    <string name="custom_categories">Catégories personnalisées</string>
+    <string name="predefined_categories">Catégories prédéfinies</string>
+    <string name="add_category">Ajouter une catégorie</string>
+    <string name="edit_category">Modifier la catégorie</string>
+    <string name="delete_category_action">Supprimer la catégorie</string>
+    <string name="category_name_label">Nom de la catégorie</string>
+    <string name="category_icon">Icône</string>
+    <string name="category_color">Couleur</string>
+    <string name="delete_category_confirm">Êtes-vous sûr de vouloir supprimer cette catégorie ?</string>
+    <string name="no_categories_yet">Pas encore de catégories personnalisées</string>
+    <string name="create_first_category">Créez votre première catégorie personnalisée</string>
 </resources>
