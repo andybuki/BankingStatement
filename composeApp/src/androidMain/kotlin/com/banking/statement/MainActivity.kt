@@ -1125,7 +1125,7 @@ class MainActivity : ComponentActivity() {
     private fun addCustomCategory(name: String, icon: String, color: String) {
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
-                repository.insertCategory(name, icon, color, null)
+                repository.insertCategory(name, icon, color)
             }
             loadCustomCategories()
         }
