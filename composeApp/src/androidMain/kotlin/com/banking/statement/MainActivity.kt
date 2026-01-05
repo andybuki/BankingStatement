@@ -22,6 +22,7 @@ import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.categorization.CategoryOverrideManager
+import com.banking.statement.categorization.CategoryOverrideResult
 import com.banking.statement.categorization.CustomCategory
 import com.banking.statement.categorization.KeywordDatabase
 import com.banking.statement.categorization.MerchantDatabase
@@ -53,6 +54,17 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import java.io.File
+
+/**
+ * Helper class for destructuring category info
+ */
+private data class Tuple5<A, B, C, D, E>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D,
+    val fifth: E
+)
 
 /**
  * Pending import waiting for user decision
@@ -653,30 +665,42 @@ class MainActivity : ComponentActivity() {
                 // Get account names map for display
                 val accountNames = repository.getAccountSummary().associate { it.id to it.name }
 
+                // Load custom categories map for quick lookup
+                val customCategoriesMap = repository.getAllCategories().associate { category ->
+                    category.id to CustomCategory(
+                        id = category.id,
+                        name = category.name,
+                        icon = category.icon ?: "🏷️",
+                        color = category.color ?: "#808080",
+                        parentId = category.parent_id
+                    )
+                }
+
                 // Convert DB transactions to display format with categorization
                 transactions = allTransactions.map { tx ->
-                    // Priority: 1) User overrides, 2) Saved category, 3) Recalculate
-                    val category = categoryOverrideManager.findOverride(tx.description, tx.counterparty_name)
-                        ?: run {
-                            // Use saved category if available
-                            if (!tx.auto_category.isNullOrBlank()) {
-                                TransactionCategory.entries.find { it.name == tx.auto_category }
-                                    ?: TransactionCategory.OTHER
+                    // Priority: 1) User overrides (including custom), 2) Saved category, 3) Recalculate
+                    val overrideResult = categoryOverrideManager.findOverrideWithCustom(tx.description, tx.counterparty_name)
+
+                    // Determine category and custom category info
+                    val (category, customCategoryId, customCategoryName, customCategoryIcon, customCategoryColor) = when (overrideResult) {
+                        is CategoryOverrideResult.Custom -> {
+                            val customCat = customCategoriesMap[overrideResult.categoryId]
+                            if (customCat != null) {
+                                // Custom category found
+                                Tuple5(TransactionCategory.OTHER, customCat.id, customCat.name, customCat.icon, customCat.color)
                             } else {
-                                // Fall back to recalculation for old data without saved categories
-                                TransactionCategory.categorize(tx.description, tx.counterparty_name).let { keywordCategory ->
-                                    if (keywordCategory != TransactionCategory.OTHER) {
-                                        keywordCategory
-                                    } else if (tx.amount < 0) {
-                                        // Only use merchant DB for expenses
-                                        merchantDatabase.findCategory(tx.description, tx.counterparty_name)
-                                            ?: TransactionCategory.OTHER
-                                    } else {
-                                        TransactionCategory.OTHER
-                                    }
-                                }
+                                // Custom category was deleted, fall back to auto-categorization
+                                Tuple5(determineAutoCategory(tx), null, null, null, null)
                             }
                         }
+                        is CategoryOverrideResult.Predefined -> {
+                            Tuple5(overrideResult.category, null, null, null, null)
+                        }
+                        null -> {
+                            Tuple5(determineAutoCategory(tx), null, null, null, null)
+                        }
+                    }
+
                     val date = Instant.fromEpochSeconds(tx.booking_date)
                         .toLocalDateTime(TimeZone.currentSystemDefault())
                         .date
@@ -695,7 +719,11 @@ class MainActivity : ComponentActivity() {
                             counterparty = tx.counterparty_name
                         ),
                         accountId = tx.account_id ?: 0L,
-                        accountName = tx.account_id?.let { accountNames[it] } ?: ""
+                        accountName = tx.account_id?.let { accountNames[it] } ?: "",
+                        customCategoryId = customCategoryId,
+                        customCategoryName = customCategoryName,
+                        customCategoryIcon = customCategoryIcon,
+                        customCategoryColor = customCategoryColor
                     )
                 }
 
@@ -1100,6 +1128,29 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
+     * Determine automatic category for a transaction based on saved category or merchant/keyword matching
+     */
+    private fun determineAutoCategory(tx: com.banking.statement.db.Transactions): TransactionCategory {
+        // Use saved category if available
+        if (!tx.auto_category.isNullOrBlank()) {
+            return TransactionCategory.entries.find { it.name == tx.auto_category }
+                ?: TransactionCategory.OTHER
+        }
+        // Fall back to recalculation for old data without saved categories
+        return TransactionCategory.categorize(tx.description, tx.counterparty_name).let { keywordCategory ->
+            if (keywordCategory != TransactionCategory.OTHER) {
+                keywordCategory
+            } else if (tx.amount < 0) {
+                // Only use merchant DB for expenses
+                merchantDatabase.findCategory(tx.description, tx.counterparty_name)
+                    ?: TransactionCategory.OTHER
+            } else {
+                TransactionCategory.OTHER
+            }
+        }
+    }
+
+    /**
      * Load custom categories from database
      */
     private fun loadCustomCategories() {
@@ -1162,15 +1213,54 @@ class MainActivity : ComponentActivity() {
         // Find the custom category
         val customCategory = customCategories.find { it.id == customCategoryId } ?: return
 
-        // For now, update to OTHER category and save a note
-        // In a future update, we can extend the transaction model to support custom categories
+        // Get matching key - use counterparty if available, otherwise first words of description
+        val matchKey = getTransactionMatchKey(transaction)
+
+        // Update UI immediately - change all transactions with same match key
+        var updatedCount = 0
+        transactions = transactions.map { tx ->
+            val txMatchKey = getTransactionMatchKey(tx)
+            if (txMatchKey == matchKey) {
+                updatedCount++
+                tx.copy(
+                    category = TransactionCategory.OTHER, // Use OTHER as placeholder
+                    customCategoryId = customCategoryId,
+                    customCategoryName = customCategory.name,
+                    customCategoryIcon = customCategory.icon,
+                    customCategoryColor = customCategory.color
+                )
+            } else {
+                tx
+            }
+        }
+
+        // Also update category spending for immediate visual feedback
+        updateCategorySpending()
+
+        // For PayPal, use the extracted display name so each merchant gets its own category
+        val counterpartyLower = transaction.counterparty?.lowercase() ?: ""
+        val descriptionLower = transaction.description.lowercase()
+        val effectiveCounterparty = if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
+            TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description)
+        } else {
+            transaction.counterparty
+        }
+
+        // Save custom category override in background
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                categoryOverrideManager.saveCustomCategoryOverride(
+                    description = transaction.description,
+                    counterparty = effectiveCounterparty,
+                    customCategoryId = customCategoryId
+                )
+            }
+        }
+
         Toast.makeText(
             applicationContext,
-            "Custom category '${customCategory.name}' selected",
+            if (updatedCount > 1) "$updatedCount transactions updated to '${customCategory.name}'" else "Category updated to '${customCategory.name}'",
             Toast.LENGTH_SHORT
         ).show()
-
-        // TODO: Implement proper custom category support in transactions
-        // This requires extending the database schema to track custom category IDs
     }
 }
