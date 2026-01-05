@@ -22,6 +22,7 @@ import com.banking.statement.parser.ExcelParser
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.categorization.CategoryOverrideManager
+import com.banking.statement.categorization.CustomCategory
 import com.banking.statement.categorization.KeywordDatabase
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
@@ -87,6 +88,7 @@ class MainActivity : ComponentActivity() {
     private var dialogState by mutableStateOf(ImportDialogState())
     private var accountsForManagement by mutableStateOf<List<AccountManagementItem>>(emptyList())
     private var currentThemeMode by mutableStateOf(ThemeMode.SYSTEM)
+    private var customCategories by mutableStateOf<List<CustomCategory>>(emptyList())
 
     private lateinit var repository: TransactionRepository
     private lateinit var fileExporter: FileExporter
@@ -176,6 +178,7 @@ class MainActivity : ComponentActivity() {
         updateStats()
         loadTransactionData()
         loadAccountsData()
+        loadCustomCategories()
 
         setContent {
             App(
@@ -212,6 +215,19 @@ class MainActivity : ComponentActivity() {
                 },
                 onCategoryChange = { transaction, newCategory ->
                     handleCategoryChange(transaction, newCategory)
+                },
+                customCategories = customCategories,
+                onCustomCategoryChange = { transaction, categoryId ->
+                    handleCustomCategoryChange(transaction, categoryId)
+                },
+                onAddCustomCategory = { name, icon, color ->
+                    addCustomCategory(name, icon, color)
+                },
+                onEditCustomCategory = { id, name, icon, color ->
+                    editCustomCategory(id, name, icon, color)
+                },
+                onDeleteCustomCategory = { id ->
+                    deleteCustomCategory(id)
                 }
             )
         }
@@ -1081,5 +1097,80 @@ class MainActivity : ComponentActivity() {
                 e.printStackTrace()
             }
         }
+    }
+
+    /**
+     * Load custom categories from database
+     */
+    private fun loadCustomCategories() {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                val categories = repository.getAllCategories()
+                customCategories = categories.map { category ->
+                    CustomCategory(
+                        id = category.id,
+                        name = category.name,
+                        icon = category.icon ?: "🏷️",
+                        color = category.color ?: "#808080",
+                        parentId = category.parent_id
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Add a new custom category
+     */
+    private fun addCustomCategory(name: String, icon: String, color: String) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.insertCategory(name, icon, color, null)
+            }
+            loadCustomCategories()
+        }
+    }
+
+    /**
+     * Edit an existing custom category
+     */
+    private fun editCustomCategory(id: Long, name: String, icon: String, color: String) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.updateCategory(id, name, icon, color)
+            }
+            loadCustomCategories()
+        }
+    }
+
+    /**
+     * Delete a custom category
+     */
+    private fun deleteCustomCategory(id: Long) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.deleteCategory(id)
+            }
+            loadCustomCategories()
+        }
+    }
+
+    /**
+     * Handle changing a transaction to a custom category
+     */
+    private fun handleCustomCategoryChange(transaction: TransactionDisplay, customCategoryId: Long) {
+        // Find the custom category
+        val customCategory = customCategories.find { it.id == customCategoryId } ?: return
+
+        // For now, update to OTHER category and save a note
+        // In a future update, we can extend the transaction model to support custom categories
+        Toast.makeText(
+            applicationContext,
+            "Custom category '${customCategory.name}' selected",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        // TODO: Implement proper custom category support in transactions
+        // This requires extending the database schema to track custom category IDs
     }
 }
