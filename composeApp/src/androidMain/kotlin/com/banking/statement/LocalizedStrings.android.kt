@@ -113,6 +113,23 @@ actual fun provideStrings(): AppStrings = AppStrings(
 
     changeCategory = stringResource(R.string.change_category),
 
+    // Bottom Navigation Tabs
+    tabHome = stringResource(R.string.tab_home),
+    tabTransactions = stringResource(R.string.tab_transactions),
+    tabSpending = stringResource(R.string.tab_spending),
+    tabMerchants = stringResource(R.string.tab_merchants),
+    tabSettings = stringResource(R.string.tab_settings),
+
+    // Merchants Screen
+    merchantsTitle = stringResource(R.string.merchants_title),
+    topMerchants = stringResource(R.string.top_merchants),
+    noMerchantData = stringResource(R.string.no_merchant_data),
+    totalSpent = stringResource(R.string.total_spent),
+    transactionsCount = stringResource(R.string.transactions_count),
+    thisMonth = stringResource(R.string.this_month),
+    lastMonth = stringResource(R.string.last_month),
+    trend = stringResource(R.string.trend),
+
     // Categories (17 consolidated categories)
     categoryRent = stringResource(R.string.category_rent),
     categoryTransport = stringResource(R.string.category_transport),
