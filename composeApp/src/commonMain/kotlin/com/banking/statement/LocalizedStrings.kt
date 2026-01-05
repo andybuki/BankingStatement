@@ -146,6 +146,20 @@ data class AppStrings(
     val lastMonth: String,
     val trend: String,
 
+    // Custom Categories
+    val manageCategories: String,
+    val customCategories: String,
+    val predefinedCategories: String,
+    val addCategory: String,
+    val editCategory: String,
+    val deleteCategory: String,
+    val categoryName: String,
+    val categoryIcon: String,
+    val categoryColor: String,
+    val deleteCategoryConfirm: String,
+    val noCategoriesYet: String,
+    val createFirstCategory: String,
+
     // Categories (17 consolidated categories)
     val categoryRent: String,
     val categoryTransport: String,
@@ -300,6 +314,20 @@ fun defaultEnglishStrings() = AppStrings(
     thisMonth = "This Month",
     lastMonth = "Last Month",
     trend = "Trend",
+
+    // Custom Categories
+    manageCategories = "Manage Categories",
+    customCategories = "Custom Categories",
+    predefinedCategories = "Predefined Categories",
+    addCategory = "Add Category",
+    editCategory = "Edit Category",
+    deleteCategory = "Delete Category",
+    categoryName = "Category Name",
+    categoryIcon = "Icon",
+    categoryColor = "Color",
+    deleteCategoryConfirm = "Are you sure you want to delete this category?",
+    noCategoriesYet = "No custom categories yet",
+    createFirstCategory = "Create your first custom category",
 
     // Categories (17 consolidated categories)
     categoryRent = "Rent & Utilities",

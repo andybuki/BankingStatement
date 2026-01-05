@@ -192,6 +192,12 @@ UPDATE categories SET name = ?, icon = ?, color = ? WHERE id = ?;
 deleteCategory:
 DELETE FROM categories WHERE id = ?;
 
+getLastInsertedCategoryId:
+SELECT last_insert_rowid();
+
+getCategoryByName:
+SELECT * FROM categories WHERE name = ? LIMIT 1;
+
 -- Summary queries
 getTransactionSummaryByCategory:
 SELECT c.name, c.color, COUNT(t.id) AS count, SUM(t.amount) AS total
