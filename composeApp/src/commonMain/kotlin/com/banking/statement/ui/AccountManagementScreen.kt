@@ -45,7 +45,7 @@ data class AccountManagementItem(
 @Composable
 fun AccountManagementScreen(
     accounts: List<AccountManagementItem>,
-    onBackClick: () -> Unit,
+    onBackClick: (() -> Unit)? = null,
     onDeleteAccount: (Long) -> Unit,
     onEditAccount: (Long, String) -> Unit,
     onClearAllData: () -> Unit,
@@ -67,13 +67,15 @@ fun AccountManagementScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Image(
-                            painter = painterResource(Res.drawable.back),
-                            contentDescription = strings.back,
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                        )
+                    if (onBackClick != null) {
+                        IconButton(onClick = onBackClick) {
+                            Image(
+                                painter = painterResource(Res.drawable.back),
+                                contentDescription = strings.back,
+                                modifier = Modifier.size(24.dp),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

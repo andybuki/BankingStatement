@@ -212,7 +212,7 @@ data class AccountFilterOption(
 fun TransactionListScreen(
     transactions: List<TransactionDisplay>,
     accounts: List<AccountFilterOption> = emptyList(),
-    onBackClick: () -> Unit,
+    onBackClick: (() -> Unit)? = null,
     onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
     onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null
 ) {
@@ -266,13 +266,15 @@ fun TransactionListScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Image(
-                            painter = painterResource(Res.drawable.back),
-                            contentDescription = strings.back,
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                        )
+                    if (onBackClick != null) {
+                        IconButton(onClick = onBackClick) {
+                            Image(
+                                painter = painterResource(Res.drawable.back),
+                                contentDescription = strings.back,
+                                modifier = Modifier.size(24.dp),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                            )
+                        }
                     }
                 },
                 actions = {

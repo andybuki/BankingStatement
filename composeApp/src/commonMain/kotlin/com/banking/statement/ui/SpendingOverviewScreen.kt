@@ -112,7 +112,7 @@ fun SpendingOverviewScreen(
     monthlySummary: List<MonthlySummary>,
     transactions: List<TransactionDisplay> = emptyList(),
     accounts: List<AccountFilterOption> = emptyList(),
-    onBackClick: () -> Unit,
+    onBackClick: (() -> Unit)? = null,
     onShare: ((ExportFormat, SpendingExportData) -> Unit)? = null
 ) {
     val strings = LocalStrings.current
@@ -215,13 +215,15 @@ fun SpendingOverviewScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Image(
-                            painter = painterResource(Res.drawable.back),
-                            contentDescription = strings.back,
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                        )
+                    if (onBackClick != null) {
+                        IconButton(onClick = onBackClick) {
+                            Image(
+                                painter = painterResource(Res.drawable.back),
+                                contentDescription = strings.back,
+                                modifier = Modifier.size(24.dp),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -1334,7 +1336,7 @@ fun MonthlyItem(summary: MonthlySummary) {
     }
 }
 
-private fun formatCurrency(amount: Double): String {
+internal fun formatCurrency(amount: Double): String {
     val absAmount = amount.absoluteValue
     val formatted = "%.2f".format(absAmount).replace(".", ",")
     return if (amount >= 0) "+$formatted €" else "-$formatted €"

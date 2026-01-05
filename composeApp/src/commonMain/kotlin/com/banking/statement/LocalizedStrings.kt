@@ -129,6 +129,23 @@ data class AppStrings(
     // Category Override
     val changeCategory: String,
 
+    // Bottom Navigation Tabs
+    val tabHome: String,
+    val tabTransactions: String,
+    val tabSpending: String,
+    val tabMerchants: String,
+    val tabSettings: String,
+
+    // Merchants Screen
+    val merchantsTitle: String,
+    val topMerchants: String,
+    val noMerchantData: String,
+    val totalSpent: String,
+    val transactionsCount: String,
+    val thisMonth: String,
+    val lastMonth: String,
+    val trend: String,
+
     // Categories (17 consolidated categories)
     val categoryRent: String,
     val categoryTransport: String,
@@ -266,6 +283,23 @@ fun defaultEnglishStrings() = AppStrings(
     close = "Close",
 
     changeCategory = "Change Category",
+
+    // Bottom Navigation Tabs
+    tabHome = "Home",
+    tabTransactions = "Transactions",
+    tabSpending = "Spending",
+    tabMerchants = "Merchants",
+    tabSettings = "Settings",
+
+    // Merchants Screen
+    merchantsTitle = "Top Merchants",
+    topMerchants = "Top Merchants",
+    noMerchantData = "No merchant data yet",
+    totalSpent = "Total Spent",
+    transactionsCount = "%d transactions",
+    thisMonth = "This Month",
+    lastMonth = "Last Month",
+    trend = "Trend",
 
     // Categories (17 consolidated categories)
     categoryRent = "Rent & Utilities",

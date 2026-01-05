@@ -155,4 +155,21 @@
 
     <!-- Category Override -->
     <string name="change_category">Change Category</string>
+
+    <!-- Bottom Navigation Tabs -->
+    <string name="tab_home">Home</string>
+    <string name="tab_transactions">Transactions</string>
+    <string name="tab_spending">Spending</string>
+    <string name="tab_merchants">Merchants</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Merchants Screen -->
+    <string name="merchants_title">Top Merchants</string>
+    <string name="top_merchants">Top Merchants</string>
+    <string name="no_merchant_data">No merchant data yet</string>
+    <string name="total_spent">Total Spent</string>
+    <string name="transactions_count">%d transactions</string>
+    <string name="this_month">This Month</string>
+    <string name="last_month">Last Month</string>
+    <string name="trend">Trend</string>
 </resources>

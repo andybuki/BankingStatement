@@ -41,13 +41,6 @@ data class DatabaseStats(
     val totalAccounts: Int = 0
 )
 
-enum class Screen {
-    HOME,
-    TRANSACTIONS,
-    SPENDING,
-    ACCOUNTS
-}
-
 /**
  * Dialog state for imports - defined here for common access
  * Platform-specific implementation in MainActivity
@@ -67,6 +60,7 @@ data class AppDialogState(
     val accountName: String = ""
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
 fun App(
@@ -96,59 +90,72 @@ fun App(
     // Category override
     onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null
 ) {
-    var currentScreen by remember { mutableStateOf(Screen.HOME) }
+    var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     val strings = provideStrings()
+    val accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) }
 
     CompositionLocalProvider(LocalStrings provides strings) {
         BankingStatementTheme(themeMode = themeMode) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                when (currentScreen) {
-                    Screen.HOME -> HomeScreen(
-                        onPickFile = onPickFile,
-                        importState = importState,
-                        stats = stats,
-                        onViewTransactions = { currentScreen = Screen.TRANSACTIONS },
-                        onViewSpending = { currentScreen = Screen.SPENDING },
-                        onManageAccounts = { currentScreen = Screen.ACCOUNTS }
-                    )
-                    Screen.TRANSACTIONS -> TransactionListScreen(
-                        transactions = transactions,
-                        accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
-                        onBackClick = { currentScreen = Screen.HOME },
-                        onShare = onShareTransactions,
-                        onCategoryChange = onCategoryChange
-                    )
-                    Screen.SPENDING -> SpendingOverviewScreen(
-                        totalIncome = totalIncome,
-                        totalExpenses = totalExpenses,
-                        categorySpending = categorySpending,
-                        monthlySummary = monthlySummary,
-                        transactions = transactions,
-                        accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) },
-                        onBackClick = { currentScreen = Screen.HOME },
-                        onShare = onShareSpending
-                    )
-                    Screen.ACCOUNTS -> AccountManagementScreen(
-                        accounts = accountsForManagement,
-                        onBackClick = { currentScreen = Screen.HOME },
-                        onDeleteAccount = { id -> onDeleteAccount?.invoke(id) },
-                        onEditAccount = { id, name -> onEditAccount?.invoke(id, name) },
-                        onClearAllData = { onClearAllData?.invoke() },
-                        currentThemeMode = themeMode,
-                        onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) }
+            Scaffold(
+                bottomBar = {
+                    AppBottomNavigation(
+                        currentTab = currentTab,
+                        onTabSelected = { currentTab = it }
                     )
                 }
+            ) { paddingValues ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    when (currentTab) {
+                        NavigationTab.HOME -> HomeScreen(
+                            onPickFile = onPickFile,
+                            importState = importState,
+                            stats = stats
+                        )
+                        NavigationTab.TRANSACTIONS -> TransactionListScreen(
+                            transactions = transactions,
+                            accounts = accounts,
+                            onBackClick = null,
+                            onShare = onShareTransactions,
+                            onCategoryChange = onCategoryChange
+                        )
+                        NavigationTab.SPENDING -> SpendingOverviewScreen(
+                            totalIncome = totalIncome,
+                            totalExpenses = totalExpenses,
+                            categorySpending = categorySpending,
+                            monthlySummary = monthlySummary,
+                            transactions = transactions,
+                            accounts = accounts,
+                            onBackClick = null,
+                            onShare = onShareSpending
+                        )
+                        NavigationTab.MERCHANTS -> MerchantsScreen(
+                            transactions = transactions,
+                            accounts = accounts
+                        )
+                        NavigationTab.SETTINGS -> AccountManagementScreen(
+                            accounts = accountsForManagement,
+                            onBackClick = null,
+                            onDeleteAccount = { id -> onDeleteAccount?.invoke(id) },
+                            onEditAccount = { id, name -> onEditAccount?.invoke(id, name) },
+                            onClearAllData = { onClearAllData?.invoke() },
+                            currentThemeMode = themeMode,
+                            onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) }
+                        )
+                    }
 
-                // Import dialogs - handled through platform-specific dialog state
-                // The dialogState is cast and handled in the platform-specific composable wrapper
-                HandleImportDialogs(
-                    dialogState = dialogState,
-                    onImportChoice = onImportChoice,
-                    onDismissSuccessDialog = onDismissSuccessDialog
-                )
+                    // Import dialogs - handled through platform-specific dialog state
+                    // The dialogState is cast and handled in the platform-specific composable wrapper
+                    HandleImportDialogs(
+                        dialogState = dialogState,
+                        onImportChoice = onImportChoice,
+                        onDismissSuccessDialog = onDismissSuccessDialog
+                    )
+                }
             }
         }
     }
@@ -165,10 +172,7 @@ expect fun HandleImportDialogs(
 fun HomeScreen(
     onPickFile: ((List<String>) -> Unit)?,
     importState: ImportState,
-    stats: DatabaseStats,
-    onViewTransactions: () -> Unit,
-    onViewSpending: () -> Unit,
-    onManageAccounts: () -> Unit
+    stats: DatabaseStats
 ) {
     val strings = LocalStrings.current
 
@@ -200,14 +204,9 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Stats Card with navigation
+        // Stats Card (simplified - no navigation buttons)
         if (stats.totalStatements > 0 || stats.totalTransactions > 0 || stats.totalAccounts > 0) {
-            StatsCard(
-                stats = stats,
-                onViewTransactions = onViewTransactions,
-                onViewSpending = onViewSpending,
-                onManageAccounts = onManageAccounts
-            )
+            StatsCard(stats = stats)
             Spacer(modifier = Modifier.height(24.dp))
         }
 
@@ -276,10 +275,7 @@ fun HomeScreen(
 
 @Composable
 fun StatsCard(
-    stats: DatabaseStats,
-    onViewTransactions: () -> Unit,
-    onViewSpending: () -> Unit,
-    onManageAccounts: () -> Unit
+    stats: DatabaseStats
 ) {
     val strings = LocalStrings.current
 
@@ -309,63 +305,6 @@ fun StatsCard(
                 StatItem(
                     label = strings.transactions,
                     value = stats.totalTransactions.toString()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Navigation buttons - styled as proper buttons with clear background
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = onViewTransactions,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(
-                        text = strings.viewTransactions,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-                Button(
-                    onClick = onViewSpending,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(
-                        text = strings.viewSpending,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = onManageAccounts,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                )
-            ) {
-                Text(
-                    text = strings.manageAccounts,
-                    style = MaterialTheme.typography.labelLarge
                 )
             }
         }
