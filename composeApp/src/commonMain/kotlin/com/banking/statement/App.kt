@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.banking.statement.categorization.CustomCategory
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
@@ -88,9 +89,16 @@ fun App(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     onThemeModeChange: ((ThemeMode) -> Unit)? = null,
     // Category override
-    onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null
+    onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null,
+    // Custom categories
+    customCategories: List<CustomCategory> = emptyList(),
+    onCustomCategoryChange: ((TransactionDisplay, Long) -> Unit)? = null,
+    onAddCustomCategory: ((name: String, icon: String, color: String) -> Unit)? = null,
+    onEditCustomCategory: ((id: Long, name: String, icon: String, color: String) -> Unit)? = null,
+    onDeleteCustomCategory: ((Long) -> Unit)? = null
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
+    var showCategoryManagement by remember { mutableStateOf(false) }
     val strings = provideStrings()
     val accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) }
 
@@ -119,9 +127,12 @@ fun App(
                         NavigationTab.TRANSACTIONS -> TransactionListScreen(
                             transactions = transactions,
                             accounts = accounts,
+                            customCategories = customCategories,
                             onBackClick = null,
                             onShare = onShareTransactions,
-                            onCategoryChange = onCategoryChange
+                            onCategoryChange = onCategoryChange,
+                            onCustomCategoryChange = onCustomCategoryChange,
+                            onManageCategories = { showCategoryManagement = true }
                         )
                         NavigationTab.SPENDING -> SpendingOverviewScreen(
                             totalIncome = totalIncome,
@@ -155,6 +166,23 @@ fun App(
                         onImportChoice = onImportChoice,
                         onDismissSuccessDialog = onDismissSuccessDialog
                     )
+
+                    // Category management screen overlay
+                    if (showCategoryManagement) {
+                        CategoryManagementScreen(
+                            customCategories = customCategories,
+                            onBackClick = { showCategoryManagement = false },
+                            onAddCategory = { name, icon, color ->
+                                onAddCustomCategory?.invoke(name, icon, color)
+                            },
+                            onEditCategory = { id, name, icon, color ->
+                                onEditCustomCategory?.invoke(id, name, icon, color)
+                            },
+                            onDeleteCategory = { id ->
+                                onDeleteCustomCategory?.invoke(id)
+                            }
+                        )
+                    }
                 }
             }
         }

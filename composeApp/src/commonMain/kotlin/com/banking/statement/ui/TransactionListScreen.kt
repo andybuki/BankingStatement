@@ -212,9 +212,12 @@ data class AccountFilterOption(
 fun TransactionListScreen(
     transactions: List<TransactionDisplay>,
     accounts: List<AccountFilterOption> = emptyList(),
+    customCategories: List<com.banking.statement.categorization.CustomCategory> = emptyList(),
     onBackClick: (() -> Unit)? = null,
     onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
-    onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null
+    onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null,
+    onCustomCategoryChange: ((TransactionDisplay, Long) -> Unit)? = null,
+    onManageCategories: (() -> Unit)? = null
 ) {
     val strings = LocalStrings.current
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
@@ -435,10 +438,17 @@ fun TransactionListScreen(
     showCategoryPicker?.let { transaction ->
         CategoryPickerDialog(
             currentCategory = transaction.category,
+            customCategories = customCategories,
+            currentCustomCategoryId = null, // TODO: track custom category ID if transaction has one
             onCategorySelected = { newCategory ->
                 onCategoryChange?.invoke(transaction, newCategory)
                 showCategoryPicker = null
             },
+            onCustomCategorySelected = if (onCustomCategoryChange != null) { customCategoryId ->
+                onCustomCategoryChange.invoke(transaction, customCategoryId)
+                showCategoryPicker = null
+            } else null,
+            onManageCategories = onManageCategories,
             onDismiss = { showCategoryPicker = null }
         )
     }
