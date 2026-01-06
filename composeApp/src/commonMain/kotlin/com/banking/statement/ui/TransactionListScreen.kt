@@ -39,8 +39,33 @@ data class TransactionDisplay(
     val counterparty: String?,
     val detailText: String? = null,
     val accountId: Long = 0,
-    val accountName: String = ""
+    val accountName: String = "",
+    // Custom category support
+    val customCategoryId: Long? = null,
+    val customCategoryName: String? = null,
+    val customCategoryIcon: String? = null,
+    val customCategoryColor: String? = null
 ) {
+    /**
+     * Returns true if this transaction has a custom category assigned
+     */
+    val hasCustomCategory: Boolean get() = customCategoryId != null
+
+    /**
+     * Returns the effective display name for the category
+     */
+    val effectiveCategoryName: String get() = customCategoryName ?: category.displayName
+
+    /**
+     * Returns the effective icon for the category
+     */
+    val effectiveCategoryIcon: String get() = customCategoryIcon ?: category.icon
+
+    /**
+     * Returns the effective color for the category
+     */
+    val effectiveCategoryColor: String get() = customCategoryColor ?: category.color
+
     companion object {
         /**
          * Extracts a clean display name from the counterparty and description.
@@ -242,6 +267,7 @@ fun TransactionListScreen(
                 tx.counterparty?.lowercase()?.contains(query) == true ||
                 tx.category.displayName.lowercase().contains(query) ||
                 tx.category.displayNameDe.lowercase().contains(query) ||
+                tx.customCategoryName?.lowercase()?.contains(query) == true ||
                 tx.date.contains(query) ||
                 formatAmount(tx.amount, tx.currency).contains(query)
             }
@@ -448,7 +474,12 @@ fun TransactionListScreen(
                 onCustomCategoryChange.invoke(transaction, customCategoryId)
                 showCategoryPicker = null
             } else null,
-            onManageCategories = onManageCategories,
+            onManageCategories = if (onManageCategories != null) {
+                {
+                    showCategoryPicker = null  // Dismiss picker first
+                    onManageCategories.invoke()  // Then open management screen
+                }
+            } else null,
             onDismiss = { showCategoryPicker = null }
         )
     }
@@ -479,16 +510,16 @@ fun TransactionItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category indicator
+            // Category indicator - supports custom categories
             Box(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(parseColor(transaction.category.color).copy(alpha = 0.2f)),
+                    .background(parseColor(transaction.effectiveCategoryColor).copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = getCategoryEmoji(transaction.category),
+                    text = if (transaction.hasCustomCategory) transaction.effectiveCategoryIcon else getCategoryEmoji(transaction.category),
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -517,14 +548,14 @@ fun TransactionItem(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                // Category and date
+                // Category and date - supports custom categories
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = transaction.category.getLocalizedName(strings),
+                        text = if (transaction.hasCustomCategory) transaction.effectiveCategoryName else transaction.category.getLocalizedName(strings),
                         style = MaterialTheme.typography.bodySmall,
-                        color = parseColor(transaction.category.color)
+                        color = parseColor(transaction.effectiveCategoryColor)
                     )
                     Text(
                         text = " · ${transaction.date}",
