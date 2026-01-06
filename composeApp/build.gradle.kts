@@ -43,8 +43,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.sqldelight.coroutines)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.vico.compose)
-            implementation(libs.vico.core)
+
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.native)
