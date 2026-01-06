@@ -62,22 +62,15 @@ fun MerchantsScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        // Top bar with title and filter
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = strings.merchantsTitle,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            // Account filter dropdown
-            if (accounts.isNotEmpty()) {
+        // Account filter row (title is now in AppHeader)
+        if (accounts.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 ExposedDropdownMenuBox(
                     expanded = accountDropdownExpanded,
                     onExpandedChange = { accountDropdownExpanded = it }

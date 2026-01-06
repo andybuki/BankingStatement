@@ -57,39 +57,12 @@ fun AccountManagementScreen(
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = strings.manageAccounts,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    if (onBackClick != null) {
-                        IconButton(onClick = onBackClick) {
-                            Image(
-                                painter = painterResource(Res.drawable.back),
-                                contentDescription = strings.back,
-                                modifier = Modifier.size(24.dp),
-                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-        ) {
+    // Content - no Scaffold, title is now in AppHeader
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
         Spacer(modifier = Modifier.height(8.dp))
 
         if (accounts.isEmpty()) {
@@ -156,7 +129,6 @@ fun AccountManagementScreen(
             ) {
                 Text(strings.clearAllData)
             }
-        }
         }
     }
 

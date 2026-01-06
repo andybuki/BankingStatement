@@ -108,6 +108,26 @@ fun App(
     val strings = provideStrings()
     val accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) }
 
+    // Track success card visibility at App level to persist across tab switches
+    var showSuccessCard by remember { mutableStateOf(false) }
+    // Track which import we've shown the success card for (using a unique key)
+    var lastShownImportKey by remember { mutableStateOf<String?>(null) }
+
+    // Generate a unique key for the current import
+    val currentImportKey = if (importState.savedToDatabase && importState.parseResult != null) {
+        "${importState.parseResult.bankName}_${importState.transactionCount}_${importState.parseResult.statementPeriod}"
+    } else null
+
+    // Auto-dismiss success card after 5 seconds, only show once per import
+    LaunchedEffect(currentImportKey) {
+        if (currentImportKey != null && currentImportKey != lastShownImportKey) {
+            lastShownImportKey = currentImportKey
+            showSuccessCard = true
+            delay(5000) // 5 seconds
+            showSuccessCard = false
+        }
+    }
+
     CompositionLocalProvider(LocalStrings provides strings) {
         BankingStatementTheme(themeMode = themeMode) {
             Scaffold(
@@ -130,41 +150,69 @@ fun App(
                             importState = importState,
                             stats = stats,
                             totalIncome = totalIncome,
-                            totalExpenses = totalExpenses
-                        )
-                        NavigationTab.TRANSACTIONS -> TransactionListScreen(
-                            transactions = transactions,
-                            accounts = accounts,
-                            customCategories = customCategories,
-                            onBackClick = null,
-                            onShare = onShareTransactions,
-                            onCategoryChange = onCategoryChange,
-                            onCustomCategoryChange = onCustomCategoryChange,
-                            onManageCategories = { showCategoryManagement = true }
-                        )
-                        NavigationTab.SPENDING -> SpendingOverviewScreen(
-                            totalIncome = totalIncome,
                             totalExpenses = totalExpenses,
-                            categorySpending = categorySpending,
-                            monthlySummary = monthlySummary,
-                            transactions = transactions,
-                            accounts = accounts,
-                            onBackClick = null,
-                            onShare = onShareSpending
+                            showSuccessCard = showSuccessCard
                         )
-                        NavigationTab.MERCHANTS -> MerchantsScreen(
-                            transactions = transactions,
-                            accounts = accounts
-                        )
-                        NavigationTab.SETTINGS -> AccountManagementScreen(
-                            accounts = accountsForManagement,
-                            onBackClick = null,
-                            onDeleteAccount = { id -> onDeleteAccount?.invoke(id) },
-                            onEditAccount = { id, name -> onEditAccount?.invoke(id, name) },
-                            onClearAllData = { onClearAllData?.invoke() },
-                            currentThemeMode = themeMode,
-                            onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) }
-                        )
+                        NavigationTab.TRANSACTIONS -> Column(modifier = Modifier.fillMaxSize()) {
+                            AppHeader(
+                                title = strings.tabTransactions,
+                                totalIncome = totalIncome,
+                                totalExpenses = totalExpenses
+                            )
+                            TransactionListScreen(
+                                transactions = transactions,
+                                accounts = accounts,
+                                customCategories = customCategories,
+                                onBackClick = null,
+                                onShare = onShareTransactions,
+                                onCategoryChange = onCategoryChange,
+                                onCustomCategoryChange = onCustomCategoryChange,
+                                onManageCategories = { showCategoryManagement = true }
+                            )
+                        }
+                        NavigationTab.SPENDING -> Column(modifier = Modifier.fillMaxSize()) {
+                            AppHeader(
+                                title = strings.spendingTitle,
+                                totalIncome = totalIncome,
+                                totalExpenses = totalExpenses
+                            )
+                            SpendingOverviewScreen(
+                                totalIncome = totalIncome,
+                                totalExpenses = totalExpenses,
+                                categorySpending = categorySpending,
+                                monthlySummary = monthlySummary,
+                                transactions = transactions,
+                                accounts = accounts,
+                                onBackClick = null,
+                                onShare = onShareSpending
+                            )
+                        }
+                        NavigationTab.MERCHANTS -> Column(modifier = Modifier.fillMaxSize()) {
+                            AppHeader(
+                                title = strings.merchantsTitle,
+                                totalIncome = totalIncome,
+                                totalExpenses = totalExpenses
+                            )
+                            MerchantsScreen(
+                                transactions = transactions,
+                                accounts = accounts
+                            )
+                        }
+                        NavigationTab.SETTINGS -> Column(modifier = Modifier.fillMaxSize()) {
+                            AppHeader(
+                                title = strings.manageAccounts,
+                                showSummary = false  // Settings doesn't need income/expense summary
+                            )
+                            AccountManagementScreen(
+                                accounts = accountsForManagement,
+                                onBackClick = null,
+                                onDeleteAccount = { id -> onDeleteAccount?.invoke(id) },
+                                onEditAccount = { id, name -> onEditAccount?.invoke(id, name) },
+                                onClearAllData = { onClearAllData?.invoke() },
+                                currentThemeMode = themeMode,
+                                onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) }
+                            )
+                        }
                     }
 
                     // Import dialogs - handled through platform-specific dialog state
@@ -210,81 +258,20 @@ fun HomeScreen(
     importState: ImportState,
     stats: DatabaseStats,
     totalIncome: Double = 0.0,
-    totalExpenses: Double = 0.0
+    totalExpenses: Double = 0.0,
+    showSuccessCard: Boolean = false  // Controlled by App level state
 ) {
     val strings = LocalStrings.current
-
-    // Auto-dismiss state for success card
-    var showSuccessCard by remember { mutableStateOf(false) }
-
-    // Track when import succeeds and auto-dismiss after 5 seconds
-    LaunchedEffect(importState.savedToDatabase, importState.parseResult) {
-        if (importState.savedToDatabase && importState.parseResult != null) {
-            showSuccessCard = true
-            delay(5000) // 5 seconds
-            showSuccessCard = false
-        }
-    }
 
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
         // Header section - same color as footer with shadow
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(elevation = 8.dp)
-                .background(Color(0xFF000000))
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            Column {
-                // App Title
-                Text(
-                    text = strings.homeTitle,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Income and Expenses summary row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Income
-                    Column {
-                        Text(
-                            text = strings.income,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF888888)
-                        )
-                        Text(
-                            text = formatHeaderAmount(totalIncome),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4CAF50)
-                        )
-                    }
-
-                    // Expenses
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = strings.expenses,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF888888)
-                        )
-                        Text(
-                            text = formatHeaderAmount(totalExpenses),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE57373)
-                        )
-                    }
-                }
-            }
-        }
+        AppHeader(
+            title = strings.homeTitle,
+            totalIncome = totalIncome,
+            totalExpenses = totalExpenses
+        )
 
         // Main content area with different background color
         Column(
@@ -412,6 +399,77 @@ private fun formatHeaderAmount(amount: Double): String {
         }
         else -> {
             formatWithTwoDecimals(absAmount) + " €"
+        }
+    }
+}
+
+/**
+ * Reusable header component for consistent styling across all tabs
+ */
+@Composable
+fun AppHeader(
+    title: String,
+    totalIncome: Double = 0.0,
+    totalExpenses: Double = 0.0,
+    showSummary: Boolean = true
+) {
+    val strings = LocalStrings.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 8.dp)
+            .background(Color(0xFF000000))
+            .padding(horizontal = 20.dp, vertical = 16.dp)
+    ) {
+        Column {
+            // Title
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            if (showSummary) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Income and Expenses summary row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Income
+                    Column {
+                        Text(
+                            text = strings.income,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF888888)
+                        )
+                        Text(
+                            text = formatHeaderAmount(totalIncome),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4CAF50)
+                        )
+                    }
+
+                    // Expenses
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = strings.expenses,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF888888)
+                        )
+                        Text(
+                            text = formatHeaderAmount(totalExpenses),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE57373)
+                        )
+                    }
+                }
+            }
         }
     }
 }

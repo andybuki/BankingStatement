@@ -205,138 +205,120 @@ fun SpendingOverviewScreen(
         monthlySummary = displayMonthlySummary
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = strings.spendingTitle,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    if (onBackClick != null) {
-                        IconButton(onClick = onBackClick) {
-                            Image(
-                                painter = painterResource(Res.drawable.back),
-                                contentDescription = strings.back,
-                                modifier = Modifier.size(24.dp),
-                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+    // Action row for chart toggle and share
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Chart toggle button
+        if (displayCategorySpending.isNotEmpty()) {
+            IconButton(onClick = { showChartView = !showChartView }) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (showChartView) {
+                        // List icon - three colored horizontal lines
+                        Canvas(modifier = Modifier.size(18.dp)) {
+                            val lineHeight = 2.5.dp.toPx()
+                            val spacing = size.height / 4
+                            val colors = listOf(
+                                Color(0xFF4CAF50),
+                                Color(0xFFE57373),
+                                Color(0xFF2196F3)
+                            )
+                            colors.forEachIndexed { index, color ->
+                                val y = spacing * (index + 1)
+                                drawLine(
+                                    color = color,
+                                    start = Offset(0f, y),
+                                    end = Offset(size.width, y),
+                                    strokeWidth = lineHeight,
+                                    cap = StrokeCap.Round
+                                )
+                            }
+                        }
+                    } else {
+                        // Pie chart icon - three colored arcs
+                        Canvas(modifier = Modifier.size(18.dp)) {
+                            val strokeWidth = 3.dp.toPx()
+                            drawArc(
+                                color = Color(0xFF4CAF50),
+                                startAngle = -90f,
+                                sweepAngle = 120f,
+                                useCenter = false,
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                size = Size(size.width, size.height)
+                            )
+                            drawArc(
+                                color = Color(0xFFE57373),
+                                startAngle = 30f,
+                                sweepAngle = 100f,
+                                useCenter = false,
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                size = Size(size.width, size.height)
+                            )
+                            drawArc(
+                                color = Color(0xFF2196F3),
+                                startAngle = 130f,
+                                sweepAngle = 140f,
+                                useCenter = false,
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                size = Size(size.width, size.height)
                             )
                         }
                     }
-                },
-                actions = {
-                    // Chart toggle button
-                    if (displayCategorySpending.isNotEmpty()) {
-                        IconButton(onClick = { showChartView = !showChartView }) {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (showChartView) {
-                                    // List icon - three colored horizontal lines
-                                    Canvas(modifier = Modifier.size(18.dp)) {
-                                        val lineHeight = 2.5.dp.toPx()
-                                        val spacing = size.height / 4
-                                        val colors = listOf(
-                                            Color(0xFF4CAF50),
-                                            Color(0xFFE57373),
-                                            Color(0xFF2196F3)
-                                        )
-                                        colors.forEachIndexed { index, color ->
-                                            val y = spacing * (index + 1)
-                                            drawLine(
-                                                color = color,
-                                                start = Offset(0f, y),
-                                                end = Offset(size.width, y),
-                                                strokeWidth = lineHeight,
-                                                cap = StrokeCap.Round
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    // Pie chart icon - three colored arcs
-                                    Canvas(modifier = Modifier.size(18.dp)) {
-                                        val strokeWidth = 3.dp.toPx()
-                                        drawArc(
-                                            color = Color(0xFF4CAF50),
-                                            startAngle = -90f,
-                                            sweepAngle = 120f,
-                                            useCenter = false,
-                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                            size = Size(size.width, size.height)
-                                        )
-                                        drawArc(
-                                            color = Color(0xFFE57373),
-                                            startAngle = 30f,
-                                            sweepAngle = 100f,
-                                            useCenter = false,
-                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                            size = Size(size.width, size.height)
-                                        )
-                                        drawArc(
-                                            color = Color(0xFF2196F3),
-                                            startAngle = 130f,
-                                            sweepAngle = 140f,
-                                            useCenter = false,
-                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                            size = Size(size.width, size.height)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Share button with dropdown
-                    if (onShare != null && displayCategorySpending.isNotEmpty()) {
-                        Box {
-                            IconButton(onClick = { shareMenuExpanded = true }) {
-                                Image(
-                                    painter = painterResource(Res.drawable.share),
-                                    contentDescription = strings.share,
-                                    modifier = Modifier.size(24.dp),
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = shareMenuExpanded,
-                                onDismissRequest = { shareMenuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(strings.exportCsv) },
-                                    onClick = {
-                                        shareMenuExpanded = false
-                                        onShare(ExportFormat.CSV, exportData)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.exportPdf) },
-                                    onClick = {
-                                        shareMenuExpanded = false
-                                        onShare(ExportFormat.PDF, exportData)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
+                }
+            }
         }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+
+        // Share button with dropdown
+        if (onShare != null && displayCategorySpending.isNotEmpty()) {
+            Box {
+                IconButton(onClick = { shareMenuExpanded = true }) {
+                    Image(
+                        painter = painterResource(Res.drawable.share),
+                        contentDescription = strings.share,
+                        modifier = Modifier.size(24.dp),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                    )
+                }
+                DropdownMenu(
+                    expanded = shareMenuExpanded,
+                    onDismissRequest = { shareMenuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(strings.exportCsv) },
+                        onClick = {
+                            shareMenuExpanded = false
+                            onShare(ExportFormat.CSV, exportData)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.exportPdf) },
+                        onClick = {
+                            shareMenuExpanded = false
+                            onShare(ExportFormat.PDF, exportData)
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
             // Account filter dropdown (only show if multiple accounts)
             if (accounts.size > 1) {
                 item {
@@ -575,7 +557,6 @@ fun SpendingOverviewScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
-    }
 
     // Custom Date Range Dialog
     if (showDateRangeDialog) {

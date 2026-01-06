@@ -285,74 +285,54 @@ fun TransactionListScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = strings.transactionListTitle,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    if (onBackClick != null) {
-                        IconButton(onClick = onBackClick) {
-                            Image(
-                                painter = painterResource(Res.drawable.back),
-                                contentDescription = strings.back,
-                                modifier = Modifier.size(24.dp),
-                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    // Share button with dropdown
-                    if (onShare != null && filteredTransactions.isNotEmpty()) {
-                        Box {
-                            IconButton(onClick = { shareMenuExpanded = true }) {
-                                Image(
-                                    painter = painterResource(Res.drawable.share),
-                                    contentDescription = strings.share,
-                                    modifier = Modifier.size(24.dp),
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = shareMenuExpanded,
-                                onDismissRequest = { shareMenuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(strings.exportCsv) },
-                                    onClick = {
-                                        shareMenuExpanded = false
-                                        onShare(ExportFormat.CSV, filteredTransactions, selectedAccountName)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(strings.exportPdf) },
-                                    onClick = {
-                                        shareMenuExpanded = false
-                                        onShare(ExportFormat.PDF, filteredTransactions, selectedAccountName)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(
+    // Share action row (replaces TopAppBar actions)
+    if (onShare != null && filteredTransactions.isNotEmpty()) {
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.End
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Box {
+                IconButton(onClick = { shareMenuExpanded = true }) {
+                    Image(
+                        painter = painterResource(Res.drawable.share),
+                        contentDescription = strings.share,
+                        modifier = Modifier.size(24.dp),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                    )
+                }
+                DropdownMenu(
+                    expanded = shareMenuExpanded,
+                    onDismissRequest = { shareMenuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(strings.exportCsv) },
+                        onClick = {
+                            shareMenuExpanded = false
+                            onShare(ExportFormat.CSV, filteredTransactions, selectedAccountName)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings.exportPdf) },
+                        onClick = {
+                            shareMenuExpanded = false
+                            onShare(ExportFormat.PDF, filteredTransactions, selectedAccountName)
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Account filter dropdown (only show if multiple accounts)
         if (accounts.size > 1) {
@@ -456,7 +436,6 @@ fun TransactionListScreen(
                     )
                 }
             }
-        }
         }
     }
 
