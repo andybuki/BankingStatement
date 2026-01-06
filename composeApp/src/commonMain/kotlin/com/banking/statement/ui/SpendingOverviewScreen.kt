@@ -557,7 +557,6 @@ fun SpendingOverviewScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
-    }
 
     // Custom Date Range Dialog
     if (showDateRangeDialog) {
