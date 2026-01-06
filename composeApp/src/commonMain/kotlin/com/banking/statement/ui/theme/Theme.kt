@@ -44,7 +44,9 @@ private val LightColorScheme = lightColorScheme(
     inversePrimary = Color(0xFFA0CAFD)
 )
 
-// Dark theme colors
+// Dark theme colors - using black/raven color scheme
+// Footer/Header: Pure black (0xFF000000)
+// Main content area: Jet black/Raven (0xFF1A1A1A / 0xFF212121)
 private val DarkColorScheme = darkColorScheme(
     primary = Color(0xFFA0CAFD),
     onPrimary = Color(0xFF003258),
@@ -62,17 +64,20 @@ private val DarkColorScheme = darkColorScheme(
     errorContainer = Color(0xFF93000A),
     onError = Color(0xFF690005),
     onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF1A1C1E),
+    background = Color(0xFF212121),  // Raven/jet black for main content
     onBackground = Color(0xFFE3E2E6),
-    surface = Color(0xFF1A1C1E),
+    surface = Color(0xFF000000),     // Pure black for header/footer
     onSurface = Color(0xFFE3E2E6),
-    surfaceVariant = Color(0xFF43474E),
+    surfaceVariant = Color(0xFF2D2D2D),  // Slightly lighter for cards
     onSurfaceVariant = Color(0xFFC3C6CF),
     outline = Color(0xFF8D9199),
     inverseOnSurface = Color(0xFF1A1C1E),
     inverseSurface = Color(0xFFE3E2E6),
     inversePrimary = Color(0xFF1565C0)
 )
+
+// Custom colors for header/footer bar (same as navigation surface)
+val NavBarColor = Color(0xFF000000)  // Pure black for navigation bar
 
 /**
  * Theme preference storage - platform-specific implementation

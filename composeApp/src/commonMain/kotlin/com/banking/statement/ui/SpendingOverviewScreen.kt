@@ -553,41 +553,6 @@ fun SpendingOverviewScreen(
                     }
                 }
 
-                // Merchant history section
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "🏪 Top Merchants - Spending History",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                item {
-                    val merchantHistory = remember(transactions) {
-                        calculateMerchantHistoryFromTransactions(transactions)
-                    }
-
-                    if (merchantHistory.isEmpty()) {
-                        Text(
-                            text = "Import transaction data to see merchant spending history",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    } else {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            merchantHistory.take(10).forEach { history ->
-                                MerchantHistoryItem(history)
-                            }
-                        }
-                    }
-                }
-
                 // Monthly summary title
                 if (displayMonthlySummary.isNotEmpty()) {
                     item {

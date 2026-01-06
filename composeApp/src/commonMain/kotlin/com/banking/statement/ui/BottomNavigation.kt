@@ -1,5 +1,6 @@
 package com.banking.statement.ui
 
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.banking.statement.LocalStrings
@@ -49,7 +51,7 @@ enum class NavigationTab(
 }
 
 /**
- * Bottom navigation bar component
+ * Bottom navigation bar component - compact black style
  */
 @Composable
 fun AppBottomNavigation(
@@ -58,11 +60,14 @@ fun AppBottomNavigation(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
+    // Pure black for the navigation bar
+    val navBarColor = Color(0xFF000000)
 
     NavigationBar(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
+        modifier = modifier.height(56.dp),  // More compact height
+        containerColor = navBarColor,
+        contentColor = Color.White,
+        tonalElevation = 0.dp  // No elevation tint
     ) {
         NavigationTab.entries.forEach { tab ->
             val selected = currentTab == tab
@@ -81,7 +86,7 @@ fun AppBottomNavigation(
                     Icon(
                         imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                         contentDescription = label,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)  // Slightly smaller icons
                     )
                 },
                 label = {
@@ -93,9 +98,9 @@ fun AppBottomNavigation(
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    indicatorColor = Color(0xFF1A1A1A),  // Subtle dark indicator
+                    unselectedIconColor = Color(0xFF888888),  // Gray for unselected
+                    unselectedTextColor = Color(0xFF888888)
                 )
             )
         }
