@@ -63,16 +63,16 @@ fun ImportAccountDialog(
     Dialog(onDismissRequest = { onChoice(ImportChoice.Cancel) }) {
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxWidth(0.95f)  // Use more screen width
+                .padding(8.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Title
                 Text(
@@ -209,46 +209,52 @@ fun ImportAccountDialog(
 
                 // Option 2: Add to existing account (if accounts exist)
                 if (existingAccounts.isNotEmpty()) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable { selectedOption = "existing" }
                             .background(
                                 if (selectedOption == "existing")
                                     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                                 else
                                     Color.Transparent
                             )
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.Top
+                            .padding(12.dp)
                     ) {
-                        RadioButton(
-                            selected = selectedOption == "existing",
-                            onClick = { selectedOption = "existing" }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column(modifier = Modifier.weight(1f)) {
+                        // Radio button row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedOption = "existing" },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedOption == "existing",
+                                onClick = { selectedOption = "existing" }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = strings.addToExisting,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium
                             )
-                            if (selectedOption == "existing") {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                LazyColumn(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .heightIn(max = 200.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(existingAccounts) { account ->
-                                        AccountSelectionItem(
-                                            account = account,
-                                            isSelected = selectedAccountId == account.id,
-                                            onClick = { selectedAccountId = account.id }
-                                        )
-                                    }
+                        }
+
+                        // Account list - full width, outside of row
+                        if (selectedOption == "existing") {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(existingAccounts) { account ->
+                                    AccountSelectionItem(
+                                        account = account,
+                                        isSelected = selectedAccountId == account.id,
+                                        onClick = { selectedAccountId = account.id }
+                                    )
                                 }
                             }
                         }
@@ -314,51 +320,61 @@ private fun AccountSelectionItem(
         ),
         shape = RoundedCornerShape(8.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
         ) {
-            // Color indicator
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(parseAccountColor(account.color))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = account.name.take(2).uppercase(),
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+                // Color indicator
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(parseAccountColor(account.color))
+                ) {
+                    Text(
+                        text = account.name.take(2).uppercase(),
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-            Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+                // Account name - takes remaining space
                 Text(
                     text = account.name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = "${account.bankName} • ${account.transactionCount} transactions",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+
+                // Balance on the right
+                if (account.balance != null) {
+                    Text(
+                        text = formatAmount(account.balance, "EUR"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = if (account.balance >= 0) Color(0xFF4CAF50) else Color(0xFFE57373)
+                    )
+                }
             }
 
-            if (account.balance != null) {
-                Text(
-                    text = formatAmount(account.balance, "EUR"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = if (account.balance >= 0) Color(0xFF4CAF50) else Color(0xFFE57373)
-                )
-            }
+            // Bank info on second line - full width
+            Text(
+                text = "${account.bankName} • ${account.transactionCount} transactions",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.padding(start = 48.dp, top = 4.dp)
+            )
         }
     }
 }

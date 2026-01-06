@@ -1,6 +1,9 @@
 package com.banking.statement
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -21,6 +26,7 @@ import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.*
 import com.banking.statement.ui.theme.BankingStatementTheme
 import com.banking.statement.ui.theme.ThemeMode
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 // Composition local for strings
@@ -122,7 +128,9 @@ fun App(
                         NavigationTab.HOME -> HomeScreen(
                             onPickFile = onPickFile,
                             importState = importState,
-                            stats = stats
+                            stats = stats,
+                            totalIncome = totalIncome,
+                            totalExpenses = totalExpenses
                         )
                         NavigationTab.TRANSACTIONS -> TransactionListScreen(
                             transactions = transactions,
@@ -200,104 +208,187 @@ expect fun HandleImportDialogs(
 fun HomeScreen(
     onPickFile: ((List<String>) -> Unit)?,
     importState: ImportState,
-    stats: DatabaseStats
+    stats: DatabaseStats,
+    totalIncome: Double = 0.0,
+    totalExpenses: Double = 0.0
 ) {
     val strings = LocalStrings.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
+    // Auto-dismiss state for success card
+    var showSuccessCard by remember { mutableStateOf(false) }
 
-        // Title
-        Text(
-            text = strings.homeTitle,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = strings.homeSubtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Stats Card (simplified - no navigation buttons)
-        if (stats.totalStatements > 0 || stats.totalTransactions > 0 || stats.totalAccounts > 0) {
-            StatsCard(stats = stats)
-            Spacer(modifier = Modifier.height(24.dp))
+    // Track when import succeeds and auto-dismiss after 5 seconds
+    LaunchedEffect(importState.savedToDatabase, importState.parseResult) {
+        if (importState.savedToDatabase && importState.parseResult != null) {
+            showSuccessCard = true
+            delay(5000) // 5 seconds
+            showSuccessCard = false
         }
+    }
 
-        // Import Button
-        Button(
-            onClick = { onPickFile?.invoke(ImportFileType.allMimeTypes()) },
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Header section - same color as footer with shadow
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            enabled = !importState.isProcessing && onPickFile != null,
-            shape = RoundedCornerShape(12.dp)
+                .shadow(elevation = 8.dp)
+                .background(Color(0xFF000000))
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Text(
-                text = strings.importButton,
-                style = MaterialTheme.typography.titleMedium
-            )
+            Column {
+                // App Title
+                Text(
+                    text = strings.homeTitle,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Income and Expenses summary row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Income
+                    Column {
+                        Text(
+                            text = strings.income,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF888888)
+                        )
+                        Text(
+                            text = formatHeaderAmount(totalIncome),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4CAF50)
+                        )
+                    }
+
+                    // Expenses
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = strings.expenses,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF888888)
+                        )
+                        Text(
+                            text = formatHeaderAmount(totalExpenses),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE57373)
+                        )
+                    }
+                }
+            }
         }
 
-        // Processing Overlay
-        if (importState.isProcessing) {
+        // Main content area with different background color
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Spacer(modifier = Modifier.height(16.dp))
-            ProcessingCard(
-                progress = importState.progress,
-                message = importState.progressMessage.ifEmpty { strings.processing }
+
+            Text(
+                text = strings.homeSubtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = strings.supportedFormats,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            // Stats Card (simplified - no navigation buttons)
+            if (stats.totalStatements > 0 || stats.totalTransactions > 0 || stats.totalAccounts > 0) {
+                StatsCard(stats = stats)
+                Spacer(modifier = Modifier.height(24.dp))
+            }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Error Message
-        AnimatedVisibility(visible = importState.errorMessage != null) {
-            ErrorCard(message = importState.errorMessage ?: "")
-        }
-
-        // Success Result (without dialog - for backwards compatibility)
-        AnimatedVisibility(visible = importState.savedToDatabase && importState.parseResult != null) {
-            importState.parseResult?.let { result ->
-                SuccessCard(
-                    result = result,
-                    transactionCount = importState.transactionCount
+            // Import Button
+            Button(
+                onClick = { onPickFile?.invoke(ImportFileType.allMimeTypes()) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = !importState.isProcessing && onPickFile != null,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = strings.importButton,
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
-        }
 
-        // Parse Failed Result
-        AnimatedVisibility(
-            visible = importState.parseResult != null &&
-                      !importState.parseResult!!.success &&
-                      importState.errorMessage == null &&
-                      !importState.isProcessing
-        ) {
-            importState.parseResult?.let { result ->
-                ValidationFailedCard(result = result)
+            // Processing Overlay
+            if (importState.isProcessing) {
+                Spacer(modifier = Modifier.height(16.dp))
+                ProcessingCard(
+                    progress = importState.progress,
+                    message = importState.progressMessage.ifEmpty { strings.processing }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = strings.supportedFormats,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Error Message
+            AnimatedVisibility(visible = importState.errorMessage != null) {
+                ErrorCard(message = importState.errorMessage ?: "")
+            }
+
+            // Success Result - auto-dismisses after 5 seconds
+            AnimatedVisibility(
+                visible = showSuccessCard && importState.savedToDatabase && importState.parseResult != null,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                importState.parseResult?.let { result ->
+                    SuccessCard(
+                        result = result,
+                        transactionCount = importState.transactionCount
+                    )
+                }
+            }
+
+            // Parse Failed Result
+            AnimatedVisibility(
+                visible = importState.parseResult != null &&
+                          !importState.parseResult!!.success &&
+                          importState.errorMessage == null &&
+                          !importState.isProcessing
+            ) {
+                importState.parseResult?.let { result ->
+                    ValidationFailedCard(result = result)
+                }
             }
         }
+    }
+}
+
+// Helper function to format amounts for header
+private fun formatHeaderAmount(amount: Double): String {
+    val absAmount = kotlin.math.abs(amount)
+    return if (absAmount >= 1000000) {
+        "%.1fM €".format(absAmount / 1000000)
+    } else if (absAmount >= 1000) {
+        "%.1fK €".format(absAmount / 1000)
+    } else {
+        "%.2f €".format(absAmount).replace(".", ",")
     }
 }
 
