@@ -64,7 +64,7 @@ fun AppBottomNavigation(
     val navBarColor = Color(0xFF000000)
 
     NavigationBar(
-        modifier = modifier.height(56.dp),  // More compact height
+        modifier = modifier.height(72.dp),  // Increased height to prevent overlap
         containerColor = navBarColor,
         contentColor = Color.White,
         tonalElevation = 0.dp  // No elevation tint
@@ -86,7 +86,7 @@ fun AppBottomNavigation(
                     Icon(
                         imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                         contentDescription = label,
-                        modifier = Modifier.size(22.dp)  // Slightly smaller icons
+                        modifier = Modifier.size(24.dp)  // Standard icon size
                     )
                 },
                 label = {
