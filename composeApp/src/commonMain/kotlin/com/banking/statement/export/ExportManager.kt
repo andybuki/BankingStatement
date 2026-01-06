@@ -4,6 +4,7 @@ import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.MonthlySummary
 import com.banking.statement.ui.TransactionDisplay
 import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 /**
  * Export format types
@@ -240,8 +241,12 @@ object ExportManager {
         }
     }
 
-    private fun formatAmount(amount: Double): String {
+    /*private fun formatAmount(amount: Double): String {
         return "%.2f".format(amount)
+    }*/
+
+    private fun formatAmount(amount: Double): String {
+        return ((amount * 100).toInt() / 100.0).toString()
     }
 
     private fun formatAmountWithCurrency(amount: Double, currency: String): String {
@@ -251,7 +256,10 @@ object ExportManager {
             "GBP" -> "£"
             else -> currency
         }
-        val formatted = "%.2f".format(amount.absoluteValue).replace(".", ",")
+        //val formatted = "%.2f".format(amount.absoluteValue).replace(".", ",")
+        val formatted = ((amount.absoluteValue * 100).roundToInt() / 100.0)
+            .toString()
+            .replace(".", ",")
         return if (amount >= 0) "+$formatted $symbol" else "-$formatted $symbol"
     }
 }
