@@ -267,6 +267,7 @@ fun TransactionListScreen(
                 tx.counterparty?.lowercase()?.contains(query) == true ||
                 tx.category.displayName.lowercase().contains(query) ||
                 tx.category.displayNameDe.lowercase().contains(query) ||
+                tx.customCategoryName?.lowercase()?.contains(query) == true ||
                 tx.date.contains(query) ||
                 formatAmount(tx.amount, tx.currency).contains(query)
             }
