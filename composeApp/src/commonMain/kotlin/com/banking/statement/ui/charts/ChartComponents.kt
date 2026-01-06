@@ -9,31 +9,22 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.banking.statement.LocalStrings
-import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.MonthlySummary
-import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 
@@ -196,13 +187,13 @@ fun CategoryBarsChart(
                         .weight(0.5f)
                         .height(20.dp)
                 ) {
-                    androidx.compose.foundation.Canvas(
+                    Canvas(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         drawRoundRect(
                             color = parseColor(spending.category.color),
                             size = size.copy(width = size.width * (spending.percentage / 100f)),
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx())
+                            cornerRadius = CornerRadius(4.dp.toPx())
                         )
                     }
                 }
@@ -219,6 +210,7 @@ fun CategoryBarsChart(
 
 /**
  * Line chart showing monthly spending trends with income and expenses
+ * Custom Canvas implementation for cross-platform support
  */
 @Composable
 fun MonthlySpendingLineChart(
@@ -246,36 +238,88 @@ fun MonthlySpendingLineChart(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (monthlySummary.size >= 1) {
-                val modelProducer = remember { CartesianChartModelProducer() }
+            if (monthlySummary.isNotEmpty()) {
                 val reversed = remember(monthlySummary) { monthlySummary.reversed() }
-
-                LaunchedEffect(monthlySummary) {
-                    val incomeData = reversed.map { it.income }
-                    val expensesData = reversed.map { abs(it.expenses) }
-                    modelProducer.runTransaction {
-                        lineSeries {
-                            series(incomeData)   // Green line for income
-                            series(expensesData) // Red line for expenses
-                        }
-                    }
+                val incomeData = remember(reversed) { reversed.map { it.income } }
+                val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
+                val maxValue = remember(incomeData, expensesData) {
+                    maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
                 }
 
-                CartesianChartHost(
-                    chart = rememberCartesianChart(
-                        rememberLineCartesianLayer(),
-                        startAxis = rememberStartAxis(),
-                        bottomAxis = rememberBottomAxis(
-                            valueFormatter = { value, _, _ ->
-                                reversed.getOrNull(value.toInt())?.month ?: ""
-                            }
-                        )
-                    ),
-                    modelProducer = modelProducer,
+                val incomeColor = Color(0xFF4CAF50)
+                val expensesColor = Color(0xFFE57373)
+                val gridColor = MaterialTheme.colorScheme.outlineVariant
+
+                Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
-                )
+                ) {
+                    val padding = 40.dp.toPx()
+                    val chartWidth = size.width - padding * 2
+                    val chartHeight = size.height - padding * 2
+
+                    // Draw grid lines
+                    for (i in 0..4) {
+                        val y = padding + (chartHeight * i / 4)
+                        drawLine(
+                            color = gridColor,
+                            start = Offset(padding, y),
+                            end = Offset(size.width - padding, y),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+
+                    if (incomeData.size > 1 && maxValue > 0) {
+                        val stepX = chartWidth / (incomeData.size - 1)
+
+                        // Draw income line
+                        val incomePath = Path()
+                        incomeData.forEachIndexed { index, value ->
+                            val x = padding + index * stepX
+                            val y = padding + chartHeight - (value / maxValue * chartHeight).toFloat()
+                            if (index == 0) {
+                                incomePath.moveTo(x, y)
+                            } else {
+                                incomePath.lineTo(x, y)
+                            }
+                        }
+                        drawPath(
+                            path = incomePath,
+                            color = incomeColor,
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                        )
+
+                        // Draw expenses line
+                        val expensesPath = Path()
+                        expensesData.forEachIndexed { index, value ->
+                            val x = padding + index * stepX
+                            val y = padding + chartHeight - (value / maxValue * chartHeight).toFloat()
+                            if (index == 0) {
+                                expensesPath.moveTo(x, y)
+                            } else {
+                                expensesPath.lineTo(x, y)
+                            }
+                        }
+                        drawPath(
+                            path = expensesPath,
+                            color = expensesColor,
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                        )
+
+                        // Draw data points
+                        incomeData.forEachIndexed { index, value ->
+                            val x = padding + index * stepX
+                            val y = padding + chartHeight - (value / maxValue * chartHeight).toFloat()
+                            drawCircle(color = incomeColor, radius = 5.dp.toPx(), center = Offset(x, y))
+                        }
+                        expensesData.forEachIndexed { index, value ->
+                            val x = padding + index * stepX
+                            val y = padding + chartHeight - (value / maxValue * chartHeight).toFloat()
+                            drawCircle(color = expensesColor, radius = 5.dp.toPx(), center = Offset(x, y))
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -344,6 +388,7 @@ private fun formatAmountShort(amount: Double): String {
 
 /**
  * Bar chart comparing income vs expenses - grouped bars for each month
+ * Custom Canvas implementation for cross-platform support
  */
 @Composable
 fun IncomeVsExpensesBarChart(
@@ -372,37 +417,72 @@ fun IncomeVsExpensesBarChart(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (monthlySummary.isNotEmpty()) {
-                val modelProducer = remember { CartesianChartModelProducer() }
                 val reversed = remember(monthlySummary) { monthlySummary.reversed() }
-
-                LaunchedEffect(monthlySummary) {
-                    val incomeData = reversed.map { it.income }
-                    val expensesData = reversed.map { abs(it.expenses) }
-
-                    modelProducer.runTransaction {
-                        columnSeries {
-                            // Separate series for income and expenses = grouped bars
-                            series(incomeData)
-                            series(expensesData)
-                        }
-                    }
+                val incomeData = remember(reversed) { reversed.map { it.income } }
+                val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
+                val maxValue = remember(incomeData, expensesData) {
+                    maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
                 }
 
-                CartesianChartHost(
-                    chart = rememberCartesianChart(
-                        rememberColumnCartesianLayer(),
-                        startAxis = rememberStartAxis(),
-                        bottomAxis = rememberBottomAxis(
-                            valueFormatter = { value, _, _ ->
-                                reversed.getOrNull(value.toInt())?.month ?: ""
-                            }
-                        )
-                    ),
-                    modelProducer = modelProducer,
+                val incomeColor = Color(0xFF4CAF50)
+                val expensesColor = Color(0xFFE57373)
+                val gridColor = MaterialTheme.colorScheme.outlineVariant
+
+                Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
-                )
+                ) {
+                    val padding = 40.dp.toPx()
+                    val chartWidth = size.width - padding * 2
+                    val chartHeight = size.height - padding * 2
+
+                    // Draw grid lines
+                    for (i in 0..4) {
+                        val y = padding + (chartHeight * i / 4)
+                        drawLine(
+                            color = gridColor,
+                            start = Offset(padding, y),
+                            end = Offset(size.width - padding, y),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+
+                    if (incomeData.isNotEmpty() && maxValue > 0) {
+                        val groupWidth = chartWidth / incomeData.size
+                        val barWidth = groupWidth * 0.35f
+                        val gap = groupWidth * 0.05f
+
+                        incomeData.forEachIndexed { index, income ->
+                            val expense = expensesData[index]
+                            val groupStart = padding + index * groupWidth
+
+                            // Income bar
+                            val incomeHeight = (income / maxValue * chartHeight).toFloat()
+                            drawRoundRect(
+                                color = incomeColor,
+                                topLeft = Offset(
+                                    groupStart + gap,
+                                    padding + chartHeight - incomeHeight
+                                ),
+                                size = Size(barWidth, incomeHeight),
+                                cornerRadius = CornerRadius(4.dp.toPx())
+                            )
+
+                            // Expense bar
+                            val expenseHeight = (expense / maxValue * chartHeight).toFloat()
+                            drawRoundRect(
+                                color = expensesColor,
+                                topLeft = Offset(
+                                    groupStart + barWidth + gap * 2,
+                                    padding + chartHeight - expenseHeight
+                                ),
+                                size = Size(barWidth, expenseHeight),
+                                cornerRadius = CornerRadius(4.dp.toPx())
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -539,7 +619,7 @@ fun LegendItem(
                 .size(12.dp)
                 .padding(top = 4.dp)
         ) {
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
                 drawRect(color)
             }
         }
