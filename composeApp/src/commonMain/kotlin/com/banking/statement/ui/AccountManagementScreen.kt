@@ -588,7 +588,14 @@ private fun formatIbanShort(iban: String): String {
     }
 }
 
-private fun formatBalance(amount: Double): String {
+/*private fun formatBalance(amount: Double): String {
     val formatted = "%.2f".format(kotlin.math.abs(amount)).replace(".", ",")
+    return if (amount >= 0) "+$formatted €" else "-$formatted €"
+}*/
+
+private fun formatBalance(amount: Double): String {
+    val absAmount = kotlin.math.abs(amount)
+    val rounded = kotlin.math.round(absAmount * 100) / 100
+    val formatted = rounded.toString().replace(".", ",")
     return if (amount >= 0) "+$formatted €" else "-$formatted €"
 }

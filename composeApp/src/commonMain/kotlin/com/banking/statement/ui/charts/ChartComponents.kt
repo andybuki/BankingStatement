@@ -34,6 +34,7 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 
@@ -160,11 +161,16 @@ fun CategorySpendingDonutChart(
     }
 }
 
-private fun formatCurrencyChart(amount: Double): String {
+/*private fun formatCurrencyChart(amount: Double): String {
     val formatted = "%.2f".format(amount).replace(".", ",")
     return "-$formatted €"
-}
+}*/
 
+private fun formatCurrencyChart(amount: Double): String {
+    val rounded = kotlin.math.round(amount * 100) / 100
+    val formatted = rounded.toString().replace(".", ",")
+    return "-$formatted €"
+}
 /**
  * Horizontal bars showing category breakdown (alternative to pie chart)
  */

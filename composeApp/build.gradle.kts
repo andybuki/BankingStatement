@@ -10,12 +10,8 @@ plugins {
 }
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
-        }
-    }
-    
+    androidTarget()
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -25,7 +21,7 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(compose.preview)
@@ -47,9 +43,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.sqldelight.coroutines)
             implementation(libs.kotlinx.datetime)
-            // Vico Charts
             implementation(libs.vico.compose)
-            implementation(libs.vico.compose.m3)
             implementation(libs.vico.core)
         }
         iosMain.dependencies {

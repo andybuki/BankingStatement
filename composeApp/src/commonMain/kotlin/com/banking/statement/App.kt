@@ -381,7 +381,7 @@ fun HomeScreen(
 }
 
 // Helper function to format amounts for header
-private fun formatHeaderAmount(amount: Double): String {
+/*private fun formatHeaderAmount(amount: Double): String {
     val absAmount = kotlin.math.abs(amount)
     return if (absAmount >= 1000000) {
         "%.1fM €".format(absAmount / 1000000)
@@ -389,6 +389,30 @@ private fun formatHeaderAmount(amount: Double): String {
         "%.1fK €".format(absAmount / 1000)
     } else {
         "%.2f €".format(absAmount).replace(".", ",")
+    }
+}*/
+private fun formatWithOneDecimal(value: Double): String {
+    val rounded = kotlin.math.round(value * 10) / 10
+    return rounded.toString().replace(".", ",")
+}
+
+private fun formatWithTwoDecimals(value: Double): String {
+    val rounded = kotlin.math.round(value * 100) / 100
+    return rounded.toString().replace(".", ",")
+}
+private fun formatHeaderAmount(amount: Double): String {
+    val absAmount = kotlin.math.abs(amount)
+
+    return when {
+        absAmount >= 1_000_000 -> {
+            formatWithOneDecimal(absAmount / 1_000_000) + "M €"
+        }
+        absAmount >= 1_000 -> {
+            formatWithOneDecimal(absAmount / 1_000) + "K €"
+        }
+        else -> {
+            formatWithTwoDecimals(absAmount) + " €"
+        }
     }
 }
 

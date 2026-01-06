@@ -1301,9 +1301,16 @@ fun MonthlyItem(summary: MonthlySummary) {
     }
 }
 
-internal fun formatCurrency(amount: Double): String {
+/*internal fun formatCurrency(amount: Double): String {
     val absAmount = amount.absoluteValue
     val formatted = "%.2f".format(absAmount).replace(".", ",")
+    return if (amount >= 0) "+$formatted €" else "-$formatted €"
+}*/
+
+internal fun formatCurrency(amount: Double): String {
+    val absAmount = kotlin.math.abs(amount)
+    val rounded = kotlin.math.round(absAmount * 100) / 100
+    val formatted = rounded.toString().replace(".", ",")
     return if (amount >= 0) "+$formatted €" else "-$formatted €"
 }
 

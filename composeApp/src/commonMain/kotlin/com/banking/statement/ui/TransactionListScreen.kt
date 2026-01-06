@@ -589,8 +589,13 @@ private fun formatAmount(amount: Double, currency: String): String {
         "GBP" -> "£"
         else -> currency
     }
-    val formatted = "%.2f".format(kotlin.math.abs(amount))
-        .replace(".", ",") // German format
+    /*val formatted = "%.2f".format(kotlin.math.abs(amount))
+        .replace(".", ",") // German format*/
+
+    val absAmount = kotlin.math.abs(amount)
+    val rounded = kotlin.math.round(absAmount * 100) / 100
+    val formatted = rounded.toString().replace(".", ",") // German format
+
     return if (amount >= 0) "+$formatted $symbol" else "-$formatted $symbol"
 }
 
