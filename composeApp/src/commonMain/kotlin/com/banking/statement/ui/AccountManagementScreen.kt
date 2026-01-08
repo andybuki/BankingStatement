@@ -115,7 +115,7 @@ fun AccountManagementScreen(
 
         // Clear all data button (only show if there's data)
         if (accounts.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedButton(
                 onClick = { showClearAllDialog = true },

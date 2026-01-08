@@ -189,6 +189,9 @@ INSERT INTO categories(name, icon, color, parent_id) VALUES (?, ?, ?, ?);
 updateCategory:
 UPDATE categories SET name = ?, icon = ?, color = ? WHERE id = ?;
 
+resetTransactionsCategoryToOther:
+UPDATE transactions SET category_id = NULL, auto_category = 'OTHER' WHERE category_id = ?;
+
 deleteCategory:
 DELETE FROM categories WHERE id = ?;
 

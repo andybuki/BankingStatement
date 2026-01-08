@@ -178,6 +178,7 @@
     <string name="custom_categories">Categorías personalizadas</string>
     <string name="predefined_categories">Categorías predefinidas</string>
     <string name="add_category">Añadir categoría</string>
+    <string name="new_category">Nueva categoría</string>
     <string name="edit_category">Editar categoría</string>
     <string name="delete_category_action">Eliminar categoría</string>
     <string name="category_name_label">Nombre de categoría</string>

@@ -381,9 +381,12 @@ class TransactionRepository(
     }
 
     /**
-     * Delete a custom category
+     * Delete a custom category and reset affected transactions to "other" category
      */
     fun deleteCategory(id: Long) {
+        // First, reset all transactions with this category to "OTHER"
+        queries.resetTransactionsCategoryToOther(id)
+        // Then delete the category
         queries.deleteCategory(id)
     }
 

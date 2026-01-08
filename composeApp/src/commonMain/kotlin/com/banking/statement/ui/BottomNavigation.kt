@@ -64,7 +64,7 @@ fun AppBottomNavigation(
     val navBarColor = Color(0xFF000000)
 
     NavigationBar(
-        modifier = modifier.height(72.dp),  // Increased height to prevent overlap
+        modifier = modifier.height(88.dp),  // Increased height to prevent overlap
         containerColor = navBarColor,
         contentColor = Color.White,
         tonalElevation = 0.dp  // No elevation tint

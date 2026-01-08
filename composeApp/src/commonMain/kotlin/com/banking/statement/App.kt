@@ -3,6 +3,8 @@ package com.banking.statement
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,11 +14,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import bankingstatement.composeapp.generated.resources.Res
+import bankingstatement.composeapp.generated.resources.share
+import org.jetbrains.compose.resources.painterResource
 import com.banking.statement.categorization.CustomCategory
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
@@ -108,15 +119,33 @@ fun App(
     val strings = provideStrings()
     val accounts = accountsForManagement.map { AccountFilterOption(it.id, it.name) }
 
+    // Share menu states for header actions
+    var transactionsShareMenuExpanded by remember { mutableStateOf(false) }
+    var spendingShareMenuExpanded by remember { mutableStateOf(false) }
+    var showChartView by remember { mutableStateOf(false) }
+
+    // Merchants account filter state
+    var merchantsSelectedAccountId by remember { mutableStateOf<Long?>(null) }
+    var merchantsAccountDropdownExpanded by remember { mutableStateOf(false) }
+
     // Track success card visibility at App level to persist across tab switches
     var showSuccessCard by remember { mutableStateOf(false) }
     // Track which import we've shown the success card for (using a unique key)
     var lastShownImportKey by remember { mutableStateOf<String?>(null) }
 
+    // Track error card visibility at App level (auto-dismiss like success card)
+    var showErrorCard by remember { mutableStateOf(false) }
+    var lastShownErrorKey by remember { mutableStateOf<String?>(null) }
+
     // Generate a unique key for the current import
     val currentImportKey = if (importState.savedToDatabase && importState.parseResult != null) {
         "${importState.parseResult.bankName}_${importState.transactionCount}_${importState.parseResult.statementPeriod}"
     } else null
+
+    // Generate a unique key for errors
+    val currentErrorKey = importState.errorMessage ?:
+        (if (importState.parseResult != null && !importState.parseResult.success)
+            importState.parseResult.errorMessage else null)
 
     // Auto-dismiss success card after 5 seconds, only show once per import
     LaunchedEffect(currentImportKey) {
@@ -125,6 +154,16 @@ fun App(
             showSuccessCard = true
             delay(5000) // 5 seconds
             showSuccessCard = false
+        }
+    }
+
+    // Auto-dismiss error card after 5 seconds, only show once per error
+    LaunchedEffect(currentErrorKey) {
+        if (currentErrorKey != null && currentErrorKey != lastShownErrorKey) {
+            lastShownErrorKey = currentErrorKey
+            showErrorCard = true
+            delay(5000) // 5 seconds
+            showErrorCard = false
         }
     }
 
@@ -151,20 +190,54 @@ fun App(
                             stats = stats,
                             totalIncome = totalIncome,
                             totalExpenses = totalExpenses,
-                            showSuccessCard = showSuccessCard
+                            showSuccessCard = showSuccessCard,
+                            showErrorCard = showErrorCard
                         )
                         NavigationTab.TRANSACTIONS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.tabTransactions,
                                 totalIncome = totalIncome,
-                                totalExpenses = totalExpenses
+                                totalExpenses = totalExpenses,
+                                actions = {
+                                    if (onShareTransactions != null && transactions.isNotEmpty()) {
+                                        Box {
+                                            IconButton(onClick = { transactionsShareMenuExpanded = true }) {
+                                                Image(
+                                                    painter = painterResource(Res.drawable.share),
+                                                    contentDescription = strings.share,
+                                                    modifier = Modifier.size(24.dp),
+                                                    colorFilter = ColorFilter.tint(Color.White)
+                                                )
+                                            }
+                                            DropdownMenu(
+                                                expanded = transactionsShareMenuExpanded,
+                                                onDismissRequest = { transactionsShareMenuExpanded = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text(strings.exportCsv) },
+                                                    onClick = {
+                                                        transactionsShareMenuExpanded = false
+                                                        onShareTransactions(ExportFormat.CSV, transactions, null)
+                                                    }
+                                                )
+                                                DropdownMenuItem(
+                                                    text = { Text(strings.exportPdf) },
+                                                    onClick = {
+                                                        transactionsShareMenuExpanded = false
+                                                        onShareTransactions(ExportFormat.PDF, transactions, null)
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             )
                             TransactionListScreen(
                                 transactions = transactions,
                                 accounts = accounts,
                                 customCategories = customCategories,
                                 onBackClick = null,
-                                onShare = onShareTransactions,
+                                onShare = null,  // Share moved to header
                                 onCategoryChange = onCategoryChange,
                                 onCustomCategoryChange = onCustomCategoryChange,
                                 onManageCategories = { showCategoryManagement = true }
@@ -174,7 +247,114 @@ fun App(
                             AppHeader(
                                 title = strings.spendingTitle,
                                 totalIncome = totalIncome,
-                                totalExpenses = totalExpenses
+                                totalExpenses = totalExpenses,
+                                actions = {
+                                    // Chart toggle button
+                                    if (categorySpending.isNotEmpty()) {
+                                        IconButton(onClick = { showChartView = !showChartView }) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .clip(RoundedCornerShape(4.dp)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                if (showChartView) {
+                                                    // List icon - three colored horizontal lines
+                                                    Canvas(modifier = Modifier.size(18.dp)) {
+                                                        val lineHeight = 2.5.dp.toPx()
+                                                        val spacing = size.height / 4
+                                                        val colors = listOf(
+                                                            Color(0xFF4CAF50),
+                                                            Color(0xFFE57373),
+                                                            Color(0xFF2196F3)
+                                                        )
+                                                        colors.forEachIndexed { index, color ->
+                                                            val y = spacing * (index + 1)
+                                                            drawLine(
+                                                                color = color,
+                                                                start = Offset(0f, y),
+                                                                end = Offset(size.width, y),
+                                                                strokeWidth = lineHeight,
+                                                                cap = StrokeCap.Round
+                                                            )
+                                                        }
+                                                    }
+                                                } else {
+                                                    // Pie chart icon - three colored arcs
+                                                    Canvas(modifier = Modifier.size(18.dp)) {
+                                                        val strokeWidth = 3.dp.toPx()
+                                                        drawArc(
+                                                            color = Color(0xFF4CAF50),
+                                                            startAngle = -90f,
+                                                            sweepAngle = 120f,
+                                                            useCenter = false,
+                                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                                            size = Size(size.width, size.height)
+                                                        )
+                                                        drawArc(
+                                                            color = Color(0xFFE57373),
+                                                            startAngle = 30f,
+                                                            sweepAngle = 100f,
+                                                            useCenter = false,
+                                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                                            size = Size(size.width, size.height)
+                                                        )
+                                                        drawArc(
+                                                            color = Color(0xFF2196F3),
+                                                            startAngle = 130f,
+                                                            sweepAngle = 140f,
+                                                            useCenter = false,
+                                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                                                            size = Size(size.width, size.height)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // Share button
+                                    if (onShareSpending != null && categorySpending.isNotEmpty()) {
+                                        Box {
+                                            IconButton(onClick = { spendingShareMenuExpanded = true }) {
+                                                Image(
+                                                    painter = painterResource(Res.drawable.share),
+                                                    contentDescription = strings.share,
+                                                    modifier = Modifier.size(24.dp),
+                                                    colorFilter = ColorFilter.tint(Color.White)
+                                                )
+                                            }
+                                            DropdownMenu(
+                                                expanded = spendingShareMenuExpanded,
+                                                onDismissRequest = { spendingShareMenuExpanded = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text(strings.exportCsv) },
+                                                    onClick = {
+                                                        spendingShareMenuExpanded = false
+                                                        onShareSpending(ExportFormat.CSV, SpendingExportData(
+                                                            totalIncome = totalIncome,
+                                                            totalExpenses = totalExpenses,
+                                                            categorySpending = categorySpending,
+                                                            monthlySummary = monthlySummary
+                                                        ))
+                                                    }
+                                                )
+                                                DropdownMenuItem(
+                                                    text = { Text(strings.exportPdf) },
+                                                    onClick = {
+                                                        spendingShareMenuExpanded = false
+                                                        onShareSpending(ExportFormat.PDF, SpendingExportData(
+                                                            totalIncome = totalIncome,
+                                                            totalExpenses = totalExpenses,
+                                                            categorySpending = categorySpending,
+                                                            monthlySummary = monthlySummary
+                                                        ))
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             )
                             SpendingOverviewScreen(
                                 totalIncome = totalIncome,
@@ -184,18 +364,64 @@ fun App(
                                 transactions = transactions,
                                 accounts = accounts,
                                 onBackClick = null,
-                                onShare = onShareSpending
+                                onShare = null,  // Share moved to header
+                                showChartView = showChartView
                             )
                         }
                         NavigationTab.MERCHANTS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.merchantsTitle,
                                 totalIncome = totalIncome,
-                                totalExpenses = totalExpenses
+                                totalExpenses = totalExpenses,
+                                actions = {
+                                    if (accounts.isNotEmpty()) {
+                                        Box {
+                                            FilterChip(
+                                                selected = merchantsSelectedAccountId != null,
+                                                onClick = { merchantsAccountDropdownExpanded = true },
+                                                label = {
+                                                    Text(
+                                                        text = merchantsSelectedAccountId?.let { id ->
+                                                            accounts.find { it.id == id }?.name ?: strings.allAccounts
+                                                        } ?: strings.allAccounts,
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        color = Color.White
+                                                    )
+                                                },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    containerColor = Color(0xFF333333),
+                                                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                                )
+                                            )
+                                            DropdownMenu(
+                                                expanded = merchantsAccountDropdownExpanded,
+                                                onDismissRequest = { merchantsAccountDropdownExpanded = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text(strings.allAccounts) },
+                                                    onClick = {
+                                                        merchantsSelectedAccountId = null
+                                                        merchantsAccountDropdownExpanded = false
+                                                    }
+                                                )
+                                                accounts.forEach { account ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(account.name) },
+                                                        onClick = {
+                                                            merchantsSelectedAccountId = account.id
+                                                            merchantsAccountDropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             )
                             MerchantsScreen(
                                 transactions = transactions,
-                                accounts = accounts
+                                accounts = accounts,
+                                selectedAccountId = merchantsSelectedAccountId
                             )
                         }
                         NavigationTab.SETTINGS -> Column(modifier = Modifier.fillMaxSize()) {
@@ -259,7 +485,8 @@ fun HomeScreen(
     stats: DatabaseStats,
     totalIncome: Double = 0.0,
     totalExpenses: Double = 0.0,
-    showSuccessCard: Boolean = false  // Controlled by App level state
+    showSuccessCard: Boolean = false,  // Controlled by App level state
+    showErrorCard: Boolean = false     // Controlled by App level state for errors
 ) {
     val strings = LocalStrings.current
 
@@ -333,8 +560,12 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Error Message
-            AnimatedVisibility(visible = importState.errorMessage != null) {
+            // Error Message - auto-dismisses after 5 seconds
+            AnimatedVisibility(
+                visible = showErrorCard && importState.errorMessage != null,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 ErrorCard(message = importState.errorMessage ?: "")
             }
 
@@ -352,12 +583,15 @@ fun HomeScreen(
                 }
             }
 
-            // Parse Failed Result
+            // Parse Failed Result - auto-dismisses after 5 seconds
             AnimatedVisibility(
-                visible = importState.parseResult != null &&
+                visible = showErrorCard &&
+                          importState.parseResult != null &&
                           !importState.parseResult!!.success &&
                           importState.errorMessage == null &&
-                          !importState.isProcessing
+                          !importState.isProcessing,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
                 importState.parseResult?.let { result ->
                     ValidationFailedCard(result = result)
@@ -411,7 +645,8 @@ fun AppHeader(
     title: String,
     totalIncome: Double = 0.0,
     totalExpenses: Double = 0.0,
-    showSummary: Boolean = true
+    showSummary: Boolean = true,
+    actions: @Composable RowScope.() -> Unit = {}
 ) {
     val strings = LocalStrings.current
 
@@ -423,13 +658,25 @@ fun AppHeader(
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Column {
-            // Title
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            // Title row with actions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    actions()
+                }
+            }
 
             if (showSummary) {
                 Spacer(modifier = Modifier.height(12.dp))

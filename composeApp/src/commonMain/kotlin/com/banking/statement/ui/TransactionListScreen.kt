@@ -285,47 +285,6 @@ fun TransactionListScreen(
         }
     }
 
-    // Share action row (replaces TopAppBar actions)
-    if (onShare != null && filteredTransactions.isNotEmpty()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.End
-        ) {
-            Box {
-                IconButton(onClick = { shareMenuExpanded = true }) {
-                    Image(
-                        painter = painterResource(Res.drawable.share),
-                        contentDescription = strings.share,
-                        modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                    )
-                }
-                DropdownMenu(
-                    expanded = shareMenuExpanded,
-                    onDismissRequest = { shareMenuExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(strings.exportCsv) },
-                        onClick = {
-                            shareMenuExpanded = false
-                            onShare(ExportFormat.CSV, filteredTransactions, selectedAccountName)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(strings.exportPdf) },
-                        onClick = {
-                            shareMenuExpanded = false
-                            onShare(ExportFormat.PDF, filteredTransactions, selectedAccountName)
-                        }
-                    )
-                }
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -627,24 +586,10 @@ fun CategoryPickerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = strings.changeCategory,
-                    style = MaterialTheme.typography.titleLarge
-                )
-                if (onManageCategories != null) {
-                    TextButton(onClick = onManageCategories) {
-                        Text(
-                            text = "⚙️",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                }
-            }
+            Text(
+                text = strings.changeCategory,
+                style = MaterialTheme.typography.titleLarge
+            )
         },
         text = {
             LazyColumn(
@@ -767,6 +712,13 @@ fun CategoryPickerDialog(
                             )
                         }
                     }
+                }
+            }
+        },
+        dismissButton = {
+            if (onManageCategories != null) {
+                TextButton(onClick = onManageCategories) {
+                    Text(strings.newCategory)
                 }
             }
         },
