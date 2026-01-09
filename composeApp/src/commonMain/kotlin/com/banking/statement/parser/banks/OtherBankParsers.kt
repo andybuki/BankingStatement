@@ -43,15 +43,28 @@ class RevolutPdfParser : BankPdfParser {
             val accountNumber = extractAccountNumber(pdfText)
             val statementPeriod = extractStatementPeriod(pdfText)
 
-            // Try multiple parsing strategies
-            var transactions = parseRevolutTableFormat(lines, currency)
+            // Try multiple parsing strategies - start with German format
+            var transactions = parseRevolutGermanFormat(lines, currency)
 
-            if (transactions.isEmpty()) {
-                transactions = parseRevolutLineFormat(lines, currency)
+            if (transactions.size < 3) {
+                val tableTransactions = parseRevolutTableFormat(lines, currency)
+                if (tableTransactions.size > transactions.size) {
+                    transactions = tableTransactions
+                }
             }
 
-            if (transactions.isEmpty()) {
-                transactions = parseRevolutBlockFormat(lines, currency)
+            if (transactions.size < 3) {
+                val lineTransactions = parseRevolutLineFormat(lines, currency)
+                if (lineTransactions.size > transactions.size) {
+                    transactions = lineTransactions
+                }
+            }
+
+            if (transactions.size < 3) {
+                val blockTransactions = parseRevolutBlockFormat(lines, currency)
+                if (blockTransactions.size > transactions.size) {
+                    transactions = blockTransactions
+                }
             }
 
             return if (transactions.isNotEmpty()) {
@@ -76,6 +89,95 @@ class RevolutPdfParser : BankPdfParser {
                 errorMessage = "Error parsing Revolut PDF: ${e.message}"
             )
         }
+    }
+
+    /**
+     * Parse German Revolut format with columns: Datum, Beschreibung, Geldausgang, Geldeingang, Kontostand
+     * Example: "01.09.2024 Payment from Leonie Jakubowski €21.00 €255.44"
+     */
+    private fun parseRevolutGermanFormat(lines: List<String>, currency: String): List<ParsedTransaction> {
+        val transactions = mutableListOf<ParsedTransaction>()
+
+        // German date pattern: DD.MM.YYYY
+        val datePattern = Regex("""(\d{2}\.\d{2}\.\d{4})""")
+        // Euro amount pattern: €21.00 or €1,234.56
+        val euroAmountPattern = Regex("""€(\d{1,3}(?:[,.']\d{3})*(?:[.,]\d{2}))""")
+
+        // Detect if this is German format by checking for column headers
+        val hasGermanHeader = lines.any {
+            val lower = it.lowercase()
+            lower.contains("geldausgang") || lower.contains("geldeingang") || lower.contains("beschreibung")
+        }
+
+        if (!hasGermanHeader) {
+            return transactions
+        }
+
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i].trim()
+            if (line.isEmpty() || isHeaderOrFooter(line)) {
+                i++
+                continue
+            }
+
+            // Look for German date at start
+            val dateMatch = datePattern.find(line)
+            if (dateMatch != null && dateMatch.range.first < 15) {
+                val dateStr = dateMatch.groupValues[1]
+                val parts = dateStr.split(".")
+                val date = try {
+                    LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
+                } catch (e: Exception) {
+                    i++
+                    continue
+                }
+
+                // Find all euro amounts on this line
+                val amounts = euroAmountPattern.findAll(line).toList()
+
+                if (amounts.isNotEmpty()) {
+                    // Extract description
+                    var description = line.substring(dateMatch.range.last + 1)
+                    amounts.forEach { description = description.replace(it.value, "") }
+                    description = description.replace(Regex("""\s+"""), " ").trim()
+
+                    // Determine amount - first amount is usually the transaction, last is balance
+                    // If there are 2+ amounts, first is transaction amount
+                    val amountStr = amounts.first().groupValues[1]
+                        .replace(",", "")
+                        .replace("'", "")
+                        .replace(".", "")
+                        .let { it.dropLast(2) + "." + it.takeLast(2) }
+                    val amountValue = amountStr.toDoubleOrNull() ?: 0.0
+
+                    // Determine if income or expense based on context
+                    val lower = line.lowercase()
+                    val isIncome = lower.contains("from") || lower.contains("von") ||
+                        lower.contains("payment from") || lower.contains("received")
+
+                    val finalAmount = if (isIncome) amountValue else -amountValue
+
+                    if (description.length > 2) {
+                        transactions.add(
+                            ParsedTransaction(
+                                bookingDate = date,
+                                valueDate = date,
+                                amount = finalAmount,
+                                currency = currency,
+                                description = description.take(200),
+                                counterpartyName = extractCounterparty(description),
+                                transactionType = detectTransactionType(description),
+                                rawText = line
+                            )
+                        )
+                    }
+                }
+            }
+            i++
+        }
+
+        return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.description.take(20)}" }
     }
 
     /**
@@ -449,13 +551,17 @@ class DkbParser : GermanBankParser() {
         "deutsche kreditbank",
         "dkb",
         "byladem1",
-        "dkb.de"
+        "byladem1001",
+        "dkb.de",
+        "dkb-ag"
     )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) } &&
-               (lower.contains("kontoauszug") || lower.contains("kreditkarte") || lower.contains("girokonto"))
+        // Also check for DKB-specific format: "DD.MM. DD.MM. Überweisung" with "KREF+" pattern
+        val hasDkbFormat = lower.contains("kref+") && lower.contains("svwz+")
+        return identifiers.any { lower.contains(it) } ||
+               (hasDkbFormat && (lower.contains("kontoauszug") || lower.contains("überweisung")))
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {

@@ -20,7 +20,23 @@ abstract class GermanBankParser : BankPdfParser {
         "SEPA-Lastschrift", "SEPA-Überweisung", "Kontoführung",
         "Geldautomat", "Echtzeitüberweisung", "Abrechnung",
         "Barauszahlung", "Bareinzahlung", "Scheckeinreichung",
-        "Wertpapier", "Dividende", "Zinsabschluss"
+        "Wertpapier", "Dividende", "Zinsabschluss",
+        "SEPA Lastschrifteinzug", "SEPA-Basislastschrift", "Basislastschrift",
+        "Zahlungseingang", "SDD Lastschr", "Wertstellung"
+    )
+
+    // Keywords that indicate INCOME (positive amount)
+    protected val incomeKeywords = listOf(
+        "gutschrift", "zahlungseingang", "gehalt", "lohn", "einzahlung",
+        "geldeingang", "eingang", "haben", "überweisung von", "zahlung von",
+        "erstattung", "rückerstattung", "zinsen", "dividende", "bonus"
+    )
+
+    // Keywords that indicate EXPENSE (negative amount)
+    protected val expenseKeywords = listOf(
+        "lastschrift", "abbuchung", "auszahlung", "geldausgang", "ausgang",
+        "soll", "kartenzahlung", "überweisung an", "zahlung an", "entgelt",
+        "gebühr", "kosten"
     )
 
     /**
@@ -37,19 +53,35 @@ abstract class GermanBankParser : BankPdfParser {
             val accountIban = extractIban(pdfText)
             val statementPeriod = extractStatementPeriod(pdfText)
 
-            // Try multiple parsing strategies
-            var transactions = parseMultiLineFormat(lines)
+            // Try multiple parsing strategies - start with comprehensive
+            var transactions = parseComprehensiveFormat(lines)
 
-            if (transactions.isEmpty()) {
-                transactions = parseTableFormat(lines)
+            if (transactions.size < 3) {
+                val multiLineTransactions = parseMultiLineFormat(lines)
+                if (multiLineTransactions.size > transactions.size) {
+                    transactions = multiLineTransactions
+                }
             }
 
-            if (transactions.isEmpty()) {
-                transactions = parseDateAmountLines(lines)
+            if (transactions.size < 3) {
+                val tableTransactions = parseTableFormat(lines)
+                if (tableTransactions.size > transactions.size) {
+                    transactions = tableTransactions
+                }
             }
 
-            if (transactions.isEmpty()) {
-                transactions = parseBlockFormat(lines)
+            if (transactions.size < 3) {
+                val dateAmountTransactions = parseDateAmountLines(lines)
+                if (dateAmountTransactions.size > transactions.size) {
+                    transactions = dateAmountTransactions
+                }
+            }
+
+            if (transactions.size < 3) {
+                val blockTransactions = parseBlockFormat(lines)
+                if (blockTransactions.size > transactions.size) {
+                    transactions = blockTransactions
+                }
             }
 
             return if (transactions.isNotEmpty()) {
@@ -474,12 +506,180 @@ abstract class GermanBankParser : BankPdfParser {
         return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.description.take(20)}" }
     }
 
+    /**
+     * Strategy 5: Comprehensive format parser for various German bank formats
+     * Handles: split dates, short dates, suffix signs (S/H/+/-), amounts on separate lines
+     */
+    protected fun parseComprehensiveFormat(lines: List<String>): List<ParsedTransaction> {
+        val transactions = mutableListOf<ParsedTransaction>()
+
+        // Preprocess: Join split dates like "02.05.\n2024" -> "02.05.2024"
+        val processedLines = preprocessLines(lines)
+
+        // Comprehensive patterns
+        // Date: DD.MM.YYYY or DD.MM.YY or DD.MM. (short)
+        val datePattern = Regex("""(\d{2}\.\d{2}\.(?:\d{4}|\d{2})?)""")
+        // Amount with optional sign suffix: "128,96 S", "2.500,00 H", "25,49+", "19,90-", "513,29 €"
+        val amountWithSignPattern = Regex(
+            """([+-−–])?\s*(\d{1,3}(?:[.]\d{3})*,\d{2})\s*(?:€|EUR)?\s*([+-−–SH])?""",
+            RegexOption.IGNORE_CASE
+        )
+
+        var i = 0
+        while (i < processedLines.size) {
+            val line = processedLines[i].trim()
+            if (line.isEmpty() || isHeaderOrFooter(line)) {
+                i++
+                continue
+            }
+
+            // Try to find a date in this line
+            val dateMatch = datePattern.find(line)
+            if (dateMatch == null) {
+                i++
+                continue
+            }
+
+            val dateStr = normalizeYear(dateMatch.groupValues[1])
+            val bookingDate = parseGermanDate(dateStr)
+            if (bookingDate == null) {
+                i++
+                continue
+            }
+
+            // Look for second date (value date) on same line
+            val remainingAfterFirstDate = line.substring(dateMatch.range.last + 1)
+            val secondDateMatch = datePattern.find(remainingAfterFirstDate)
+            val valueDate = secondDateMatch?.let {
+                parseGermanDate(normalizeYear(it.groupValues[1]))
+            } ?: bookingDate
+
+            // Collect transaction block (current line + following lines until next date)
+            val blockLines = mutableListOf(line)
+            var j = i + 1
+            while (j < processedLines.size && j < i + 12) {
+                val nextLine = processedLines[j].trim()
+                if (nextLine.isEmpty()) {
+                    j++
+                    continue
+                }
+                // Stop if we hit a new transaction (line starting with date pattern that's not just an amount)
+                val nextDateMatch = datePattern.find(nextLine)
+                if (nextDateMatch != null && nextDateMatch.range.first < 3) {
+                    // Check if this is likely a new transaction or continuation
+                    val hasAmountOnLine = amountWithSignPattern.containsMatchIn(nextLine)
+                    if (!hasAmountOnLine || nextLine.length > 20) {
+                        break
+                    }
+                }
+                if (!isHeaderOrFooter(nextLine)) {
+                    blockLines.add(nextLine)
+                }
+                j++
+            }
+
+            // Join block and find amount
+            val blockText = blockLines.joinToString(" ")
+            val amountMatch = amountWithSignPattern.findAll(blockText).lastOrNull()
+
+            if (amountMatch != null) {
+                val prefixSign = amountMatch.groupValues[1]
+                val amountStr = amountMatch.groupValues[2]
+                val suffixSign = amountMatch.groupValues[3].uppercase()
+
+                val amountValue = parseGermanAmount(amountStr)
+                if (amountValue != null) {
+                    // Build description from block
+                    var description = blockText
+                    // Remove dates
+                    datePattern.findAll(description).forEach {
+                        description = description.replace(it.value, " ")
+                    }
+                    // Remove amounts
+                    amountWithSignPattern.findAll(description).forEach {
+                        description = description.replace(it.value, " ")
+                    }
+                    description = description
+                        .replace(Regex("""[€SH+-−–]"""), " ")
+                        .replace(Regex("""\s+"""), " ")
+                        .trim()
+
+                    // Determine sign
+                    val isExpense = when {
+                        prefixSign in listOf("-", "−", "–") -> true
+                        prefixSign == "+" -> false
+                        suffixSign in listOf("-", "−", "–") -> true
+                        suffixSign == "+" -> false
+                        suffixSign == "S" -> true
+                        suffixSign == "H" -> false
+                        else -> isExpenseFromContext(description)
+                    }
+
+                    val finalAmount = if (isExpense) -kotlin.math.abs(amountValue) else kotlin.math.abs(amountValue)
+
+                    if (description.length > 2 || transactions.none { it.bookingDate == bookingDate && it.amount == finalAmount }) {
+                        transactions.add(
+                            ParsedTransaction(
+                                bookingDate = bookingDate,
+                                valueDate = valueDate,
+                                amount = finalAmount,
+                                currency = "EUR",
+                                description = description.ifEmpty { "Transaction" },
+                                counterpartyName = extractCounterparty(description),
+                                transactionType = detectTransactionType(description),
+                                rawText = blockLines.joinToString("\n")
+                            )
+                        )
+                    }
+                }
+            }
+
+            i = j
+        }
+
+        return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.description.take(20)}" }
+    }
+
+    /**
+     * Preprocess lines: Join split dates like "02.05.\n2024" -> "02.05.2024"
+     */
+    private fun preprocessLines(lines: List<String>): List<String> {
+        val result = mutableListOf<String>()
+        var i = 0
+        while (i < lines.size) {
+            var line = lines[i]
+
+            // Check if line ends with incomplete date "DD.MM." and next line is year "YYYY"
+            val incompleteDatePattern = Regex("""(\d{2}\.\d{2}\.)\s*$""")
+            val yearPattern = Regex("""^(\d{4})\s*$""")
+
+            if (incompleteDatePattern.containsMatchIn(line) && i + 1 < lines.size) {
+                val nextLine = lines[i + 1].trim()
+                val yearMatch = yearPattern.find(nextLine)
+                if (yearMatch != null) {
+                    // Join the date
+                    line = line.trimEnd() + yearMatch.groupValues[1]
+                    i++ // Skip the year line
+                }
+            }
+
+            result.add(line)
+            i++
+        }
+        return result
+    }
+
     // Helper functions
     protected fun parseGermanDate(dateStr: String): LocalDate? {
         return try {
             val parts = dateStr.split(".")
             if (parts.size == 3) {
                 LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
+            } else if (parts.size == 2) {
+                // Short date format: DD.MM. - use current year
+                val currentYear = Clock.System.now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault()).year
+                LocalDate(currentYear, parts[1].trimEnd('.').toInt(), parts[0].toInt())
             } else null
         } catch (e: Exception) {
             null
@@ -490,13 +690,87 @@ abstract class GermanBankParser : BankPdfParser {
         return try {
             amountStr
                 .replace("€", "")
+                .replace("EUR", "")
                 .replace(" ", "")
                 .replace(".", "")
                 .replace(",", ".")
+                .replace("−", "-")  // Unicode minus to regular minus
+                .replace("–", "-")  // En dash to minus
                 .trim()
                 .toDouble()
         } catch (e: Exception) {
             null
+        }
+    }
+
+    /**
+     * Parse amount with sign suffix/prefix: "25,49+", "128,96 S", "2.500,00 H", "- 492,00", "19,90 -"
+     * Returns Pair(amount, isExpense)
+     */
+    protected fun parseGermanAmountWithSign(text: String, context: String = ""): Pair<Double, Boolean>? {
+        // Normalize unicode characters
+        val normalized = text
+            .replace("−", "-")
+            .replace("–", "-")
+            .trim()
+
+        // Pattern for amount with optional sign prefix/suffix
+        // Matches: "25,49+", "128,96 S", "2.500,00 H", "- 492,00", "19,90-", "513,29 €"
+        val amountPattern = Regex(
+            """([+-])?\s*(\d{1,3}(?:[.]\d{3})*,\d{2})\s*(?:€|EUR)?\s*([+-SH])?""",
+            RegexOption.IGNORE_CASE
+        )
+
+        val match = amountPattern.find(normalized) ?: return null
+        val prefixSign = match.groupValues[1]
+        val amountStr = match.groupValues[2]
+        val suffixSign = match.groupValues[3].uppercase()
+
+        val amount = parseGermanAmount(amountStr) ?: return null
+
+        // Determine if expense based on signs
+        val isExpense = when {
+            prefixSign == "-" -> true
+            prefixSign == "+" -> false
+            suffixSign == "-" -> true
+            suffixSign == "+" -> false
+            suffixSign == "S" -> true   // Soll = debit = expense
+            suffixSign == "H" -> false  // Haben = credit = income
+            // Check context for keywords
+            else -> isExpenseFromContext(context)
+        }
+
+        return Pair(amount, isExpense)
+    }
+
+    /**
+     * Determine if transaction is expense based on description keywords
+     */
+    protected fun isExpenseFromContext(context: String): Boolean {
+        val lower = context.lowercase()
+        // Check income keywords first
+        for (keyword in incomeKeywords) {
+            if (lower.contains(keyword)) return false
+        }
+        // Check expense keywords
+        for (keyword in expenseKeywords) {
+            if (lower.contains(keyword)) return true
+        }
+        // Default to expense for unknown
+        return true
+    }
+
+    /**
+     * Determine sign multiplier from context and parsed sign
+     */
+    protected fun getSignMultiplier(signStr: String?, context: String): Double {
+        val sign = signStr?.trim()?.uppercase() ?: ""
+        return when {
+            sign.startsWith("-") || sign == "S" -> -1.0
+            sign.startsWith("+") || sign == "H" -> 1.0
+            // Use context to determine
+            !isExpenseFromContext(context) -> 1.0
+            else -> -1.0
         }
     }
 
@@ -506,6 +780,12 @@ abstract class GermanBankParser : BankPdfParser {
             val year = parts[2].toIntOrNull() ?: return dateStr
             val fullYear = if (year > 50) 1900 + year else 2000 + year
             return "${parts[0]}.${parts[1]}.$fullYear"
+        }
+        // Handle short dates: "06.07" -> add current year
+        if (parts.size == 2 || (parts.size == 3 && parts[2].isEmpty())) {
+            val currentYear = Clock.System.now()
+                .toLocalDateTime(TimeZone.currentSystemDefault()).year
+            return "${parts[0]}.${parts[1]}.$currentYear"
         }
         return dateStr
     }
@@ -625,7 +905,9 @@ class CommerzbankParser : GermanBankParser() {
         "commerzbank",
         "cobadeff",
         "dresdner bank",
-        "commerzbank.de"
+        "commerzbank.de",
+        "comdirect",  // Commerzbank subsidiary
+        "cobadehd"    // BIC variant
     )
 
     override fun canParse(pdfText: String): Boolean {
@@ -650,7 +932,9 @@ class VolksbankParser : GermanBankParser() {
         "vr bank",
         "raiffeisenbank",
         "genossenschaftsbank",
-        "genoded"  // BIC prefix for Genobanks
+        "genoded",  // BIC prefix for Genobanks
+        "basislastschrift pn:",  // Common pattern in Volksbank statements
+        "klarna bank ab"  // Often appears in Volksbank statements
     )
 
     override fun canParse(pdfText: String): Boolean {
@@ -697,12 +981,16 @@ class ConsorsbankParser : GermanBankParser() {
         "consors",
         "bnp paribas",
         "csdbde71",
-        "cortal consors"
+        "cortal consors",
+        "visa 26466"  // Consorsbank VISA card pattern
     )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
+        // Also check for Consorsbank-specific format: "GUTSCHRIFT DD.MM. XXXX DD.MM. XX,XX+"
+        val hasConsorsFormat = Regex("""(GUTSCHRIFT|LASTSCHRIFT)\s+\d{2}\.\d{2}\.\s+\d{4}\s+\d{2}\.\d{2}\.\s+[\d,]+[+-]""")
+            .containsMatchIn(pdfText.uppercase())
+        return identifiers.any { lower.contains(it) } || hasConsorsFormat
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
@@ -743,13 +1031,18 @@ class TargobankParser : GermanBankParser() {
         "targobank",
         "targo bank",
         "cmcidedd",
+        "cmcideddxxx",
+        "trbkdebb",
+        "trbkdebbxxx",
         "targobank.de",
         "citibank"  // Former name
     )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
+        // Also check for Targo-specific format: "Datum Tag Buchungstext Ausgaben Einnahmen"
+        val hasTargoFormat = lower.contains("ausgaben") && lower.contains("einnahmen") && lower.contains("guthaben/kredit")
+        return identifiers.any { lower.contains(it) } || hasTargoFormat
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
@@ -768,7 +1061,9 @@ class DirectBank1822Parser : GermanBankParser() {
         "1822 direkt",
         "1822direct",
         "frankfurter sparkasse",
-        "heaborh" // BIC contains this
+        "heaborh", // BIC contains this
+        "dsl bank",  // DSL Bank is related to 1822direkt
+        "sepa-basislastschrift"  // Common in 1822direkt statements
     )
 
     override fun canParse(pdfText: String): Boolean {
@@ -778,6 +1073,33 @@ class DirectBank1822Parser : GermanBankParser() {
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
         return parseGermanStatement(pdfText, fileName, "1822direkt")
+    }
+}
+
+// ============================================================
+// Apobank Parser (Deutsche Apotheker- und Ärztebank)
+// ============================================================
+class ApoBankParser : GermanBankParser() {
+    override val bankName = "Apobank"
+
+    private val identifiers = listOf(
+        "apobank",
+        "apo bank",
+        "apotheker",
+        "ärztebank",
+        "daaededd",  // BIC
+        "deutsche apotheker"
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        // Also check for Apobank-specific format: "Wertstellung: DD.MM.YYYY"
+        val hasApobankFormat = lower.contains("wertstellung:") && lower.contains("kartenzahlung debitkarte")
+        return identifiers.any { lower.contains(it) } || hasApobankFormat
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "Apobank")
     }
 }
 
