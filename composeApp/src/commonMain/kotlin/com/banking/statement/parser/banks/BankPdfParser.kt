@@ -107,6 +107,9 @@ object BankParserRegistry {
         register(BancaMarchParser())
         register(BancoCttParser())
 
+        // German banks (additional)
+        register(ApoBankParser())
+
         // Generic German bank parser (fallback - should be last for German banks)
         register(GenericGermanBankParser())
     }
