@@ -2,7 +2,10 @@ package com.banking.statement.parser.banks
 
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.parser.ParsedTransaction
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Base class for German bank parsers with common parsing logic
@@ -361,8 +364,8 @@ abstract class GermanBankParser : BankPdfParser {
             else {
                 val datePairMatch = datePairPattern.find(line)
                 if (datePairMatch != null) {
-                    val currentYear = kotlinx.datetime.Clock.System.now()
-                        .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).year
+                    val currentYear = Clock.System.now()
+                        .toLocalDateTime(TimeZone.currentSystemDefault()).year
                     bookingDate = parseGermanDate("${datePairMatch.groupValues[1]}$currentYear")
                     valueDate = parseGermanDate("${datePairMatch.groupValues[2]}$currentYear")
                     val remainingText = datePairMatch.groupValues[3].trim()
