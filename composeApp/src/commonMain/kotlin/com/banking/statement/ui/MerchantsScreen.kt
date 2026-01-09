@@ -21,13 +21,10 @@ import com.banking.statement.LocalStrings
 fun MerchantsScreen(
     transactions: List<TransactionDisplay>,
     accounts: List<AccountFilterOption> = emptyList(),
+    selectedAccountId: Long? = null,  // Controlled by App level
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
-
-    // Account filtering
-    var selectedAccountId by remember { mutableStateOf<Long?>(null) }
-    var accountDropdownExpanded by remember { mutableStateOf(false) }
 
     // Filter transactions by selected account
     val filteredTransactions = remember(transactions, selectedAccountId) {
@@ -62,57 +59,7 @@ fun MerchantsScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        // Account filter row (title is now in AppHeader)
-        if (accounts.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ExposedDropdownMenuBox(
-                    expanded = accountDropdownExpanded,
-                    onExpandedChange = { accountDropdownExpanded = it }
-                ) {
-                    FilterChip(
-                        selected = selectedAccountId != null,
-                        onClick = { accountDropdownExpanded = true },
-                        label = {
-                            Text(
-                                text = selectedAccountId?.let { id ->
-                                    accounts.find { it.id == id }?.name ?: strings.allAccounts
-                                } ?: strings.allAccounts,
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        },
-                        modifier = Modifier.menuAnchor()
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = accountDropdownExpanded,
-                        onDismissRequest = { accountDropdownExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(strings.allAccounts) },
-                            onClick = {
-                                selectedAccountId = null
-                                accountDropdownExpanded = false
-                            }
-                        )
-                        accounts.forEach { account ->
-                            DropdownMenuItem(
-                                text = { Text(account.name) },
-                                onClick = {
-                                    selectedAccountId = account.id
-                                    accountDropdownExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        Spacer(modifier = Modifier.height(8.dp))
 
         if (merchantHistory.isEmpty()) {
             // Empty state

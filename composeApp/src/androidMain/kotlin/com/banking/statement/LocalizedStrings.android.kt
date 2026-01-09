@@ -135,6 +135,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     customCategories = stringResource(R.string.custom_categories),
     predefinedCategories = stringResource(R.string.predefined_categories),
     addCategory = stringResource(R.string.add_category),
+    newCategory = stringResource(R.string.new_category),
     editCategory = stringResource(R.string.edit_category),
     deleteCategory = stringResource(R.string.delete_category_action),
     categoryName = stringResource(R.string.category_name_label),
