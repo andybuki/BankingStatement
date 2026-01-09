@@ -29,9 +29,10 @@ class BankStatementValidator {
         // Bank statement keywords in multiple languages
         private val BALANCE_KEYWORDS = listOf(
             // German
-            "Saldo", "Kontostand", "Guthaben", "Haben",
+            "Saldo", "Kontostand", "Guthaben", "Haben", "Neuer Saldo", "Alter Saldo",
+            "Anfangssaldo", "Endsaldo", "Abschlusssaldo", "Vorläufiger Saldo",
             // English
-            "Balance", "Account Balance", "Available Balance",
+            "Balance", "Account Balance", "Available Balance", "Opening Balance", "Closing Balance",
             // French
             "Solde",
             // Spanish
@@ -39,9 +40,13 @@ class BankStatementValidator {
         )
 
         private val TRANSACTION_KEYWORDS = listOf(
-            // German
+            // German - expanded
             "Buchung", "Valuta", "Lastschrift", "Gutschrift", "Überweisung",
             "Verwendungszweck", "Betrag", "Auszug", "Kontoauszug",
+            "Kartenzahlung", "Bargeldein", "Bargeldaus", "Dauerauftrag",
+            "SEPA", "Einzahlung", "Auszahlung", "Entgelt", "Abschluss",
+            "Zinsen", "Gehalt", "Lohn", "Mandat", "Referenz", "Einreicher",
+            "Kundenreferenz", "SDD Lastschr", "Abrechnung", "Rechnungsabschluss",
             // English
             "Transaction", "Debit", "Credit", "Transfer", "Payment",
             "Statement", "Description", "Amount", "Date",
@@ -53,7 +58,9 @@ class BankStatementValidator {
 
         private val BANK_INDICATORS = listOf(
             "IBAN", "BIC", "SWIFT", "BLZ",
-            "Konto", "Account", "Compte", "Cuenta"
+            "Konto", "Account", "Compte", "Cuenta",
+            "Kontonummer", "Bankleitzahl", "Girokonto",
+            "Bank AG", "Sparkasse", "Volksbank", "Raiffeisenbank"
         )
     }
 
