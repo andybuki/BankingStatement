@@ -169,7 +169,8 @@ abstract class GermanBankParser : BankPdfParser {
                         "$description ${additionalDesc.joinToString(" ")}"
                     } else description
 
-                    if (fullDescription.isNotBlank()) {
+                    // Skip balance entries
+                    if (!isBalanceEntry(fullDescription, line) && fullDescription.isNotBlank()) {
                         transactions.add(
                             ParsedTransaction(
                                 bookingDate = bookingDate,
@@ -253,7 +254,8 @@ abstract class GermanBankParser : BankPdfParser {
                         "$cleanDescription ${additionalDesc.joinToString(" ")}"
                     } else cleanDescription
 
-                    if (fullDescription.isNotBlank()) {
+                    // Skip balance entries
+                    if (!isBalanceEntry(fullDescription, line) && fullDescription.isNotBlank()) {
                         transactions.add(
                             ParsedTransaction(
                                 bookingDate = date,
@@ -333,7 +335,8 @@ abstract class GermanBankParser : BankPdfParser {
                     amounts.forEach { description = description.replace(it.value, " ") }
                     description = description.replace(Regex("\\s+"), " ").trim()
 
-                    if (description.length > 3) {
+                    // Skip balance entries
+                    if (!isBalanceEntry(description, block) && description.length > 3) {
                         transactions.add(
                             ParsedTransaction(
                                 bookingDate = bookingDate,
@@ -486,6 +489,11 @@ abstract class GermanBankParser : BankPdfParser {
                     .replace(Regex("\\s+"), " ")
                     .trim()
 
+                // Skip balance entries
+                if (isBalanceEntry(fullDescription, rawText)) {
+                    continue
+                }
+
                 if (fullDescription.isNotEmpty() || transactions.none { it.bookingDate == bookingDate && it.amount == amount }) {
                     transactions.add(
                         ParsedTransaction(
@@ -493,7 +501,7 @@ abstract class GermanBankParser : BankPdfParser {
                             valueDate = valueDate ?: bookingDate,
                             amount = amount,
                             currency = "EUR",
-                            description = fullDescription.ifEmpty { "Transaction" },
+                            description = fullDescription.ifEmpty { "Buchung" },
                             counterpartyName = extractCounterparty(fullDescription),
                             transactionType = detectTransactionType(fullDescription),
                             rawText = rawText
@@ -616,6 +624,13 @@ abstract class GermanBankParser : BankPdfParser {
                     }
 
                     val finalAmount = if (isExpense) -kotlin.math.abs(amountValue) else kotlin.math.abs(amountValue)
+                    val rawText = blockLines.joinToString("\n")
+
+                    // Skip balance entries - these are not real transactions
+                    if (isBalanceEntry(description, rawText)) {
+                        i = j
+                        continue
+                    }
 
                     if (description.length > 2 || transactions.none { it.bookingDate == bookingDate && it.amount == finalAmount }) {
                         transactions.add(
@@ -624,10 +639,10 @@ abstract class GermanBankParser : BankPdfParser {
                                 valueDate = valueDate,
                                 amount = finalAmount,
                                 currency = "EUR",
-                                description = description.ifEmpty { "Transaction" },
+                                description = description.ifEmpty { "Buchung" },
                                 counterpartyName = extractCounterparty(description),
                                 transactionType = detectTransactionType(description),
-                                rawText = blockLines.joinToString("\n")
+                                rawText = rawText
                             )
                         )
                     }
@@ -815,12 +830,42 @@ abstract class GermanBankParser : BankPdfParser {
     }
 
     protected fun detectTransactionType(description: String): String {
-        val lower = description.lowercase()
+        val trimmed = description.trim()
+        val lower = trimmed.lowercase()
+
+        // First, check if description STARTS with a known transaction type
+        // This handles cases like "Kartenzahlung - 100,28" or "Lastschrift AMAZON"
+        for (type in germanTransactionTypes) {
+            val typeLower = type.lowercase()
+            if (lower.startsWith(typeLower)) {
+                return type
+            }
+        }
+
+        // Check for SEPA variants at start
+        if (lower.startsWith("sepa")) {
+            if (lower.contains("lastschrift")) return "SEPA-Lastschrift"
+            if (lower.contains("überweisung")) return "SEPA-Überweisung"
+            return "SEPA"
+        }
+
+        // Extract first word/phrase and check if it's a known type
+        val firstWord = trimmed.split(Regex("[\\s-]")).firstOrNull()?.trim()
+        if (firstWord != null) {
+            for (type in germanTransactionTypes) {
+                if (firstWord.equals(type, ignoreCase = true)) {
+                    return type
+                }
+            }
+        }
+
+        // Fallback: check if any keyword is contained anywhere in description
         for (type in germanTransactionTypes) {
             if (lower.contains(type.lowercase())) {
                 return type
             }
         }
+
         return "Buchung"
     }
 
@@ -836,16 +881,82 @@ abstract class GermanBankParser : BankPdfParser {
     }
 
     protected fun isHeaderOrFooter(line: String): Boolean {
-        val lower = line.lowercase()
-        return lower.contains("seite") && lower.contains("von") ||
-               lower.contains("kontoauszug") && lower.contains("nr") ||
-               lower.contains("iban") && lower.contains("bic") ||
-               lower.contains("blz") ||
-               lower.contains("datum") && lower.contains("betrag") && lower.contains("saldo") ||
-               lower.contains("alter saldo") ||
-               lower.contains("neuer saldo") ||
-               lower.contains("übertrag") ||
-               line.length < 5
+        val lower = line.lowercase().trim()
+
+        // Balance/summary lines - must be filtered out
+        if (lower.contains("neuer saldo") ||
+            lower.contains("alter saldo") ||
+            lower.contains("anfangssaldo") ||
+            lower.contains("endsaldo") ||
+            lower.contains("kontosaldo") ||
+            lower.contains("gesamtsaldo") ||
+            lower.contains("kontostand") ||
+            lower.contains("summe haben") ||
+            lower.contains("summe soll") ||
+            lower.contains("disponibel") ||
+            lower.startsWith("saldo") ||
+            lower == "kontonummer" ||
+            lower == "filialnummer" ||
+            lower == "iban" ||
+            lower == "bic") {
+            return true
+        }
+
+        // Page headers/footers
+        if ((lower.contains("seite") && lower.contains("von")) ||
+            (lower.contains("kontoauszug") && (lower.contains("nr") || lower.contains("nummer"))) ||
+            (lower.contains("iban") && lower.contains("bic")) ||
+            lower.contains("blz") ||
+            (lower.contains("datum") && lower.contains("betrag") && lower.contains("saldo")) ||
+            lower.contains("übertrag") ||
+            lower.contains("buchungsdatum") && lower.contains("wertstellung") ||
+            lower.contains("fortsetzung") ||
+            lower.startsWith("buchungstext") ||
+            lower.startsWith("verwendungszweck") && lower.length < 25) {
+            return true
+        }
+
+        // Account number lines (just digits separated by spaces)
+        if (Regex("""^\d+\s*\d*\s*$""").matches(line.trim()) && line.trim().length < 15) {
+            return true
+        }
+
+        // Too short lines
+        if (line.trim().length < 5) {
+            return true
+        }
+
+        return false
+    }
+
+    /**
+     * Check if this looks like a balance entry rather than a real transaction
+     * These should not be included in the transaction list
+     */
+    protected fun isBalanceEntry(description: String, rawText: String): Boolean {
+        val lowerDesc = description.lowercase()
+        val lowerRaw = rawText.lowercase()
+
+        // Check for balance keywords
+        val balanceKeywords = listOf(
+            "neuer saldo", "alter saldo", "anfangssaldo", "endsaldo",
+            "kontosaldo", "gesamtsaldo", "kontostand", "saldo per",
+            "disponibel", "verfügbar", "guthaben per", "summe haben",
+            "summe soll", "kontonummer", "filialnummer"
+        )
+
+        for (keyword in balanceKeywords) {
+            if (lowerDesc.contains(keyword) || lowerRaw.contains(keyword)) {
+                return true
+            }
+        }
+
+        // Check if description is just EUR or currency marker
+        if (description.trim().uppercase() in listOf("EUR", "€", "EURO", "")) {
+            return true
+        }
+
+        return false
     }
 }
 
