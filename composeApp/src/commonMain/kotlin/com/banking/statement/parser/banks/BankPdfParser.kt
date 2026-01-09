@@ -106,6 +106,9 @@ object BankParserRegistry {
         register(BankOfIrelandParser())
         register(BancaMarchParser())
         register(BancoCttParser())
+
+        // Generic German bank parser (fallback - should be last for German banks)
+        register(GenericGermanBankParser())
     }
 
     fun register(parser: BankPdfParser) {

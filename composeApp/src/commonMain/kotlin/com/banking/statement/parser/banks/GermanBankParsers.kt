@@ -35,7 +35,11 @@ abstract class GermanBankParser : BankPdfParser {
             val statementPeriod = extractStatementPeriod(pdfText)
 
             // Try multiple parsing strategies
-            var transactions = parseTableFormat(lines)
+            var transactions = parseMultiLineFormat(lines)
+
+            if (transactions.isEmpty()) {
+                transactions = parseTableFormat(lines)
+            }
 
             if (transactions.isEmpty()) {
                 transactions = parseDateAmountLines(lines)
@@ -77,7 +81,8 @@ abstract class GermanBankParser : BankPdfParser {
     protected fun parseTableFormat(lines: List<String>): List<ParsedTransaction> {
         val transactions = mutableListOf<ParsedTransaction>()
         val datePattern = Regex("(\\d{2}\\.\\d{2}\\.(?:\\d{4}|\\d{2}))")
-        val amountPattern = Regex("(-?\\d{1,3}(?:[.]\\d{3})*,\\d{2})\\s*[€]?")
+        // Updated pattern to capture signed amounts: "- 250,00" or "+ 1.043,44" or "-250,00"
+        val amountPattern = Regex("([+-]\\s*)?(-?\\d{1,3}(?:[.]\\d{3})*,\\d{2})\\s*(?:EUR|€)?")
 
         var i = 0
         while (i < lines.size) {
@@ -94,7 +99,16 @@ abstract class GermanBankParser : BankPdfParser {
                 } else bookingDate
 
                 // Take the first amount as transaction amount (second might be balance)
-                val amount = parseGermanAmount(amounts[0].groupValues[1])
+                // Handle signed amounts: "- 250,00" or "+ 1.043,44"
+                val amountMatch = amounts[0]
+                val signStr = amountMatch.groupValues[1].trim()
+                val amountStr = amountMatch.groupValues[2]
+                val sign = when {
+                    signStr.startsWith("-") -> -1.0
+                    signStr.startsWith("+") -> 1.0
+                    else -> 1.0 // default to positive if no explicit sign
+                }
+                val amount = parseGermanAmount(amountStr)?.let { it * sign }
 
                 if (bookingDate != null && amount != null) {
                     // Extract description - text between dates and amount
@@ -150,7 +164,8 @@ abstract class GermanBankParser : BankPdfParser {
     protected fun parseDateAmountLines(lines: List<String>): List<ParsedTransaction> {
         val transactions = mutableListOf<ParsedTransaction>()
         val dateStartPattern = Regex("^(\\d{2}\\.\\d{2}\\.(?:\\d{4}|\\d{2}))")
-        val amountEndPattern = Regex("(-?\\d{1,3}(?:[.]\\d{3})*,\\d{2})\\s*[€]?\\s*$")
+        // Updated pattern to capture signed amounts at end of line
+        val amountEndPattern = Regex("([+-]\\s*)?(-?\\d{1,3}(?:[.]\\d{3})*,\\d{2})\\s*(?:EUR|€)?\\s*$")
 
         var i = 0
         while (i < lines.size) {
@@ -161,7 +176,15 @@ abstract class GermanBankParser : BankPdfParser {
 
             if (dateMatch != null && amountMatch != null) {
                 val date = parseGermanDate(normalizeYear(dateMatch.groupValues[1]))
-                val amount = parseGermanAmount(amountMatch.groupValues[1])
+                // Handle signed amounts
+                val signStr = amountMatch.groupValues[1]?.trim() ?: ""
+                val amountStr = amountMatch.groupValues[2]
+                val sign = when {
+                    signStr.startsWith("-") -> -1.0
+                    signStr.startsWith("+") -> 1.0
+                    else -> 1.0
+                }
+                val amount = parseGermanAmount(amountStr)?.let { it * sign }
 
                 if (date != null && amount != null) {
                     val description = line
@@ -225,7 +248,8 @@ abstract class GermanBankParser : BankPdfParser {
     protected fun parseBlockFormat(lines: List<String>): List<ParsedTransaction> {
         val transactions = mutableListOf<ParsedTransaction>()
         val datePattern = Regex("(\\d{2}\\.\\d{2}\\.(?:\\d{4}|\\d{2}))")
-        val amountPattern = Regex("(-?\\d{1,3}(?:[.,]\\d{3})*[,]\\d{2})\\s*[€]?")
+        // Updated pattern to capture signed amounts
+        val amountPattern = Regex("([+-]\\s*)?(-?\\d{1,3}(?:[.]\\d{3})*,\\d{2})\\s*(?:EUR|€)?")
 
         // Group lines into blocks separated by empty lines
         val blocks = mutableListOf<String>()
@@ -257,7 +281,16 @@ abstract class GermanBankParser : BankPdfParser {
                     parseGermanDate(normalizeYear(dates[1].groupValues[1]))
                 } else bookingDate
 
-                val amount = parseGermanAmount(amounts[0].groupValues[1])
+                // Handle signed amounts
+                val amountMatch = amounts[0]
+                val signStr = amountMatch.groupValues[1]?.trim() ?: ""
+                val amountStr = amountMatch.groupValues[2]
+                val sign = when {
+                    signStr.startsWith("-") -> -1.0
+                    signStr.startsWith("+") -> 1.0
+                    else -> 1.0
+                }
+                val amount = parseGermanAmount(amountStr)?.let { it * sign }
 
                 if (bookingDate != null && amount != null) {
                     var description = block
@@ -279,6 +312,158 @@ abstract class GermanBankParser : BankPdfParser {
                             )
                         )
                     }
+                }
+            }
+        }
+
+        return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.description.take(20)}" }
+    }
+
+    /**
+     * Strategy 4: Parse multi-line format where date, description, and amount are on separate lines
+     * Format examples:
+     * - "04.03.2023" on line 1, "Kartenzahlung" on line 2, "- 2,18" on a later line
+     * - "27.01./27.01. SDD Lastschr" with amount "- 48,37" on separate line
+     */
+    protected fun parseMultiLineFormat(lines: List<String>): List<ParsedTransaction> {
+        val transactions = mutableListOf<ParsedTransaction>()
+
+        // Date patterns: "04.03.2023" or "27.01./27.01." (booking/value date)
+        val dateOnlyPattern = Regex("^(\\d{2}\\.\\d{2}\\.(?:\\d{4}|\\d{2}))\\s*$")
+        val datePairPattern = Regex("^(\\d{2}\\.\\d{2}\\.)/(\\d{2}\\.\\d{2}\\.)\\s*(.*)")
+        val dateStartPattern = Regex("^(\\d{2}\\.\\d{2}\\.(?:\\d{4}|\\d{2}))")
+
+        // Amount patterns: "- 250,00", "+ 1.043,44", "- 250,00 EUR"
+        val amountOnlyPattern = Regex("^\\s*([+-])\\s*(\\d{1,3}(?:[.]\\d{3})*,\\d{2})\\s*(?:EUR|€)?\\s*$")
+        val amountAnywherePattern = Regex("([+-])\\s*(\\d{1,3}(?:[.]\\d{3})*,\\d{2})\\s*(?:EUR|€)?")
+
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i].trim()
+            if (line.isEmpty() || isHeaderOrFooter(line)) {
+                i++
+                continue
+            }
+
+            var bookingDate: LocalDate? = null
+            var valueDate: LocalDate? = null
+            var transactionStartLine = i
+            var descriptionParts = mutableListOf<String>()
+
+            // Check for date-only line: "04.03.2023"
+            val dateOnlyMatch = dateOnlyPattern.find(line)
+            if (dateOnlyMatch != null) {
+                bookingDate = parseGermanDate(normalizeYear(dateOnlyMatch.groupValues[1]))
+                valueDate = bookingDate
+                i++
+            }
+            // Check for date pair: "27.01./27.01. SDD Lastschr"
+            else {
+                val datePairMatch = datePairPattern.find(line)
+                if (datePairMatch != null) {
+                    val currentYear = kotlinx.datetime.Clock.System.now()
+                        .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).year
+                    bookingDate = parseGermanDate("${datePairMatch.groupValues[1]}$currentYear")
+                    valueDate = parseGermanDate("${datePairMatch.groupValues[2]}$currentYear")
+                    val remainingText = datePairMatch.groupValues[3].trim()
+                    if (remainingText.isNotEmpty()) {
+                        descriptionParts.add(remainingText)
+                    }
+                    i++
+                }
+                // Check for date at start of line: "04.03.2023 Kartenzahlung"
+                else {
+                    val dateStartMatch = dateStartPattern.find(line)
+                    if (dateStartMatch != null) {
+                        bookingDate = parseGermanDate(normalizeYear(dateStartMatch.groupValues[1]))
+                        valueDate = bookingDate
+                        val remainingText = line.substring(dateStartMatch.range.last + 1).trim()
+                        if (remainingText.isNotEmpty() && !amountOnlyPattern.containsMatchIn(remainingText)) {
+                            descriptionParts.add(remainingText)
+                        }
+                        i++
+                    } else {
+                        i++
+                        continue
+                    }
+                }
+            }
+
+            if (bookingDate == null) {
+                continue
+            }
+
+            // Now collect description lines and find the amount
+            var amount: Double? = null
+            var amountSign = 1.0
+            var rawText = line
+
+            // Look at following lines for description and amount
+            while (i < lines.size && i < transactionStartLine + 15) {
+                val nextLine = lines[i].trim()
+
+                // Stop if we hit a new transaction (line starting with date)
+                if (nextLine.isNotEmpty() && i > transactionStartLine) {
+                    if (dateOnlyPattern.containsMatchIn(nextLine) ||
+                        datePairPattern.containsMatchIn(nextLine) ||
+                        (dateStartPattern.containsMatchIn(nextLine) && !amountAnywherePattern.containsMatchIn(nextLine))) {
+                        break
+                    }
+                }
+
+                // Check if this line contains only an amount: "- 250,00"
+                val amountOnlyMatch = amountOnlyPattern.find(nextLine)
+                if (amountOnlyMatch != null) {
+                    amountSign = if (amountOnlyMatch.groupValues[1] == "-") -1.0 else 1.0
+                    amount = parseGermanAmount(amountOnlyMatch.groupValues[2])?.let { it * amountSign }
+                    rawText += "\n$nextLine"
+                    i++
+                    break
+                }
+
+                // Check if this line contains an amount somewhere
+                val amountMatch = amountAnywherePattern.find(nextLine)
+                if (amountMatch != null && amount == null) {
+                    amountSign = if (amountMatch.groupValues[1] == "-") -1.0 else 1.0
+                    amount = parseGermanAmount(amountMatch.groupValues[2])?.let { it * amountSign }
+                    // Extract description part before the amount
+                    val descPart = nextLine.substring(0, amountMatch.range.first).trim()
+                    if (descPart.isNotEmpty() && !isHeaderOrFooter(descPart)) {
+                        descriptionParts.add(descPart)
+                    }
+                    rawText += "\n$nextLine"
+                    i++
+                    break
+                }
+
+                // It's a description line
+                if (nextLine.isNotEmpty() && !isHeaderOrFooter(nextLine)) {
+                    descriptionParts.add(nextLine)
+                    rawText += "\n$nextLine"
+                }
+
+                i++
+            }
+
+            // Create transaction if we have valid data
+            if (bookingDate != null && amount != null) {
+                val fullDescription = descriptionParts.joinToString(" ")
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
+
+                if (fullDescription.isNotEmpty() || transactions.none { it.bookingDate == bookingDate && it.amount == amount }) {
+                    transactions.add(
+                        ParsedTransaction(
+                            bookingDate = bookingDate,
+                            valueDate = valueDate ?: bookingDate,
+                            amount = amount,
+                            currency = "EUR",
+                            description = fullDescription.ifEmpty { "Transaction" },
+                            counterpartyName = extractCounterparty(fullDescription),
+                            transactionType = detectTransactionType(fullDescription),
+                            rawText = rawText
+                        )
+                    )
                 }
             }
         }
@@ -637,5 +822,103 @@ class BunqParser : GermanBankParser() {
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
         return parseGermanStatement(pdfText, fileName, "bunq")
+    }
+}
+
+// ============================================================
+// Generic German Bank Parser (Fallback)
+// ============================================================
+/**
+ * Generic parser for German bank statements that weren't recognized by specific parsers.
+ * Attempts to:
+ * 1. Extract bank name from address block (e.g., "Deutsche Bank AG")
+ * 2. Parse transactions using multiple strategies
+ */
+class GenericGermanBankParser : GermanBankParser() {
+    override val bankName = "German Bank"
+
+    // Keywords that indicate this is a German bank statement
+    private val germanIndicators = listOf(
+        "kontoauszug", "girokonto", "sparkonto", "tagesgeld",
+        "verwendungszweck", "buchung", "lastschrift", "gutschrift",
+        "überweisung", "dauerauftrag", "kartenzahlung", "bargeld",
+        "sepa", "blz", "kontonummer", "rechnungsabschluss"
+    )
+
+    // Patterns to identify bank names in address blocks
+    private val bankNamePatterns = listOf(
+        Regex("([A-Za-zäöüÄÖÜß\\s]+(?:Bank|Sparkasse|Volksbank|Raiffeisenbank)(?:\\s+[A-Z]{2,})?)", RegexOption.IGNORE_CASE),
+        Regex("([A-Za-zäöüÄÖÜß\\s]+(?:AG|GmbH|eG))", RegexOption.IGNORE_CASE),
+        Regex("(Deutsche\\s+Bank)", RegexOption.IGNORE_CASE),
+        Regex("(Commerzbank)", RegexOption.IGNORE_CASE),
+        Regex("(Postbank)", RegexOption.IGNORE_CASE),
+        Regex("(ING-DiBa|ING\\s+DiBa)", RegexOption.IGNORE_CASE),
+        Regex("(Comdirect)", RegexOption.IGNORE_CASE),
+        Regex("(HypoVereinsbank|HVB)", RegexOption.IGNORE_CASE),
+        Regex("(Santander)", RegexOption.IGNORE_CASE)
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        // Check if this looks like a German bank statement
+        val hasGermanIndicators = germanIndicators.count { lower.contains(it) } >= 2
+        val hasIban = lower.contains("de") && Regex("[a-z]{2}\\d{2}\\s?\\d{4}").containsMatchIn(lower)
+        val hasGermanDate = Regex("\\d{2}\\.\\d{2}\\.\\d{4}").containsMatchIn(pdfText)
+        val hasGermanAmount = Regex("[+-]?\\s*\\d{1,3}(?:[.]\\d{3})*,\\d{2}").containsMatchIn(pdfText)
+
+        return (hasGermanIndicators || hasIban) && hasGermanDate && hasGermanAmount
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        val detectedBankName = extractBankName(pdfText) ?: "German Bank"
+        return parseGermanStatement(pdfText, fileName, detectedBankName)
+    }
+
+    /**
+     * Try to extract bank name from the PDF text
+     * Looks for patterns like "Deutsche Bank AG", "Sparkasse München", etc.
+     */
+    private fun extractBankName(pdfText: String): String? {
+        // Try each pattern
+        for (pattern in bankNamePatterns) {
+            val match = pattern.find(pdfText)
+            if (match != null) {
+                val name = match.groupValues[1].trim()
+                // Validate the name looks reasonable
+                if (name.length in 3..50 && !name.all { it.isDigit() }) {
+                    return cleanBankName(name)
+                }
+            }
+        }
+
+        // Try to find bank name in first 20 lines (usually in header/address block)
+        val lines = pdfText.lines().take(20)
+        for (line in lines) {
+            val trimmed = line.trim()
+            // Look for lines ending with "Bank", "AG", "Sparkasse", etc.
+            if (trimmed.contains("Bank", ignoreCase = true) ||
+                trimmed.contains("Sparkasse", ignoreCase = true) ||
+                trimmed.endsWith("AG") ||
+                trimmed.endsWith("eG")) {
+                // Clean up the line
+                val cleaned = trimmed
+                    .replace(Regex("\\d+"), "")
+                    .replace(Regex("[,;:]"), "")
+                    .trim()
+                if (cleaned.length in 5..50) {
+                    return cleanBankName(cleaned)
+                }
+            }
+        }
+
+        return null
+    }
+
+    private fun cleanBankName(name: String): String {
+        return name
+            .replace(Regex("\\s+"), " ")
+            .replace(Regex("^(Ihr|Ihre|Die|Der|Das)\\s+", RegexOption.IGNORE_CASE), "")
+            .trim()
+            .take(50)
     }
 }

@@ -214,7 +214,8 @@ class IngDiBaParser : BankPdfParser {
 
         // Pattern: line starting with date and containing an amount somewhere
         val datePattern = Regex("^(\\d{2}\\.\\d{2}\\.\\d{4})")
-        val amountPattern = Regex("(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})(?:\\s|$)")
+        // Updated pattern to capture signed amounts: "- 250,00" or "+ 1.043,44"
+        val amountPattern = Regex("([+-]\\s*)?(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})(?:\\s|$)")
 
         var i = 0
         while (i < lines.size) {
@@ -225,14 +226,22 @@ class IngDiBaParser : BankPdfParser {
                 val amountMatch = amountPattern.find(line)
                 if (amountMatch != null) {
                     val date = parseGermanDate(dateMatch.groupValues[1])
-                    val amount = parseGermanAmount(amountMatch.groupValues[1])
+                    // Handle signed amounts
+                    val signStr = amountMatch.groupValues[1]?.trim() ?: ""
+                    val amountStr = amountMatch.groupValues[2]
+                    val sign = when {
+                        signStr.startsWith("-") -> -1.0
+                        signStr.startsWith("+") -> 1.0
+                        else -> 1.0
+                    }
+                    val amount = parseGermanAmount(amountStr)?.let { it * sign }
 
                     if (date != null && amount != null) {
                         // Extract description between date and amount
                         val afterDate = line.substring(dateMatch.range.last + 1)
                         val description = afterDate.substring(0,
-                            maxOf(0, afterDate.indexOf(amountMatch.groupValues[1]))).trim()
-                            .ifEmpty { afterDate.replace(amountMatch.groupValues[1], "").trim() }
+                            maxOf(0, afterDate.indexOf(amountMatch.value))).trim()
+                            .ifEmpty { afterDate.replace(amountMatch.value, "").trim() }
 
                         // Collect follow-up lines
                         val additionalDesc = mutableListOf<String>()
@@ -282,7 +291,8 @@ class IngDiBaParser : BankPdfParser {
 
         // Look for patterns like: date followed by text, then amount on same or next line
         val datePattern = Regex("(\\d{2}\\.\\d{2}\\.(?:\\d{4}|\\d{2}))")
-        val amountPattern = Regex("(-?\\d{1,3}(?:[.,]\\d{3})*[.,]\\d{2})\\s*€?")
+        // Updated pattern to capture signed amounts
+        val amountPattern = Regex("([+-]\\s*)?(-?\\d{1,3}(?:[.]\\d{3})*,\\d{2})\\s*(?:EUR|€)?")
 
         // Join lines and split into potential transaction blocks
         val transactionBlocks = mutableListOf<String>()
@@ -315,9 +325,16 @@ class IngDiBaParser : BankPdfParser {
 
                 if (nearestAmount != null) {
                     val date = parseGermanDate(normalizeDate(dateMatch.groupValues[1]))
-                    val amountStr = nearestAmount.groupValues[1]
+                    // Handle signed amounts
+                    val signStr = nearestAmount.groupValues[1]?.trim() ?: ""
+                    val amountStr = nearestAmount.groupValues[2]
+                    val sign = when {
+                        signStr.startsWith("-") -> -1.0
+                        signStr.startsWith("+") -> 1.0
+                        else -> 1.0
+                    }
                     // Parse German amount format: 1.234,56 -> 1234.56
-                    val amount = parseGermanAmount(amountStr)
+                    val amount = parseGermanAmount(amountStr)?.let { it * sign }
 
                     if (date != null && amount != null) {
                         val description = block.substring(
