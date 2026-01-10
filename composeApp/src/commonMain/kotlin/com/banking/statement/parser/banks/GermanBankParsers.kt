@@ -1430,6 +1430,256 @@ class BunqParser : GermanBankParser() {
 }
 
 // ============================================================
+// Landesbank Berlin (LBB) Parser
+// ============================================================
+class LandesbankBerlinParser : GermanBankParser() {
+    override val bankName = "Landesbank Berlin"
+
+    // BLZ codes from jejik-mt940 PHP library
+    private val allowedBlz = listOf(
+        "10050000", "10050005", "10050006", "10050007", "10050008"
+    )
+
+    private val identifiers = listOf(
+        "landesbank berlin",
+        "berliner sparkasse",
+        "lbb",
+        "beladebe"  // BIC prefix
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        // Check identifiers
+        if (identifiers.any { lower.contains(it) }) return true
+        // Check BLZ codes
+        return allowedBlz.any { pdfText.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "Landesbank Berlin")
+    }
+}
+
+// ============================================================
+// HypoVereinsbank / UniCredit Parser
+// ============================================================
+class HypoVereinsbankParser : GermanBankParser() {
+    override val bankName = "HypoVereinsbank"
+
+    // BLZ codes from jejik-mt940 PHP library (partial list)
+    private val allowedBlz = listOf(
+        "10020890", "20030000", "70020270", "70020001",
+        "20730001", "20730002", "20730003", "20730004", "20730005",
+        "20730006", "20730007", "20730008", "20730009", "20730010"
+    )
+
+    private val identifiers = listOf(
+        "hypovereinsbank",
+        "hvb",
+        "unicredit",
+        "unicredit bank",
+        "hypobank",
+        "vereinsbank",
+        "hvbkdeff",  // BIC
+        "hyvedemmxxx"
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        // Check identifiers
+        if (identifiers.any { lower.contains(it) }) return true
+        // Check BLZ codes
+        return allowedBlz.any { pdfText.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "HypoVereinsbank")
+    }
+}
+
+// ============================================================
+// DKB (Deutsche Kreditbank) Parser
+// ============================================================
+class DkbParser : GermanBankParser() {
+    override val bankName = "DKB"
+
+    private val identifiers = listOf(
+        "deutsche kreditbank",
+        "dkb",
+        "dkb ag",
+        "byladem1001",  // BIC
+        "bylademmxxx",
+        "12030000"  // BLZ
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "DKB")
+    }
+}
+
+// ============================================================
+// LBBW (Landesbank Baden-Württemberg) Parser
+// ============================================================
+class LbbwParser : GermanBankParser() {
+    override val bankName = "LBBW"
+
+    private val identifiers = listOf(
+        "landesbank baden-württemberg",
+        "lbbw",
+        "bw bank",
+        "bw-bank",
+        "soladest",  // BIC prefix
+        "60050101"  // BLZ
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "LBBW")
+    }
+}
+
+// ============================================================
+// Sparkasse Parser (with more identifiers)
+// ============================================================
+class SparkasseParser : GermanBankParser() {
+    override val bankName = "Sparkasse"
+
+    private val identifiers = listOf(
+        "sparkasse",
+        "spk ",
+        "kreissparkasse",
+        "stadtsparkasse",
+        "landessparkasse",
+        "nasspa",  // Nassauische Sparkasse
+        "haspa",   // Hamburger Sparkasse
+        "ospa",    // Ostdeutsche Sparkasse
+        "nospa",   // Nord-Ostsee Sparkasse
+        "startums"  // Common identifier in Sparkasse MT940
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        // Try to extract specific Sparkasse name
+        val sparkasseName = extractSparkasseName(pdfText) ?: "Sparkasse"
+        return parseGermanStatement(pdfText, fileName, sparkasseName)
+    }
+
+    private fun extractSparkasseName(text: String): String? {
+        // Look for specific Sparkasse names like "Sparkasse Köln Bonn" or "Kreissparkasse München"
+        val pattern = Regex("""((?:Stadt|Kreis|Landes)?[Ss]parkasse\s+[A-Za-zäöüÄÖÜß\s\-]+)""")
+        val match = pattern.find(text)
+        return match?.groupValues?.get(1)?.trim()?.take(40)
+    }
+}
+
+// ============================================================
+// Comdirect Parser
+// ============================================================
+class ComdirectParser : GermanBankParser() {
+    override val bankName = "comdirect"
+
+    private val identifiers = listOf(
+        "comdirect",
+        "comdirect bank",
+        "cobadehdxxx",  // BIC
+        "cobadehd",
+        "20041111"  // BLZ
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "comdirect")
+    }
+}
+
+// ============================================================
+// Santander Consumer Bank Parser
+// ============================================================
+class SantanderParser : GermanBankParser() {
+    override val bankName = "Santander"
+
+    private val identifiers = listOf(
+        "santander",
+        "santander consumer bank",
+        "santander bank",
+        "scfbde33",  // BIC
+        "31010833"  // BLZ
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "Santander")
+    }
+}
+
+// ============================================================
+// Sparda Bank Parser
+// ============================================================
+class SpardaBankParser : GermanBankParser() {
+    override val bankName = "Sparda-Bank"
+
+    private val identifiers = listOf(
+        "sparda",
+        "sparda-bank",
+        "sparda bank",
+        "genodef1s"  // BIC prefix for Sparda banks
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "Sparda-Bank")
+    }
+}
+
+// ============================================================
+// PSD Bank Parser
+// ============================================================
+class PsdBankParser : GermanBankParser() {
+    override val bankName = "PSD Bank"
+
+    private val identifiers = listOf(
+        "psd bank",
+        "psd-bank",
+        "psdbank",
+        "genodef1p"  // BIC prefix for PSD banks
+    )
+
+    override fun canParse(pdfText: String): Boolean {
+        val lower = pdfText.lowercase()
+        return identifiers.any { lower.contains(it) }
+    }
+
+    override fun parse(pdfText: String, fileName: String): ParseResult {
+        return parseGermanStatement(pdfText, fileName, "PSD Bank")
+    }
+}
+
+// ============================================================
 // Generic German Bank Parser (Fallback)
 // ============================================================
 /**

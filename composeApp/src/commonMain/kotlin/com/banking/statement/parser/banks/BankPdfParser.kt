@@ -107,8 +107,15 @@ object BankParserRegistry {
         register(BancaMarchParser())
         register(BancoCttParser())
 
-        // German banks (additional)
+        // German banks (additional) - from jejik-mt940 PHP library
         register(ApoBankParser())
+        register(LandesbankBerlinParser())
+        register(HypoVereinsbankParser())
+        register(LbbwParser())
+        register(ComdirectParser())
+        register(SantanderParser())
+        register(SpardaBankParser())
+        register(PsdBankParser())
 
         // Generic German bank parser (fallback - should be last for German banks)
         register(GenericGermanBankParser())
