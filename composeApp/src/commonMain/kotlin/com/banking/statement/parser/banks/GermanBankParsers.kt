@@ -1507,6 +1507,9 @@ class DkbParser : GermanBankParser() {
         "deutsche kreditbank",
         "dkb",
         "dkb ag",
+        "dkb-ag",
+        "dkb.de",
+        "byladem1",
         "byladem1001",  // BIC
         "bylademmxxx",
         "12030000"  // BLZ
@@ -1514,7 +1517,10 @@ class DkbParser : GermanBankParser() {
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
+        // Also check for DKB-specific format with KREF+/SVWZ+ pattern
+        val hasDkbFormat = lower.contains("kref+") && lower.contains("svwz+")
+        return identifiers.any { lower.contains(it) } ||
+               (hasDkbFormat && (lower.contains("kontoauszug") || lower.contains("überweisung")))
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
@@ -1560,9 +1566,11 @@ class SparkasseParser : GermanBankParser() {
         "stadtsparkasse",
         "landessparkasse",
         "nasspa",  // Nassauische Sparkasse
+        "naspa",   // Also Nassauische Sparkasse
         "haspa",   // Hamburger Sparkasse
         "ospa",    // Ostdeutsche Sparkasse
         "nospa",   // Nord-Ostsee Sparkasse
+        "helaba",  // Landesbank Hessen-Thüringen
         "startums"  // Common identifier in Sparkasse MT940
     )
 
