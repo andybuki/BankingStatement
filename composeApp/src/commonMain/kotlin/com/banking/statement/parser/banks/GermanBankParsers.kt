@@ -2159,8 +2159,8 @@ class SparkasseParser : GermanBankParser() {
 
         // German amount pattern - matches: -58,28 or 168,03 or -1.234,56
         val amountPattern = Regex("""(-?\d{1,3}(?:\.\d{3})*,\d{2})""")
-        // Standalone amount line (just the amount, possibly with whitespace)
-        val standaloneAmountPattern = Regex("""^\s*(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$""")
+        // Standalone amount line (just the amount, possibly with trailing punctuation like "-35,93.")
+        val standaloneAmountPattern = Regex("""^\s*(-?\d{1,3}(?:\.\d{3})*,\d{2})[.\s]*$""")
 
         var i = 0
         while (i < normalizedLines.size) {
@@ -2317,10 +2317,32 @@ class SparkasseParser : GermanBankParser() {
     }
 
     private fun extractSparkasseName(text: String): String? {
-        // Look for specific Sparkasse names like "Sparkasse Köln Bonn" or "Kreissparkasse München"
-        val pattern = Regex("""((?:Stadt|Kreis|Landes)?[Ss]parkasse\s+[A-Za-zäöüÄÖÜß\s\-]+)""")
-        val match = pattern.find(text)
-        return match?.groupValues?.get(1)?.trim()?.take(40)
+        // Look for specific Sparkasse names like "Sparkasse Essen" or "Kreissparkasse München"
+        // Limit to max 3 words after "Sparkasse" to avoid capturing account owner names
+        val patterns = listOf(
+            // "Sparkasse Essen" or "Sparkasse Köln Bonn"
+            Regex("""((?:Stadt|Kreis|Landes)?[Ss]parkasse\s+[A-Za-zäöüÄÖÜß]+(?:\s+[A-Za-zäöüÄÖÜß]+)?(?:\s+[A-Za-zäöüÄÖÜß]+)?)"""),
+            // Just "Sparkasse" followed by city
+            Regex("""([Ss]parkasse\s+[A-Za-zäöüÄÖÜß\-]+)""")
+        )
+
+        for (pattern in patterns) {
+            val match = pattern.find(text)
+            if (match != null) {
+                val name = match.groupValues[1].trim()
+                // Validate: should be reasonable length and not contain common non-bank words
+                val lower = name.lowercase()
+                if (name.length in 10..35 &&
+                    !lower.contains("herr") && !lower.contains("frau") &&
+                    !lower.contains("straße") && !lower.contains("str.") &&
+                    !lower.contains("gmbh") && !lower.contains("inhaber")) {
+                    return name
+                }
+            }
+        }
+
+        // Fallback: just return "Sparkasse"
+        return "Sparkasse"
     }
 }
 
