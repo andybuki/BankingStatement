@@ -37,11 +37,10 @@ object BankParserRegistry {
         register(N26Parser())
         register(BunqParser())
 
-        // German banks
-        // DKB must be before Sparkasse because they share some patterns
+        // German banks - order matters!
         register(DkbParser())  // DKB MUST be before Sparkasse (they share patterns)
+        register(IngDiBaParser())  // ING before Sparkasse
         register(SparkasseParser())
-        register(IngDiBaParser())  // ING has generic terms like "girokonto" - must be after specific banks
         register(DeutscheBankParser())
         register(PostbankParser())
         register(CommerzbankParser())
