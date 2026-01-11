@@ -147,9 +147,15 @@ class RevolutPdfParser : BankPdfParser {
             val dateMatch = datePattern.find(line)
             if (dateMatch != null) {
                 val monthStr = dateMatch.groupValues[1].lowercase().take(3)
-                val day = dateMatch.groupValues[2].toIntOrNull() ?: run { i++; continue }
-                val year = dateMatch.groupValues[3].toIntOrNull() ?: run { i++; continue }
-                val month = months[monthStr] ?: run { i++; continue }
+                val day = dateMatch.groupValues[2].toIntOrNull()
+                val year = dateMatch.groupValues[3].toIntOrNull()
+                val month = months[monthStr]
+
+                // Skip if any date component is invalid
+                if (day == null || year == null || month == null) {
+                    i++
+                    continue
+                }
 
                 val date = try {
                     LocalDate(year, month, day)
