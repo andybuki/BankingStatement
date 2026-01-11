@@ -2148,14 +2148,23 @@ class SparkasseParser : GermanBankParser() {
 
         // Date pattern at start of line: DD.MM.YYYY
         val datePattern = Regex("""^(\d{2}\.\d{2}\.\d{4})""")
+
+        // Pre-process lines: normalize Unicode minus signs to regular hyphen
+        val normalizedLines = lines.map { line ->
+            line.replace('−', '-')  // Unicode minus U+2212
+                .replace('–', '-')  // En-dash U+2013
+                .replace('—', '-')  // Em-dash U+2014
+                .replace('\u00AD', '-') // Soft hyphen
+        }
+
         // German amount pattern - matches: -58,28 or 168,03 or -1.234,56
         val amountPattern = Regex("""(-?\d{1,3}(?:\.\d{3})*,\d{2})""")
         // Standalone amount line (just the amount, possibly with whitespace)
         val standaloneAmountPattern = Regex("""^\s*(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$""")
 
         var i = 0
-        while (i < lines.size) {
-            val line = lines[i].trim()
+        while (i < normalizedLines.size) {
+            val line = normalizedLines[i].trim()
 
             // Skip empty lines and headers
             if (line.isEmpty() || isSparkasseHeader(line)) {
@@ -2206,8 +2215,8 @@ class SparkasseParser : GermanBankParser() {
                     }
 
                     var j = i + 1
-                    while (j < lines.size) {
-                        val nextLine = lines[j]
+                    while (j < normalizedLines.size) {
+                        val nextLine = normalizedLines[j]
                         val trimmedNext = nextLine.trim()
 
                         // Stop if empty line
@@ -2236,7 +2245,7 @@ class SparkasseParser : GermanBankParser() {
                         if (lineAmounts.isNotEmpty() && transactionAmount == null) {
                             val lastAmt = lineAmounts.last()
                             val amtEndPos = trimmedNext.lastIndexOf(lastAmt.value) + lastAmt.value.length
-                            // Amount is at end if within last 15 chars of line
+                            // Amount is at end if within last 5 chars of line
                             if (amtEndPos >= trimmedNext.length - 5) {
                                 transactionAmount = parseGermanAmount(lastAmt.groupValues[1])
                                 // Add text before the amount to description
@@ -2267,7 +2276,7 @@ class SparkasseParser : GermanBankParser() {
                                 description = fullDescription.take(200),
                                 counterpartyName = extractCounterpartyFromSparkasse(fullDescription),
                                 transactionType = detectTransactionType(fullDescription),
-                                rawText = line
+                                rawText = lines[i]  // Use original line for raw text
                             )
                         )
                     }
