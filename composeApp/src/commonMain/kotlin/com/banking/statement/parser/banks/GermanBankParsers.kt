@@ -2132,17 +2132,23 @@ class SparkasseParser : GermanBankParser() {
 
     /**
      * Parse Sparkasse-specific format:
-     * Columns: Datum | Erläuterung | Betrag EUR
-     * Date: DD.MM.YYYY
-     * Amount: German format with comma decimal (-397,70 or 168,03)
+     * Format 1: Date | Transaction Type | ... whitespace ... | Amount
+     *           (indented continuation lines with description details)
+     * Format 2: Date | Description | Amount
+     *
+     * Example:
+     * 19.12.2022 Lastschrift                                    -58,28
+     *            RSG Group GmbH E0003--0062-0000011 McFIT: Classic 19,28
+     *            08.12.22-31.12.22/Aktivierungsgebuehr
      */
     private fun parseSparkasseFormat(lines: List<String>): List<ParsedTransaction> {
         val transactions = mutableListOf<ParsedTransaction>()
 
         // Date pattern at start of line: DD.MM.YYYY
         val datePattern = Regex("""^(\d{2}\.\d{2}\.\d{4})""")
-        // German amount pattern at end: -397,70 or 168,03 or -1.234,56
-        val amountPattern = Regex("""(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$""")
+        // German amount pattern - find anywhere but typically at end
+        // Matches: -58,28 or 168,03 or -1.234,56
+        val amountPattern = Regex("""(-?\d{1,3}(?:\.\d{3})*,\d{2})""")
 
         var i = 0
         while (i < lines.size) {
@@ -2167,37 +2173,49 @@ class SparkasseParser : GermanBankParser() {
                 val date = parseGermanDate(dateStr)
 
                 if (date != null) {
-                    // Find amount at end of line
-                    val amountMatch = amountPattern.find(line)
+                    // Find ALL amounts in the line - the LAST one is usually the transaction amount
+                    val amounts = amountPattern.findAll(line).toList()
 
-                    if (amountMatch != null) {
-                        val amountStr = amountMatch.groupValues[1]
+                    if (amounts.isNotEmpty()) {
+                        // Take the LAST amount on the line (rightmost = transaction amount)
+                        val lastAmountMatch = amounts.last()
+                        val amountStr = lastAmountMatch.groupValues[1]
                         val amount = parseGermanAmount(amountStr)
 
                         if (amount != null) {
-                            // Extract description - text between date and amount
+                            // Extract description - text between date and last amount
                             val afterDate = line.substring(dateMatch.range.last + 1)
-                            val beforeAmount = afterDate.substring(0, afterDate.lastIndexOf(amountMatch.value)).trim()
+                            val amountStartIndex = afterDate.lastIndexOf(lastAmountMatch.value)
+                            val beforeAmount = if (amountStartIndex > 0) {
+                                afterDate.substring(0, amountStartIndex).trim()
+                            } else {
+                                afterDate.replace(lastAmountMatch.value, "").trim()
+                            }
 
                             // Collect continuation lines (multi-line descriptions)
+                            // Continuation lines are indented and don't start with a date
                             val descriptionParts = mutableListOf(beforeAmount)
                             var j = i + 1
                             while (j < lines.size) {
-                                val nextLine = lines[j].trim()
-                                // Stop if empty, new transaction (starts with date), or is header/balance
-                                if (nextLine.isEmpty() ||
-                                    datePattern.find(nextLine) != null ||
-                                    isSparkasseHeader(nextLine) ||
-                                    nextLine.contains("Kontostand")) {
+                                val nextLine = lines[j]
+                                val trimmedNext = nextLine.trim()
+
+                                // Stop conditions
+                                if (trimmedNext.isEmpty()) {
                                     break
                                 }
-                                // Add continuation line if it doesn't have its own amount
-                                if (!amountPattern.containsMatchIn(nextLine)) {
-                                    descriptionParts.add(nextLine)
-                                    j++
-                                } else {
+                                // Stop if next line starts with a date (new transaction)
+                                if (datePattern.find(trimmedNext) != null) {
                                     break
                                 }
+                                // Stop if it's a header or balance line
+                                if (isSparkasseHeader(trimmedNext) || trimmedNext.contains("Kontostand")) {
+                                    break
+                                }
+
+                                // This is a continuation line - add it
+                                descriptionParts.add(trimmedNext)
+                                j++
                             }
 
                             val fullDescription = descriptionParts.joinToString(" ").trim()
@@ -2211,7 +2229,7 @@ class SparkasseParser : GermanBankParser() {
                                         amount = amount,
                                         currency = "EUR",
                                         description = fullDescription.take(200),
-                                        counterpartyName = extractCounterparty(fullDescription),
+                                        counterpartyName = extractCounterpartyFromSparkasse(fullDescription),
                                         transactionType = detectTransactionType(fullDescription),
                                         rawText = line
                                     )
@@ -2227,6 +2245,22 @@ class SparkasseParser : GermanBankParser() {
         }
 
         return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.description.take(20)}" }
+    }
+
+    private fun extractCounterpartyFromSparkasse(description: String): String? {
+        // For Lastschrift/Debitkartenlastschr., the counterparty is usually after the transaction type
+        val parts = description.split(Regex("\\s+"), limit = 2)
+        if (parts.size > 1) {
+            // Skip transaction type, get first few words of actual description
+            val afterType = parts[1]
+            // Extract company name (usually first part before special chars or dates)
+            val companyPattern = Regex("""^([A-Za-zÄÖÜäöüß\s.&-]+)""")
+            companyPattern.find(afterType)?.let {
+                val name = it.groupValues[1].trim()
+                if (name.length > 2) return name.take(50)
+            }
+        }
+        return extractCounterparty(description)
     }
 
     private fun isSparkasseHeader(line: String): Boolean {
