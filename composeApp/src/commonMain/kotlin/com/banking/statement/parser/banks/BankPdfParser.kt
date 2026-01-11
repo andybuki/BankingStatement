@@ -30,13 +30,15 @@ object BankParserRegistry {
 
     init {
         // Register all bank parsers - German banks
+        // IMPORTANT: Order matters! More specific parsers should come BEFORE generic ones
+        // DKB must be before Sparkasse because they share some patterns
         register(IngDiBaParser())
         register(DeutscheBankParser())
         register(PostbankParser())
         register(CommerzbankParser())
+        register(DkbParser())  // DKB MUST be before Sparkasse (they share patterns)
         register(SparkasseParser())
         register(VolksbankParser())  // Also handles VR-Bank and Raiffeisenbank
-        register(DkbParser())
         register(N26Parser())
         register(C24Parser())
         register(ConsorsbankParser())
