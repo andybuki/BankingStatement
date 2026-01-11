@@ -18,14 +18,21 @@ class IngDiBaParser : BankPdfParser {
 
     override val bankName = "ING DiBa"
 
-    // Keywords that identify ING DiBa statements
-    private val identifiers = listOf(
+    // Primary identifiers that uniquely identify ING DiBa statements
+    private val primaryIdentifiers = listOf(
         "ing-diba",
         "ing diba",
         "ing.de",
         "ingddeffxxx",  // BIC
         "ingddeff",
-        "de29 5001 0517", // Common ING IBAN prefix
+        "ing ag",
+        "ing deutschland"
+    )
+
+    // Secondary identifiers (generic German terms) - only match if combined with ING indicators
+    private val secondaryIdentifiers = listOf(
+        "de29 5001 0517", // ING IBAN prefix
+        "de50 5001 0517",
         "girokonto",
         "extra-konto",
         "tagesgeld"
@@ -43,7 +50,15 @@ class IngDiBaParser : BankPdfParser {
 
     override fun canParse(pdfText: String): Boolean {
         val lowerText = pdfText.lowercase()
-        return identifiers.any { lowerText.contains(it) }
+
+        // Primary identifiers are conclusive - if found, this is ING DiBa
+        if (primaryIdentifiers.any { lowerText.contains(it) }) {
+            return true
+        }
+
+        // Secondary identifiers need at least 2 to match (to avoid false positives)
+        val secondaryMatches = secondaryIdentifiers.count { lowerText.contains(it) }
+        return secondaryMatches >= 2
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {

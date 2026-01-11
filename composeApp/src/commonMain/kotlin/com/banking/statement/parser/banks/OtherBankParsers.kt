@@ -47,9 +47,19 @@ class RevolutPdfParser : BankPdfParser {
             val accountNumber = extractAccountNumber(pdfText)
             val statementPeriod = extractStatementPeriod(pdfText)
 
-            // Try multiple parsing strategies - start with German format
-            var transactions = parseRevolutGermanFormat(lines, currency)
+            // Try multiple parsing strategies
+            // Strategy 1: English format with Money out/Money in columns
+            var transactions = parseRevolutEnglishFormat(lines, currency)
 
+            // Strategy 2: German format with Geldausgang/Geldeingang columns
+            if (transactions.size < 3) {
+                val germanTransactions = parseRevolutGermanFormat(lines, currency)
+                if (germanTransactions.size > transactions.size) {
+                    transactions = germanTransactions
+                }
+            }
+
+            // Strategy 3: Generic table format
             if (transactions.size < 3) {
                 val tableTransactions = parseRevolutTableFormat(lines, currency)
                 if (tableTransactions.size > transactions.size) {
@@ -92,6 +102,186 @@ class RevolutPdfParser : BankPdfParser {
                 bankName = bankName,
                 errorMessage = "Error parsing Revolut PDF: ${e.message}"
             )
+        }
+    }
+
+    /**
+     * Parse English Revolut format with columns: Date, Description, Money out, Money in, Balance
+     *
+     * Date format: "Mar 19, 2024" (Month Day, Year)
+     * Amount format: €700.00 (period decimal, optional comma thousands)
+     * - Money out = expenses (negative)
+     * - Money in = income (positive)
+     *
+     * Multi-line descriptions include: Reference:, From:, To:, Card: lines
+     */
+    private fun parseRevolutEnglishFormat(lines: List<String>, currency: String): List<ParsedTransaction> {
+        val transactions = mutableListOf<ParsedTransaction>()
+
+        // Check for English column headers
+        val hasEnglishHeader = lines.any {
+            val lower = it.lowercase()
+            (lower.contains("money out") && lower.contains("money in")) ||
+                (lower.contains("date") && lower.contains("description") && lower.contains("balance"))
+        }
+
+        if (!hasEnglishHeader) {
+            return transactions
+        }
+
+        // Date pattern: "Mar 19, 2024" or "March 19, 2024"
+        val datePattern = Regex("""^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2}),?\s+(\d{4})""", RegexOption.IGNORE_CASE)
+
+        // Amount pattern: €700.00 or €1,234.56
+        val euroAmountPattern = Regex("""€([\d,]+\.\d{2})""")
+
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i].trim()
+            if (line.isEmpty() || isHeaderOrFooterEnglish(line)) {
+                i++
+                continue
+            }
+
+            // Look for date at start of line
+            val dateMatch = datePattern.find(line)
+            if (dateMatch != null) {
+                val monthStr = dateMatch.groupValues[1].lowercase().take(3)
+                val day = dateMatch.groupValues[2].toIntOrNull() ?: run { i++; continue }
+                val year = dateMatch.groupValues[3].toIntOrNull() ?: run { i++; continue }
+                val month = months[monthStr] ?: run { i++; continue }
+
+                val date = try {
+                    LocalDate(year, month, day)
+                } catch (e: Exception) {
+                    i++
+                    continue
+                }
+
+                // Extract description and amounts from the line
+                val afterDate = line.substring(dateMatch.range.last + 1).trim()
+                val amounts = euroAmountPattern.findAll(afterDate).toList()
+
+                if (amounts.isNotEmpty()) {
+                    // Description is text before first amount
+                    val firstAmountMatch = euroAmountPattern.find(afterDate)
+                    var description = if (firstAmountMatch != null && firstAmountMatch.range.first > 0) {
+                        afterDate.substring(0, firstAmountMatch.range.first).trim()
+                    } else {
+                        afterDate
+                    }
+
+                    // Collect continuation lines (Reference:, From:, To:, Card:, Revolut Rate, etc.)
+                    val descriptionParts = mutableListOf(description)
+                    var j = i + 1
+                    while (j < lines.size) {
+                        val nextLine = lines[j].trim()
+                        // Stop if empty line, new transaction (starts with date), or is header
+                        if (nextLine.isEmpty() || datePattern.find(nextLine) != null || isHeaderOrFooterEnglish(nextLine)) {
+                            break
+                        }
+                        // Continuation lines typically start with these prefixes or don't have amounts
+                        val isContinuation = nextLine.startsWith("Reference:") ||
+                            nextLine.startsWith("From:") ||
+                            nextLine.startsWith("To:") ||
+                            nextLine.startsWith("Card:") ||
+                            nextLine.startsWith("Revolut Rate") ||
+                            (!euroAmountPattern.containsMatchIn(nextLine) && nextLine.length < 100)
+
+                        if (isContinuation) {
+                            descriptionParts.add(nextLine)
+                            j++
+                        } else {
+                            break
+                        }
+                    }
+
+                    val fullDescription = descriptionParts.joinToString(" ").trim()
+
+                    // Parse the transaction amount (first amount, not balance)
+                    val amountStr = amounts.first().groupValues[1].replace(",", "")
+                    val amountValue = amountStr.toDoubleOrNull() ?: 0.0
+
+                    // Determine if income or expense based on description keywords
+                    // "Payment from X" = income, everything else is typically expense
+                    val lowerDesc = fullDescription.lowercase()
+                    val isIncome = lowerDesc.contains("payment from") ||
+                        lowerDesc.contains("received from") ||
+                        lowerDesc.contains("refund") ||
+                        lowerDesc.contains("cashback") ||
+                        lowerDesc.contains("interest")
+
+                    val finalAmount = if (isIncome) amountValue else -amountValue
+
+                    if (fullDescription.length > 2 && amountValue > 0) {
+                        transactions.add(
+                            ParsedTransaction(
+                                bookingDate = date,
+                                valueDate = date,
+                                amount = finalAmount,
+                                currency = currency,
+                                description = fullDescription.take(200),
+                                counterpartyName = extractCounterpartyEnglish(fullDescription),
+                                transactionType = detectTransactionTypeEnglish(fullDescription),
+                                rawText = line
+                            )
+                        )
+                    }
+                    i = j
+                    continue
+                }
+            }
+            i++
+        }
+
+        return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.description.take(20)}" }
+    }
+
+    private fun isHeaderOrFooterEnglish(line: String): Boolean {
+        val lower = line.lowercase()
+        return (lower.contains("date") && lower.contains("description") && lower.contains("balance")) ||
+            (lower.contains("money out") && lower.contains("money in")) ||
+            lower.contains("page") && lower.contains("of") ||
+            lower.contains("statement") && lower.contains("period") ||
+            lower.contains("account number") ||
+            lower.contains("sort code")
+    }
+
+    private fun extractCounterpartyEnglish(description: String): String? {
+        // "Payment from ANDREY BUCHMANN . NATALIA BUCHMANN" -> extract names
+        val fromPattern = Regex("""(?:Payment from|Received from|From:)\s+([A-Za-z\s.]+?)(?:\s+Reference:|$)""", RegexOption.IGNORE_CASE)
+        fromPattern.find(description)?.let { match ->
+            return match.groupValues[1].trim().take(50)
+        }
+
+        // "To: Booking.com" or company name at start
+        val toPattern = Regex("""(?:To:|Payment to)\s+([A-Za-z0-9\s.]+)""", RegexOption.IGNORE_CASE)
+        toPattern.find(description)?.let { match ->
+            return match.groupValues[1].trim().take(50)
+        }
+
+        // First meaningful words as fallback
+        val words = description.split(Regex("\\s+"))
+            .filter { it.length > 2 && !it.all { c -> c.isDigit() || c == '.' || c == ',' || c == '€' } }
+            .take(3)
+        return if (words.isNotEmpty()) words.joinToString(" ").take(50) else null
+    }
+
+    private fun detectTransactionTypeEnglish(description: String): String {
+        val lower = description.lowercase()
+        return when {
+            lower.contains("payment from") || lower.contains("received from") -> "Payment Received"
+            lower.contains("transfer") -> "Transfer"
+            lower.contains("card:") || lower.contains("pos") -> "Card Payment"
+            lower.contains("atm") || lower.contains("withdrawal") -> "ATM Withdrawal"
+            lower.contains("exchange") || lower.contains("exchanged") -> "Exchange"
+            lower.contains("top-up") || lower.contains("topup") -> "Top Up"
+            lower.contains("refund") -> "Refund"
+            lower.contains("fee") || lower.contains("charge") -> "Fee"
+            lower.contains("subscription") -> "Subscription"
+            lower.contains("interest") -> "Interest"
+            lower.contains("booking") || lower.contains("hotel") || lower.contains("flight") -> "Travel"
+            else -> "Payment"
         }
     }
 
