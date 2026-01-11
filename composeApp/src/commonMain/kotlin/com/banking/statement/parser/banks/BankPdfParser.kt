@@ -29,24 +29,28 @@ object BankParserRegistry {
     private val parsers = mutableListOf<BankPdfParser>()
 
     init {
-        // Register all bank parsers - German banks
+        // Register all bank parsers
         // IMPORTANT: Order matters! More specific parsers should come BEFORE generic ones
+
+        // International neo-banks first (have very specific identifiers like "revolut")
+        register(RevolutPdfParser())  // Revolut MUST be before German banks (they may share generic terms like "girokonto")
+        register(N26Parser())
+        register(BunqParser())
+
+        // German banks
         // DKB must be before Sparkasse because they share some patterns
-        register(IngDiBaParser())
+        register(DkbParser())  // DKB MUST be before Sparkasse (they share patterns)
+        register(SparkasseParser())
+        register(IngDiBaParser())  // ING has generic terms like "girokonto" - must be after specific banks
         register(DeutscheBankParser())
         register(PostbankParser())
         register(CommerzbankParser())
-        register(DkbParser())  // DKB MUST be before Sparkasse (they share patterns)
-        register(SparkasseParser())
         register(VolksbankParser())  // Also handles VR-Bank and Raiffeisenbank
-        register(N26Parser())
         register(C24Parser())
         register(ConsorsbankParser())
         register(TargobankParser())
         register(DirectBank1822Parser())
         register(TomorrowBankParser())
-        register(BunqParser())
-        register(RevolutPdfParser())
 
         // US/UK/Australian banks
         register(BankwestParser())
