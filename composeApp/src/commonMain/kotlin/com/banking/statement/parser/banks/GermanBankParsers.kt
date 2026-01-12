@@ -12,6 +12,67 @@ import kotlinx.datetime.toLocalDateTime
  */
 abstract class GermanBankParser : BankPdfParser {
 
+    /**
+     * Calculate confidence based on matched identifiers
+     * @param pdfText the PDF text to analyze
+     * @param certainIdentifiers identifiers that give CERTAIN confidence (BIC codes, explicit bank name)
+     * @param highIdentifiers identifiers that give HIGH confidence
+     * @param mediumIdentifiers identifiers that give MEDIUM confidence (generic patterns)
+     */
+    protected fun calculateConfidence(
+        pdfText: String,
+        certainIdentifiers: List<String>,
+        highIdentifiers: List<String> = emptyList(),
+        mediumIdentifiers: List<String> = emptyList()
+    ): Pair<DetectionConfidence, List<String>> {
+        val lower = pdfText.lowercase()
+        val matchedIdentifiers = mutableListOf<String>()
+
+        // Check for CERTAIN identifiers (unique to this bank)
+        for (id in certainIdentifiers) {
+            if (lower.contains(id.lowercase())) {
+                matchedIdentifiers.add(id)
+            }
+        }
+        if (matchedIdentifiers.isNotEmpty()) {
+            return Pair(DetectionConfidence.CERTAIN, matchedIdentifiers)
+        }
+
+        // Check for HIGH identifiers
+        for (id in highIdentifiers) {
+            if (lower.contains(id.lowercase())) {
+                matchedIdentifiers.add(id)
+            }
+        }
+        if (matchedIdentifiers.size >= 2) {
+            return Pair(DetectionConfidence.HIGH, matchedIdentifiers)
+        }
+        if (matchedIdentifiers.size == 1) {
+            // Check if we also have medium identifiers
+            val mediumMatches = mediumIdentifiers.filter { lower.contains(it.lowercase()) }
+            if (mediumMatches.isNotEmpty()) {
+                matchedIdentifiers.addAll(mediumMatches)
+                return Pair(DetectionConfidence.HIGH, matchedIdentifiers)
+            }
+            return Pair(DetectionConfidence.MEDIUM, matchedIdentifiers)
+        }
+
+        // Check for MEDIUM identifiers
+        for (id in mediumIdentifiers) {
+            if (lower.contains(id.lowercase())) {
+                matchedIdentifiers.add(id)
+            }
+        }
+        if (matchedIdentifiers.size >= 2) {
+            return Pair(DetectionConfidence.MEDIUM, matchedIdentifiers)
+        }
+        if (matchedIdentifiers.isNotEmpty()) {
+            return Pair(DetectionConfidence.LOW, matchedIdentifiers)
+        }
+
+        return Pair(DetectionConfidence.NONE, emptyList())
+    }
+
     // Common German transaction type keywords
     protected val germanTransactionTypes = listOf(
         "Lastschrift", "Gutschrift", "Überweisung", "Dauerauftrag",
@@ -1134,16 +1195,27 @@ abstract class GermanBankParser : BankPdfParser {
 class DeutscheBankParser : GermanBankParser() {
     override val bankName = "Deutsche Bank"
 
-    private val identifiers = listOf(
+    // CERTAIN: unique BIC codes and explicit name
+    private val certainIdentifiers = listOf(
+        "deutdedb",      // Deutsche Bank BIC
+        "deutdeff",      // Deutsche Bank BIC Frankfurt
+        "deutsche bank ag"
+    )
+
+    // HIGH: strong indicators
+    private val highIdentifiers = listOf(
         "deutsche bank",
-        "deutdedb",
-        "deutdeff",
         "deutsche-bank.de"
     )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
+        return certainIdentifiers.any { lower.contains(it) } ||
+               highIdentifiers.any { lower.contains(it) }
+    }
+
+    override fun getConfidence(pdfText: String): Pair<DetectionConfidence, List<String>> {
+        return calculateConfidence(pdfText, certainIdentifiers, highIdentifiers)
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
@@ -1442,18 +1514,36 @@ class PostbankParser : GermanBankParser() {
 class CommerzbankParser : GermanBankParser() {
     override val bankName = "Commerzbank"
 
-    private val identifiers = listOf(
+    // CERTAIN: unique identifiers (BIC codes, official name)
+    private val certainIdentifiers = listOf(
+        "cobadeff",      // Commerzbank BIC Frankfurt
+        "cobadehd",      // Commerzbank BIC variant
+        "cobadehdxxx",   // Full BIC
+        "cobadeffxxx",   // Full BIC
+        "commerzbank ag" // Official legal name
+    )
+
+    // HIGH: strong indicators
+    private val highIdentifiers = listOf(
         "commerzbank",
-        "cobadeff",
-        "dresdner bank",
-        "commerzbank.de",
-        "comdirect",  // Commerzbank subsidiary
-        "cobadehd"    // BIC variant
+        "dresdner bank",  // Former name (merged with Commerzbank)
+        "commerzbank.de"
+    )
+
+    // MEDIUM: patterns that might appear in Commerzbank statements
+    private val mediumIdentifiers = listOf(
+        "zu ihren lasten",  // Debit column header
+        "zu ihren gunsten"  // Credit column header
     )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
+        return certainIdentifiers.any { lower.contains(it) } ||
+               highIdentifiers.any { lower.contains(it) }
+    }
+
+    override fun getConfidence(pdfText: String): Pair<DetectionConfidence, List<String>> {
+        return calculateConfidence(pdfText, certainIdentifiers, highIdentifiers, mediumIdentifiers)
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
@@ -1765,18 +1855,28 @@ class HypoVereinsbankParser : GermanBankParser() {
 class DkbParser : GermanBankParser() {
     override val bankName = "DKB"
 
-    private val identifiers = listOf(
+    // CERTAIN: unique identifiers (BIC codes, BLZ, official name)
+    private val certainIdentifiers = listOf(
+        "deutsche kreditbank ag",
+        "byladem1",         // BIC
+        "byladem1001",      // BIC variant
+        "bylademmxxx",      // Full BIC
+        "12030000"          // BLZ (Bankleitzahl)
+    )
+
+    // HIGH: strong indicators
+    private val highIdentifiers = listOf(
         "deutsche kreditbank",
-        "dkb",
         "dkb ag",
         "dkb-ag",
         "dkb.de",
-        "byladem1",
-        "byladem1001",  // BIC
-        "bylademmxxx",
-        "12030000",  // BLZ
-        "wir haben für sie gebucht",  // DKB-specific header
-        "belastung in eur",
+        "wir haben für sie gebucht"  // DKB-specific header
+    )
+
+    // MEDIUM: patterns that might appear in DKB statements
+    private val mediumIdentifiers = listOf(
+        "dkb",              // Short name, could match other things
+        "belastung in eur", // Column headers
         "gutschrift in eur"
     )
 
@@ -1785,9 +1885,14 @@ class DkbParser : GermanBankParser() {
         // Check for DKB-specific format with header columns
         val hasDkbHeader = lower.contains("belastung in eur") || lower.contains("gutschrift in eur")
         val hasDkbFormat = lower.contains("kref+") && lower.contains("svwz+")
-        return identifiers.any { lower.contains(it) } ||
+        return certainIdentifiers.any { lower.contains(it) } ||
+               highIdentifiers.any { lower.contains(it) } ||
                hasDkbHeader ||
                (hasDkbFormat && (lower.contains("kontoauszug") || lower.contains("überweisung")))
+    }
+
+    override fun getConfidence(pdfText: String): Pair<DetectionConfidence, List<String>> {
+        return calculateConfidence(pdfText, certainIdentifiers, highIdentifiers, mediumIdentifiers)
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
@@ -2075,25 +2180,39 @@ class LbbwParser : GermanBankParser() {
 class SparkasseParser : GermanBankParser() {
     override val bankName = "Sparkasse"
 
-    private val identifiers = listOf(
+    // CERTAIN: unique Sparkasse identifiers
+    private val certainIdentifiers = listOf(
         "sparkasse",
-        "spk ",
         "kreissparkasse",
         "stadtsparkasse",
         "landessparkasse",
-        "nasspa",  // Nassauische Sparkasse
-        "naspa",   // Also Nassauische Sparkasse
-        "haspa",   // Hamburger Sparkasse
-        "ospa",    // Ostdeutsche Sparkasse
-        "nospa",   // Nord-Ostsee Sparkasse
-        "helaba",  // Landesbank Hessen-Thüringen
-        "s-girostart",  // S-GiroStart account type
-        "kontoauszug"  // Common in Sparkasse statements
+        "nasspa",   // Nassauische Sparkasse
+        "naspa",    // Also Nassauische Sparkasse
+        "haspa",    // Hamburger Sparkasse
+        "ospa",     // Ostdeutsche Sparkasse
+        "nospa",    // Nord-Ostsee Sparkasse
+        "s-girostart"  // S-GiroStart account type (unique to Sparkasse)
+    )
+
+    // HIGH: strong indicators
+    private val highIdentifiers = listOf(
+        "spk ",     // Sparkasse abbreviation with space
+        "helaba"    // Landesbank Hessen-Thüringen (Sparkasse group)
+    )
+
+    // MEDIUM: generic patterns that could appear in other statements
+    private val mediumIdentifiers = listOf(
+        "kontoauszug"  // Common German term, not unique to Sparkasse
     )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
+        return certainIdentifiers.any { lower.contains(it) } ||
+               highIdentifiers.any { lower.contains(it) }
+    }
+
+    override fun getConfidence(pdfText: String): Pair<DetectionConfidence, List<String>> {
+        return calculateConfidence(pdfText, certainIdentifiers, highIdentifiers, mediumIdentifiers)
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
