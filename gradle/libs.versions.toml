@@ -13,7 +13,7 @@ androidx-core = "1.15.0"
 androidx-espresso = "3.6.1"
 androidx-lifecycle = "2.8.4"
 androidx-testExt = "1.2.1"
-composeMultiplatform = "1.7.1"
+composeMultiplatform = "1.10.0+dev3105"
 junit = "4.13.2"
 kotlin = "2.0.21"
 
