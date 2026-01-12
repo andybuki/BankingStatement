@@ -10,12 +10,15 @@ import kotlinx.datetime.toLocalDateTime
 /**
  * Parser for Commerzbank statements
  *
- * Format:
+ * Format from PDF:
  * - Header: "Kontowährung Euro" with columns "zu Ihren Lasten" | "zu Ihren Gunsten"
- * - Balance: "Alter Kontostand vom DD.MM.YYYY" with amount
+ * - Column header: "Angaben zu den Umsätzen | Valuta | zu Ihren Lasten | zu Ihren Gunsten"
  * - Date headers: "Buchungsdatum: DD.MM.YYYY"
- * - Transactions: Multi-line description, last line has Valuta (DD.MM) and amount
- * - Amount format: 56,87- (trailing minus for debits) or 127,50 (positive for credits)
+ * - Transaction FIRST LINE: "DESCRIPTION    DD.MM    AMOUNT[-]"
+ *   - Valuta date (DD.MM) and amount are on the SAME line as description start
+ *   - Amount with trailing minus (7,99-) = debit (zu Ihren Lasten)
+ *   - Amount without minus (7,99) = credit (zu Ihren Gunsten)
+ * - Following lines: Additional description details (IBAN, BIC, End-to-End-Ref, etc.)
  */
 class CommerzbankParser : GermanBankParser() {
     override val bankName = "Commerzbank"
@@ -41,7 +44,8 @@ class CommerzbankParser : GermanBankParser() {
         "zu ihren lasten",  // Debit column header
         "zu ihren gunsten", // Credit column header
         "buchungsdatum:",   // Date header specific to Commerzbank
-        "alter kontostand vom" // Opening balance header
+        "alter kontostand vom", // Opening balance header
+        "angaben zu den umsätzen" // Transaction column header
     )
 
     override fun canParse(pdfText: String): Boolean {
@@ -66,7 +70,7 @@ class CommerzbankParser : GermanBankParser() {
             var transactions = parseCommerzbankFormat(lines)
 
             // Fallback to generic parser if specific format didn't work well
-            if (transactions.size < 3) {
+            if (transactions.size < 2) {
                 val genericTransactions = parseComprehensiveFormat(lines)
                 if (genericTransactions.size > transactions.size) {
                     transactions = genericTransactions
@@ -98,20 +102,19 @@ class CommerzbankParser : GermanBankParser() {
     }
 
     /**
-     * Parse Commerzbank specific format:
+     * Parse Commerzbank specific format where valuta and amount are on FIRST line:
      *
-     * Buchungsdatum: 10.02.2021
-     * SEPA-Gutschrift
-     * IBAN: DE12345678901234567890
-     * BIC: COBADEFFXXX
-     * Absender: Max Mustermann
-     * End-to-End-Ref: ...
-     * 10.02.           127,50
-     *
-     * SEPA-Überweisung
-     * IBAN: DE09876543210987654321
+     * Buchungsdatum: 13.07.2022
+     * AMAZON EU S.A R.L., NIEDERLASSUNG D    12.07    7,99-
+     * EUTSCHLAND
+     * D01-0693031-6475854 AMZNPrime DE 39
+     * ZVXS82AE8XQOOJ
+     * End-to-End-Ref.: 39ZVXS82AE8XQOOJ
      * ...
-     * 10.02.           56,87-
+     *
+     * BENACHRICHTIGUNGSENTGELT FUER    13.07    1,90-
+     * DIE RUECKGABE VON LASTSCHRIFTEN
+     * STUECK    1
      */
     private fun parseCommerzbankFormat(lines: List<String>): List<ParsedTransaction> {
         val transactions = mutableListOf<ParsedTransaction>()
@@ -119,19 +122,17 @@ class CommerzbankParser : GermanBankParser() {
         // Pattern for "Buchungsdatum: DD.MM.YYYY"
         val bookingDateHeaderPattern = Regex("""Buchungsdatum:\s*(\d{2}\.\d{2}\.\d{4})""", RegexOption.IGNORE_CASE)
 
-        // Pattern for valuta date + amount line: "DD.MM.     amount" or "DD.MM     amount-"
-        // Amount can have trailing minus for debits: "56,87-" or be positive: "127,50"
-        val valutaAmountPattern = Regex(
-            """^(\d{2}\.\d{2}\.?)\s+(\d{1,3}(?:[.]\d{3})*,\d{2})(-)?$"""
+        // Pattern for transaction first line: TEXT + DD.MM + AMOUNT with optional trailing minus
+        // Matches: "AMAZON EU S.A R.L., NIEDERLASSUNG D    12.07    7,99-"
+        // The amount can have spaces: "7,99-" or "7,99 -" or "1 234,56-"
+        val transactionLinePattern = Regex(
+            """^(.+?)\s+(\d{2}\.\d{2})\s+(\d{1,3}(?:[\s.]\d{3})*,\d{2})\s*(-)?$"""
         )
 
-        // Alternative: amount with trailing minus anywhere on line
-        val amountWithTrailingMinusPattern = Regex(
-            """(\d{1,3}(?:[.]\d{3})*,\d{2})(-)?$"""
+        // Alternative pattern for amounts that might have space before minus
+        val transactionLinePatternAlt = Regex(
+            """^(.+?)\s+(\d{2}\.\d{2})\s+(\d{1,3}(?:[\s.]\d{3})*,\d{2})\s*(-)?"""
         )
-
-        // Short date pattern: DD.MM. or DD.MM
-        val shortDatePattern = Regex("""^(\d{2}\.\d{2}\.?)""")
 
         var currentBookingDate: LocalDate? = null
         var currentYear = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
@@ -151,58 +152,71 @@ class CommerzbankParser : GermanBankParser() {
             if (dateHeaderMatch != null) {
                 val dateStr = dateHeaderMatch.groupValues[1]
                 currentBookingDate = parseGermanDate(dateStr)
-                // Extract year from the booking date for short dates
                 currentBookingDate?.let { currentYear = it.year }
                 i++
                 continue
             }
 
-            // Skip balance lines
+            // Skip balance and header lines
             if (isBalanceOrHeaderLine(line)) {
                 i++
                 continue
             }
 
-            // Check if this line ends with a valuta date + amount (transaction ending)
-            val valutaMatch = valutaAmountPattern.find(line)
-            if (valutaMatch != null) {
-                // This is a single-line transaction ending or standalone amount line
-                // Look back to find description
-                val valutaDateStr = valutaMatch.groupValues[1]
-                val amountStr = valutaMatch.groupValues[2]
-                val isDebit = valutaMatch.groupValues[3] == "-"
+            // Check if this is a transaction first line (description + valuta + amount)
+            val txMatch = transactionLinePattern.find(line) ?: transactionLinePatternAlt.find(line)
+            if (txMatch != null) {
+                val descriptionStart = txMatch.groupValues[1].trim()
+                val valutaDateStr = txMatch.groupValues[2]
+                val amountStr = txMatch.groupValues[3].replace(" ", "") // Remove spaces in amount
+                val isDebit = txMatch.groupValues[4] == "-"
 
                 val amount = parseGermanAmount(amountStr)
                 val valutaDate = parseShortDate(valutaDateStr, currentYear)
 
-                if (amount != null && (currentBookingDate != null || valutaDate != null)) {
+                if (amount != null) {
                     val finalAmount = if (isDebit) -kotlin.math.abs(amount) else kotlin.math.abs(amount)
-                    val bookingDate = currentBookingDate ?: valutaDate!!
+                    val bookingDate = currentBookingDate ?: valutaDate
 
-                    // This is a single amount line - look back for description
-                    val descriptionParts = mutableListOf<String>()
-                    var j = i - 1
-                    while (j >= 0 && j > i - 15) {
-                        val prevLine = lines[j].trim()
-                        if (prevLine.isEmpty()) {
-                            j--
+                    // Collect additional description lines
+                    val descriptionParts = mutableListOf(descriptionStart)
+                    var j = i + 1
+
+                    while (j < lines.size && j < i + 20) {
+                        val nextLine = lines[j].trim()
+
+                        // Skip empty lines
+                        if (nextLine.isEmpty()) {
+                            j++
                             continue
                         }
-                        // Stop if we hit a previous amount line or booking date header
-                        if (valutaAmountPattern.containsMatchIn(prevLine) ||
-                            bookingDateHeaderPattern.containsMatchIn(prevLine) ||
-                            isBalanceOrHeaderLine(prevLine)) {
+
+                        // Stop at new booking date header
+                        if (bookingDateHeaderPattern.containsMatchIn(nextLine)) {
                             break
                         }
-                        descriptionParts.add(0, prevLine)
-                        j--
+
+                        // Stop at next transaction (line with valuta + amount pattern)
+                        if (transactionLinePattern.containsMatchIn(nextLine) ||
+                            transactionLinePatternAlt.containsMatchIn(nextLine)) {
+                            break
+                        }
+
+                        // Stop at balance/header lines
+                        if (isBalanceOrHeaderLine(nextLine)) {
+                            break
+                        }
+
+                        // Add to description
+                        descriptionParts.add(nextLine)
+                        j++
                     }
 
                     val fullDescription = descriptionParts.joinToString(" ")
                         .replace(Regex("""\s+"""), " ")
                         .trim()
 
-                    if (fullDescription.isNotBlank() && !isBalanceEntry(fullDescription, fullDescription)) {
+                    if (fullDescription.isNotBlank() && !isBalanceEntry(fullDescription, fullDescription) && bookingDate != null) {
                         transactions.add(
                             ParsedTransaction(
                                 bookingDate = bookingDate,
@@ -212,128 +226,14 @@ class CommerzbankParser : GermanBankParser() {
                                 description = fullDescription,
                                 counterpartyName = extractCommerzbankCounterparty(fullDescription),
                                 transactionType = detectTransactionType(fullDescription),
-                                rawText = descriptionParts.joinToString("\n") + "\n" + line
+                                rawText = descriptionParts.joinToString("\n")
                             )
                         )
                     }
+
+                    i = j
+                    continue
                 }
-                i++
-                continue
-            }
-
-            // Check if this is a transaction start line (description start)
-            // Look ahead to find the valuta + amount line
-            if (!isHeaderOrFooter(line) && currentBookingDate != null) {
-                val descriptionParts = mutableListOf(line)
-                var foundAmount = false
-                var j = i + 1
-
-                while (j < lines.size && j < i + 20) {
-                    val nextLine = lines[j].trim()
-
-                    // Skip empty lines within transaction
-                    if (nextLine.isEmpty()) {
-                        j++
-                        continue
-                    }
-
-                    // Stop at new booking date header
-                    if (bookingDateHeaderPattern.containsMatchIn(nextLine)) {
-                        break
-                    }
-
-                    // Check for valuta + amount line
-                    val amountMatch = valutaAmountPattern.find(nextLine)
-                    if (amountMatch != null) {
-                        val valutaDateStr = amountMatch.groupValues[1]
-                        val amountStr = amountMatch.groupValues[2]
-                        val isDebit = amountMatch.groupValues[3] == "-"
-
-                        val amount = parseGermanAmount(amountStr)
-                        val valutaDate = parseShortDate(valutaDateStr, currentYear)
-
-                        if (amount != null) {
-                            val finalAmount = if (isDebit) -kotlin.math.abs(amount) else kotlin.math.abs(amount)
-
-                            val fullDescription = descriptionParts.joinToString(" ")
-                                .replace(Regex("""\s+"""), " ")
-                                .trim()
-
-                            if (fullDescription.isNotBlank() && !isBalanceEntry(fullDescription, fullDescription)) {
-                                transactions.add(
-                                    ParsedTransaction(
-                                        bookingDate = currentBookingDate!!,
-                                        valueDate = valutaDate ?: currentBookingDate!!,
-                                        amount = finalAmount,
-                                        currency = "EUR",
-                                        description = fullDescription,
-                                        counterpartyName = extractCommerzbankCounterparty(fullDescription),
-                                        transactionType = detectTransactionType(fullDescription),
-                                        rawText = descriptionParts.joinToString("\n") + "\n" + nextLine
-                                    )
-                                )
-                            }
-                            foundAmount = true
-                            i = j + 1
-                            break
-                        }
-                    }
-
-                    // Check if line ends with amount (without short date prefix)
-                    val amountEndMatch = amountWithTrailingMinusPattern.find(nextLine)
-                    if (amountEndMatch != null && shortDatePattern.containsMatchIn(nextLine)) {
-                        // This line has both date and amount at end
-                        val shortDateMatch = shortDatePattern.find(nextLine)
-                        val textBeforeDate = if (shortDateMatch != null) {
-                            nextLine.substring(0, shortDateMatch.range.first).trim()
-                        } else ""
-
-                        if (textBeforeDate.isNotEmpty()) {
-                            descriptionParts.add(textBeforeDate)
-                        }
-
-                        val valutaDateStr = shortDateMatch?.groupValues?.get(1) ?: ""
-                        val amountStr = amountEndMatch.groupValues[1]
-                        val isDebit = amountEndMatch.groupValues[2] == "-"
-
-                        val amount = parseGermanAmount(amountStr)
-                        val valutaDate = parseShortDate(valutaDateStr, currentYear)
-
-                        if (amount != null) {
-                            val finalAmount = if (isDebit) -kotlin.math.abs(amount) else kotlin.math.abs(amount)
-
-                            val fullDescription = descriptionParts.joinToString(" ")
-                                .replace(Regex("""\s+"""), " ")
-                                .trim()
-
-                            if (fullDescription.isNotBlank() && !isBalanceEntry(fullDescription, fullDescription)) {
-                                transactions.add(
-                                    ParsedTransaction(
-                                        bookingDate = currentBookingDate!!,
-                                        valueDate = valutaDate ?: currentBookingDate!!,
-                                        amount = finalAmount,
-                                        currency = "EUR",
-                                        description = fullDescription,
-                                        counterpartyName = extractCommerzbankCounterparty(fullDescription),
-                                        transactionType = detectTransactionType(fullDescription),
-                                        rawText = descriptionParts.joinToString("\n") + "\n" + nextLine
-                                    )
-                                )
-                            }
-                            foundAmount = true
-                            i = j + 1
-                            break
-                        }
-                    }
-
-                    // Add to description
-                    if (!isBalanceOrHeaderLine(nextLine)) {
-                        descriptionParts.add(nextLine)
-                    }
-                    j++
-                }
-
-                if (foundAmount) continue
             }
 
             i++
@@ -343,7 +243,7 @@ class CommerzbankParser : GermanBankParser() {
     }
 
     /**
-     * Parse short date format (DD.MM. or DD.MM) with given year
+     * Parse short date format (DD.MM) with given year
      */
     private fun parseShortDate(dateStr: String, year: Int): LocalDate? {
         return try {
@@ -374,17 +274,22 @@ class CommerzbankParser : GermanBankParser() {
                lower.contains("summe") ||
                lower.contains("übertrag") ||
                lower.contains("seite ") ||
+               lower.contains("angaben zu den umsätzen") ||
+               lower.contains("valuta") && lower.length < 20 ||
                isHeaderOrFooter(line)
     }
 
     /**
      * Extract counterparty from Commerzbank transaction description
-     * Looks for patterns like "Absender:", "Empfänger:", or extracts from SEPA fields
+     * First part of description is usually the counterparty name
      */
     private fun extractCommerzbankCounterparty(description: String): String? {
-        // Try to find explicit sender/recipient
+        // The counterparty is typically the first part before technical details
+        // e.g., "AMAZON EU S.A R.L., NIEDERLASSUNG DEUTSCHLAND D01-0693031..."
+
+        // Try to find explicit sender/recipient markers
         val patterns = listOf(
-            Regex("""(?:Absender|Empfänger|Auftraggeber|Zahlungsempfänger)[:\s]+([A-Za-zäöüÄÖÜß\s.\-]+?)(?:\s+IBAN|\s+BIC|\s+End-to-End|$)""", RegexOption.IGNORE_CASE),
+            Regex("""(?:Absender|Empfänger|Auftraggeber|Zahlungsempfänger)[:\s]+([A-Za-zäöüÄÖÜß\s.\-,]+?)(?:\s+IBAN|\s+BIC|\s+End-to-End|\s+DE\d|$)""", RegexOption.IGNORE_CASE),
             Regex("""(?:von|an)[:\s]+([A-Za-zäöüÄÖÜß\s.\-]{3,50})""", RegexOption.IGNORE_CASE)
         )
 
@@ -398,7 +303,30 @@ class CommerzbankParser : GermanBankParser() {
             }
         }
 
-        // Fallback to generic extraction
-        return extractCounterparty(description)
+        // For Commerzbank, take first meaningful segment as counterparty
+        // Stop at technical markers like D01-, DE, IBAN, etc.
+        val techMarkers = listOf("D01-", "DE ", "IBAN", "BIC", "End-to-End", "Mandatsref", "Gläubiger")
+        var counterparty = description
+
+        for (marker in techMarkers) {
+            val idx = counterparty.indexOf(marker, ignoreCase = true)
+            if (idx > 5) {
+                counterparty = counterparty.substring(0, idx).trim()
+                break
+            }
+        }
+
+        // Clean up trailing punctuation
+        counterparty = counterparty.trimEnd(',', '.', ' ')
+
+        // If still too long, take first line worth
+        if (counterparty.length > 60) {
+            val spaceIdx = counterparty.indexOf(' ', 40)
+            if (spaceIdx > 0) {
+                counterparty = counterparty.substring(0, spaceIdx)
+            }
+        }
+
+        return counterparty.takeIf { it.length > 2 }
     }
 }
