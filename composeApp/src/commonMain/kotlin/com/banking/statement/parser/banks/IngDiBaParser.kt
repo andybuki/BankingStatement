@@ -18,20 +18,66 @@ class IngDiBaParser : BankPdfParser {
 
     override val bankName = "ING DiBa"
 
-    // Keywords that identify ING DiBa statements
-    private val identifiers = listOf(
+    // CERTAIN: unique identifiers (BIC codes, specific IBAN prefixes)
+    private val certainIdentifiers = listOf(
+        "ingddeffxxx",      // Full BIC
+        "ingddeff",         // BIC
+        "ing-diba ag",      // Official legal name
+        "de29 5001 0517",   // ING IBAN prefix
+        "de50 5001 0517"    // ING IBAN prefix variant
+    )
+
+    // HIGH: strong indicators
+    private val highIdentifiers = listOf(
         "ing-diba",
         "ing diba",
         "ing.de",
-        "ingddeffxxx",  // BIC
-        "ingddeff",
-        "ing ag",
         "ing deutschland",
-        "de29 5001 0517", // ING IBAN prefix
-        "de50 5001 0517",
-        "extra-konto",
         "girokonto-auszug"  // Specific to ING statement title
     )
+
+    // MEDIUM: generic terms that might appear
+    private val mediumIdentifiers = listOf(
+        "extra-konto",      // Could be generic
+        "ing ag"            // Could match other banks
+    )
+
+    override fun getConfidence(pdfText: String): Pair<DetectionConfidence, List<String>> {
+        val lower = pdfText.lowercase()
+        val matched = mutableListOf<String>()
+
+        // Check CERTAIN identifiers
+        for (id in certainIdentifiers) {
+            if (lower.contains(id)) {
+                matched.add(id)
+            }
+        }
+        if (matched.isNotEmpty()) {
+            return Pair(DetectionConfidence.CERTAIN, matched)
+        }
+
+        // Check HIGH identifiers
+        for (id in highIdentifiers) {
+            if (lower.contains(id)) {
+                matched.add(id)
+            }
+        }
+        if (matched.isNotEmpty()) {
+            return Pair(DetectionConfidence.HIGH, matched)
+        }
+
+        // Check MEDIUM identifiers
+        for (id in mediumIdentifiers) {
+            if (lower.contains(id)) {
+                matched.add(id)
+            }
+        }
+        if (matched.isNotEmpty()) {
+            return Pair(DetectionConfidence.MEDIUM, matched)
+        }
+
+        return Pair(DetectionConfidence.NONE, emptyList())
+    }
 
     // Transaction type keywords - expanded list
     private val transactionTypes = listOf(
@@ -45,7 +91,8 @@ class IngDiBaParser : BankPdfParser {
 
     override fun canParse(pdfText: String): Boolean {
         val lowerText = pdfText.lowercase()
-        return identifiers.any { lowerText.contains(it) }
+        return certainIdentifiers.any { lowerText.contains(it) } ||
+               highIdentifiers.any { lowerText.contains(it) }
     }
 
     override fun parse(pdfText: String, fileName: String): ParseResult {
