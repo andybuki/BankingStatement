@@ -7,29 +7,6 @@ import com.banking.statement.parser.ParseResult
  */
 
 // ============================================================
-// Postbank Parser
-// ============================================================
-class PostbankParser : GermanBankParser() {
-    override val bankName = "Postbank"
-
-    private val identifiers = listOf(
-        "postbank",
-        "pbnkdeff",
-        "postbank.de",
-        "eine niederlassung der deutsche bank"
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "Postbank")
-    }
-}
-
-// ============================================================
 // Volksbank Parser
 // ============================================================
 class VolksbankParser : GermanBankParser() {
