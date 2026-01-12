@@ -30,49 +30,6 @@ class PostbankParser : GermanBankParser() {
 }
 
 // ============================================================
-// Commerzbank Parser
-// ============================================================
-class CommerzbankParser : GermanBankParser() {
-    override val bankName = "Commerzbank"
-
-    // CERTAIN: unique identifiers (BIC codes, official name)
-    private val certainIdentifiers = listOf(
-        "cobadeff",      // Commerzbank BIC Frankfurt
-        "cobadehd",      // Commerzbank BIC variant
-        "cobadehdxxx",   // Full BIC
-        "cobadeffxxx",   // Full BIC
-        "commerzbank ag" // Official legal name
-    )
-
-    // HIGH: strong indicators
-    private val highIdentifiers = listOf(
-        "commerzbank",
-        "dresdner bank",  // Former name (merged with Commerzbank)
-        "commerzbank.de"
-    )
-
-    // MEDIUM: patterns that might appear in Commerzbank statements
-    private val mediumIdentifiers = listOf(
-        "zu ihren lasten",  // Debit column header
-        "zu ihren gunsten"  // Credit column header
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return certainIdentifiers.any { lower.contains(it) } ||
-               highIdentifiers.any { lower.contains(it) }
-    }
-
-    override fun getConfidence(pdfText: String): Pair<DetectionConfidence, List<String>> {
-        return calculateConfidence(pdfText, certainIdentifiers, highIdentifiers, mediumIdentifiers)
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "Commerzbank")
-    }
-}
-
-// ============================================================
 // Volksbank Parser
 // ============================================================
 class VolksbankParser : GermanBankParser() {
