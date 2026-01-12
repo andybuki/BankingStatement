@@ -29,6 +29,7 @@ import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.categorization.TransactionCategorizer
 import com.banking.statement.parser.banks.BankParserRegistry
+import com.banking.statement.parser.banks.DetectionConfidence
 import com.banking.statement.pdf.PdfProcessor
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.ExportManager
@@ -43,6 +44,7 @@ import com.banking.statement.ui.MonthlySummary
 import com.banking.statement.ui.TransactionDisplay
 import com.banking.statement.ui.theme.ThemeMode
 import com.banking.statement.ui.theme.ThemePreferences
+import com.banking.statement.ui.BankSelectionDialog
 import com.banking.statement.validation.BankStatementValidator
 import android.widget.Toast
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -83,9 +85,31 @@ data class PendingImport(
 data class ImportDialogState(
     val showAccountDialog: Boolean = false,
     val showSuccessDialog: Boolean = false,
+    val showBankSelectionDialog: Boolean = false,
     val pendingImport: PendingImport? = null,
     val existingAccounts: List<AccountOption> = emptyList(),
-    val importResult: ImportResult? = null
+    val importResult: ImportResult? = null,
+    val detectedBanks: List<DetectedBankOption> = emptyList(),
+    val pendingPdfData: PendingPdfData? = null
+)
+
+/**
+ * Data for pending PDF that needs bank selection
+ */
+data class PendingPdfData(
+    val bytes: ByteArray,
+    val text: String,
+    val fileName: String,
+    val uri: android.net.Uri
+)
+
+/**
+ * Bank option for user selection
+ */
+data class DetectedBankOption(
+    val bankName: String,
+    val confidence: String,
+    val matchedIdentifiers: List<String>
 )
 
 class MainActivity : ComponentActivity() {
@@ -242,6 +266,15 @@ class MainActivity : ComponentActivity() {
                     deleteCustomCategory(id)
                 }
             )
+
+            // Bank selection dialog
+            if (dialogState.showBankSelectionDialog) {
+                BankSelectionDialog(
+                    detectedBanks = dialogState.detectedBanks,
+                    onBankSelected = { bankName -> handleBankSelection(bankName) },
+                    onDismiss = { cancelBankSelection() }
+                )
+            }
         }
     }
 
@@ -286,10 +319,34 @@ class MainActivity : ComponentActivity() {
                             withContext(Dispatchers.Main) {
                                 importState = importState.copy(progress = 40, progressMessage = getString(R.string.processing_pdf))
                             }
-                            parsePdf(bytes, fileName, uri)
+
+                            // Pre-process PDF to check if user selection is needed
+                            val preProcessResult = preProcessPdf(bytes)
+
+                            if (preProcessResult.needsUserSelection && preProcessResult.detectedBanks.isNotEmpty()) {
+                                // Show bank selection dialog on main thread
+                                withContext(Dispatchers.Main) {
+                                    dialogState = dialogState.copy(
+                                        showBankSelectionDialog = true,
+                                        detectedBanks = preProcessResult.detectedBanks,
+                                        pendingPdfData = PendingPdfData(bytes, preProcessResult.text ?: "", fileName, uri)
+                                    )
+                                    importState = ImportState(isProcessing = false)
+                                }
+                                // Return null to indicate waiting for user selection
+                                null
+                            } else {
+                                parsePdf(bytes, fileName, uri, preProcessResult)
+                            }
                         }
                     }
                 }
+
+                // If parseResult is null, we're waiting for user bank selection
+                if (parseResult == null) {
+                    return@launch
+                }
+
                 importState = importState.copy(progress = 70, progressMessage = getString(R.string.processing_categorizing))
 
                 // Step 4: Process result (70-90%)
@@ -482,25 +539,46 @@ class MainActivity : ComponentActivity() {
         return ExcelParser().parse(bytes, fileName)
     }
 
-    private fun parsePdf(bytes: ByteArray, fileName: String, uri: Uri): ParseResult {
+    /**
+     * Data class to hold PDF pre-processing result
+     */
+    private data class PdfPreProcessResult(
+        val needsUserSelection: Boolean,
+        val text: String?,
+        val errorResult: ParseResult?,
+        val detectedBanks: List<DetectedBankOption> = emptyList()
+    )
+
+    /**
+     * Pre-process PDF: validate and check if user selection is needed
+     */
+    private fun preProcessPdf(bytes: ByteArray): PdfPreProcessResult {
         val pdfProcessor = PdfProcessor()
 
         // Check if it's a PDF
         if (!pdfProcessor.isPdfFile(bytes)) {
-            return ParseResult(
-                success = false,
-                bankName = "Unknown",
-                errorMessage = "File is not a valid PDF"
+            return PdfPreProcessResult(
+                needsUserSelection = false,
+                text = null,
+                errorResult = ParseResult(
+                    success = false,
+                    bankName = "Unknown",
+                    errorMessage = "File is not a valid PDF"
+                )
             )
         }
 
         // Extract text
         val text = pdfProcessor.extractText(bytes)
         if (text.isNullOrBlank()) {
-            return ParseResult(
-                success = false,
-                bankName = "Unknown",
-                errorMessage = "Could not extract text from PDF. It may be a scanned document."
+            return PdfPreProcessResult(
+                needsUserSelection = false,
+                text = null,
+                errorResult = ParseResult(
+                    success = false,
+                    bankName = "Unknown",
+                    errorMessage = "Could not extract text from PDF. It may be a scanned document."
+                )
             )
         }
 
@@ -509,23 +587,76 @@ class MainActivity : ComponentActivity() {
         val validationResult = validator.validate(text)
 
         if (!validationResult.isValid) {
-            return ParseResult(
-                success = false,
-                bankName = "Unknown",
-                errorMessage = "This does not appear to be a bank statement (Score: ${validationResult.score}/50 required)"
+            return PdfPreProcessResult(
+                needsUserSelection = false,
+                text = text,
+                errorResult = ParseResult(
+                    success = false,
+                    bankName = "Unknown",
+                    errorMessage = "This does not appear to be a bank statement (Score: ${validationResult.score}/50 required)"
+                )
             )
         }
 
-        // Try to find a bank-specific parser
+        // Check if user selection is needed (multiple banks detected or low confidence)
+        if (BankParserRegistry.needsUserSelection(text)) {
+            val detectedBanks = BankParserRegistry.detectBanks(text)
+            if (detectedBanks.isNotEmpty()) {
+                val bankOptions = detectedBanks.map { result ->
+                    DetectedBankOption(
+                        bankName = result.parser.bankName,
+                        confidence = when (result.confidence) {
+                            DetectionConfidence.CERTAIN -> "Certain"
+                            DetectionConfidence.HIGH -> "High"
+                            DetectionConfidence.MEDIUM -> "Medium"
+                            DetectionConfidence.LOW -> "Low"
+                            DetectionConfidence.NONE -> "None"
+                        },
+                        matchedIdentifiers = result.matchedIdentifiers
+                    )
+                }
+                return PdfPreProcessResult(
+                    needsUserSelection = true,
+                    text = text,
+                    errorResult = null,
+                    detectedBanks = bankOptions
+                )
+            }
+        }
+
+        // No user selection needed
+        return PdfPreProcessResult(
+            needsUserSelection = false,
+            text = text,
+            errorResult = null
+        )
+    }
+
+    private fun parsePdf(bytes: ByteArray, fileName: String, uri: Uri, preProcessResult: PdfPreProcessResult? = null): ParseResult {
+        // If we already have a pre-process result, use it
+        val result = preProcessResult ?: preProcessPdf(bytes)
+
+        // If there was an error during pre-processing, return it
+        if (result.errorResult != null) {
+            return result.errorResult
+        }
+
+        val text = result.text ?: return ParseResult(
+            success = false,
+            bankName = "Unknown",
+            errorMessage = "Could not extract text from PDF"
+        )
+
+        // Try to find a bank-specific parser (high confidence)
         val bankParser = BankParserRegistry.findParser(text)
         if (bankParser != null) {
-            val result = bankParser.parse(text, fileName)
-            if (result.success && result.transactions.isNotEmpty()) {
-                return result
+            val parseResult = bankParser.parse(text, fileName)
+            if (parseResult.success && parseResult.transactions.isNotEmpty()) {
+                return parseResult
             }
             // If bank parser found but no transactions, fall through to error
-            if (result.errorMessage != null) {
-                return result
+            if (parseResult.errorMessage != null) {
+                return parseResult
             }
         }
 
@@ -544,6 +675,74 @@ class MainActivity : ComponentActivity() {
                 }
                 append("Try using CSV/Excel export from your bank.")
             }
+        )
+    }
+
+    /**
+     * Parse PDF with a specific bank parser (after user selection)
+     */
+    private fun parsePdfWithParser(text: String, fileName: String, bankName: String): ParseResult {
+        val parser = BankParserRegistry.getParserByName(bankName)
+        return if (parser != null) {
+            parser.parse(text, fileName)
+        } else {
+            ParseResult(
+                success = false,
+                bankName = bankName,
+                errorMessage = "Parser not found for $bankName"
+            )
+        }
+    }
+
+    /**
+     * Handle bank selection from user
+     */
+    private fun handleBankSelection(bankName: String) {
+        val pendingData = dialogState.pendingPdfData ?: return
+
+        dialogState = dialogState.copy(
+            showBankSelectionDialog = false,
+            detectedBanks = emptyList(),
+            pendingPdfData = null
+        )
+        importState = ImportState(isProcessing = true, progress = 50, progressMessage = getString(R.string.processing_parsing))
+
+        coroutineScope.launch {
+            val parseResult = withContext(Dispatchers.IO) {
+                parsePdfWithParser(pendingData.text, pendingData.fileName, bankName)
+            }
+
+            importState = importState.copy(progress = 70, progressMessage = getString(R.string.processing_categorizing))
+
+            if (parseResult.success && parseResult.transactions.isNotEmpty()) {
+                importState = importState.copy(progress = 80, progressMessage = getString(R.string.processing_saving))
+
+                val filePath = savePdfToStorage(pendingData.uri, pendingData.fileName)
+                importState = importState.copy(progress = 90, progressMessage = getString(R.string.processing_finalizing))
+                handleSuccessfulParse(parseResult, pendingData.fileName, filePath, ImportFileType.PDF)
+            } else {
+                importState = ImportState(
+                    isProcessing = false,
+                    parseResult = parseResult,
+                    savedToDatabase = false,
+                    errorMessage = parseResult.errorMessage
+                )
+            }
+        }
+    }
+
+    /**
+     * Cancel bank selection
+     */
+    private fun cancelBankSelection() {
+        dialogState = dialogState.copy(
+            showBankSelectionDialog = false,
+            detectedBanks = emptyList(),
+            pendingPdfData = null
+        )
+        importState = ImportState(
+            isProcessing = false,
+            errorMessage = "Bank selection cancelled"
         )
     }
 
