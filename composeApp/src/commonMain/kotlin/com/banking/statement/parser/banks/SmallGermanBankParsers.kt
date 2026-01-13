@@ -7,33 +7,6 @@ import com.banking.statement.parser.ParseResult
  */
 
 // ============================================================
-// Volksbank Parser
-// ============================================================
-class VolksbankParser : GermanBankParser() {
-    override val bankName = "Volksbank"
-
-    private val identifiers = listOf(
-        "volksbank",
-        "vr-bank",
-        "vr bank",
-        "raiffeisenbank",
-        "genossenschaftsbank",
-        "genoded",  // BIC prefix for Genobanks
-        "basislastschrift pn:",  // Common pattern in Volksbank statements
-        "klarna bank ab"  // Often appears in Volksbank statements
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "Volksbank")
-    }
-}
-
-// ============================================================
 // C24 Bank Parser
 // ============================================================
 class C24Parser : GermanBankParser() {
