@@ -153,7 +153,8 @@ class PostbankParser : GermanBankParser() {
 
                     if (amountMatch != null) {
                         val sign = amountMatch.groupValues[1]
-                        val amountStr = amountMatch.groupValues[2].replace(" ", "").replace(".", "")
+                        // Don't pre-remove dots - parseGermanAmount handles thousand separators
+                        val amountStr = amountMatch.groupValues[2].replace(" ", "")
                         amount = parseGermanAmount(amountStr)
                         isDebit = sign == "-"
 
@@ -200,7 +201,7 @@ class PostbankParser : GermanBankParser() {
                         val nextAmountMatch = amountPattern.find(nextLine)
                         if (nextAmountMatch != null && amount == null) {
                             val sign = nextAmountMatch.groupValues[1]
-                            val amountStr = nextAmountMatch.groupValues[2].replace(" ", "").replace(".", "")
+                            val amountStr = nextAmountMatch.groupValues[2].replace(" ", "")
                             amount = parseGermanAmount(amountStr)
                             isDebit = sign == "-"
 
@@ -224,7 +225,7 @@ class PostbankParser : GermanBankParser() {
                         val amountInText = amountAnywherePattern.find(fullText)
                         if (amountInText != null) {
                             val sign = amountInText.groupValues[1]
-                            val amountStr = amountInText.groupValues[2].replace(" ", "").replace(".", "")
+                            val amountStr = amountInText.groupValues[2].replace(" ", "")
                             amount = parseGermanAmount(amountStr)
                             isDebit = sign == "-"
                         }
@@ -296,6 +297,17 @@ class PostbankParser : GermanBankParser() {
                lower.contains("kontostand") ||
                lower.contains("summe") ||
                lower.contains("übertrag") ||
+               // Footer summary section
+               lower.startsWith("kontonummer") ||
+               lower.startsWith("blz") ||
+               lower.contains("summe zahlungseingänge") ||
+               lower.contains("summe zahlungsausgänge") ||
+               lower.contains("zinssatz") ||
+               lower.contains("kontoüberziehung") ||
+               lower.startsWith("anlage") ||
+               lower.startsWith("eur") && lower.length < 20 ||
+               // Account numbers (just digits with spaces)
+               Regex("""^\d[\d\s]{5,15}$""").matches(line.trim()) ||
                isHeaderOrFooter(line)
     }
 
@@ -307,7 +319,7 @@ class PostbankParser : GermanBankParser() {
         val txTypes = listOf(
             "Gutschr.SEPA", "Gutschr. SEPA", "SDD Lastschr", "SEPA Überw. Einzel",
             "SEPA Überw.", "Lastschrift", "Gutschrift", "Dauerauftrag",
-            "Kartenzahlung", "Überweisung"
+            "Kartenzahlung", "Überweisung", "Übertrag", "Einzahlung", "Auszahlung"
         )
 
         var cleanDesc = description
