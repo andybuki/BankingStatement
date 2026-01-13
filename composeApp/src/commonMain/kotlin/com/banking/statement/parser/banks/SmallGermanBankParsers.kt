@@ -7,34 +7,6 @@ import com.banking.statement.parser.ParseResult
  */
 
 // ============================================================
-// Consorsbank Parser
-// ============================================================
-class ConsorsbankParser : GermanBankParser() {
-    override val bankName = "Consorsbank"
-
-    private val identifiers = listOf(
-        "consorsbank",
-        "consors",
-        "bnp paribas",
-        "csdbde71",
-        "cortal consors",
-        "visa 26466"  // Consorsbank VISA card pattern
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        // Also check for Consorsbank-specific format: "GUTSCHRIFT DD.MM. XXXX DD.MM. XX,XX+"
-        val hasConsorsFormat = Regex("""(GUTSCHRIFT|LASTSCHRIFT)\s+\d{2}\.\d{2}\.\s+\d{4}\s+\d{2}\.\d{2}\.\s+[\d,]+[+-]""")
-            .containsMatchIn(pdfText.uppercase())
-        return identifiers.any { lower.contains(it) } || hasConsorsFormat
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "Consorsbank")
-    }
-}
-
-// ============================================================
 // N26 Parser
 // ============================================================
 class N26Parser : GermanBankParser() {
