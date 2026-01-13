@@ -126,7 +126,8 @@ class VolksbankParser : GermanBankParser() {
         val datePairPattern = Regex("""^(\d{2}\.\d{2}\.)\s+(\d{2}\.\d{2}\.)\s+(.*)""")
 
         // Pattern for amount with S/H suffix at end of line: "38,99 S" or "919,70 H"
-        val amountSHPattern = Regex("""(\d{1,3}(?:[.\s]\d{3})*,\d{2})\s*([SH])\s*$""")
+        // IMPORTANT: Only dots as thousand separators (not spaces!) to avoid matching "PN:931  919,70" as one number
+        val amountSHPattern = Regex("""(?:^|[^\d])(\d{1,3}(?:\.\d{3})*,\d{2})\s*([SH])\s*$""")
 
         var i = 0
         while (i < lines.size) {
