@@ -7,29 +7,6 @@ import com.banking.statement.parser.ParseResult
  */
 
 // ============================================================
-// C24 Bank Parser
-// ============================================================
-class C24Parser : GermanBankParser() {
-    override val bankName = "C24 Bank"
-
-    private val identifiers = listOf(
-        "c24 bank",
-        "c24bank",
-        "c24-bank",
-        "check24"
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "C24 Bank")
-    }
-}
-
-// ============================================================
 // Consorsbank Parser
 // ============================================================
 class ConsorsbankParser : GermanBankParser() {
