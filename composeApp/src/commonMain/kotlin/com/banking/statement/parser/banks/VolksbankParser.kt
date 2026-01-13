@@ -16,14 +16,17 @@ import kotlinx.datetime.LocalDate
  * - Balance: "alter Kontostand vom DD.MM.YYYY"
  */
 class VolksbankParser : GermanBankParser() {
-    override val bankName = "Volksbank"
+    override val bankName = "Volksbank/VR-Bank"
 
     // CERTAIN: unique identifiers
     private val certainIdentifiers = listOf(
         "genoded",      // BIC prefix for Genobanks
         "genode",       // BIC variant
         "vr-bank",
-        "vr bank"
+        "vr bank",
+        "vrbank",
+        "vr-networld",  // VR-Bank online banking
+        "vr networld"
     )
 
     // HIGH: strong indicators
@@ -31,7 +34,9 @@ class VolksbankParser : GermanBankParser() {
         "volksbank",
         "raiffeisenbank",
         "genossenschaftsbank",
-        "volks- und raiffeisenbank"
+        "volks- und raiffeisenbank",
+        "raiffeisen-volksbank",
+        "vereinigte volksbank"
     )
 
     // MEDIUM: patterns in Volksbank statements
