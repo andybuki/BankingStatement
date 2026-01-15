@@ -123,20 +123,25 @@ class ConsorsbankParser : GermanBankParser() {
     }
 
     /**
-     * Parse Consorsbank format:
-     * EURO-UEBERW. 04.04. 8420 04.04. 39,99-
-     * Breuninger Online Shop
-     * <GENODEFFXXX> DE53500604000000146135
+     * Parse Consorsbank table format:
+     * Text/Verwendungszweck | Datum | PNNr | Wert | Soll | Haben
+     *
+     * LASTSCHRIFT                        25.04. 8999   25.04.         14,41-
+     *    LIDL DIENSTLEISTUNG
+     *                                    VISA 26466011 ALSBACH-HAEH
+     *                                    22.04. 10355411
+     *    14,41 EUR
      */
     private fun parseConsorsbankFormat(lines: List<String>, year: Int): List<ParsedTransaction> {
         val transactions = mutableListOf<ParsedTransaction>()
 
         // Amount pattern: digits with optional thousand separator, comma, 2 decimals, then +/-
-        // Matches: 39,99- or 25,49+ or 1.234,56+
-        val amountPattern = Regex("""(\d{1,3}(?:\.\d{3})*,\d{2})([+-])$""")
+        // The +/- can have spaces before it (due to column formatting)
+        // Matches: 39,99- or 25,49+ or 1.234,56+ or 16.544,35+
+        val amountPattern = Regex("""(\d{1,3}(?:\.\d{3})*,\d{2})\s*([+-])\s*$""")
 
-        // Date pattern
-        val datePattern = Regex("""(\d{2}\.\d{2}\.)""")
+        // Date pattern: DD.MM. (with or without trailing dot)
+        val datePattern = Regex("""(\d{2}\.\d{2})\.?""")
 
         var i = 0
         while (i < lines.size) {
@@ -147,11 +152,17 @@ class ConsorsbankParser : GermanBankParser() {
                 continue
             }
 
+            // Skip Kontostand lines (balance lines)
+            if (line.contains("Kontostand")) {
+                i++
+                continue
+            }
+
             // Check if line starts with a transaction type
             val txTypeMatch = transactionTypes.find { line.uppercase().startsWith(it) }
 
             if (txTypeMatch != null) {
-                // Check if this line has an amount at the end (with +/- suffix)
+                // Check if this line has an amount with +/- suffix
                 val amountMatch = amountPattern.find(line)
 
                 if (amountMatch != null) {
@@ -160,15 +171,16 @@ class ConsorsbankParser : GermanBankParser() {
                     val amount = parseGermanAmount(amountStr)
                     val isDebit = sign == "-"
 
-                    // Find dates in the line
-                    val dates = datePattern.findAll(line).toList()
+                    // Find dates in the line (before the amount)
+                    val textBeforeAmount = line.substring(0, amountMatch.range.first)
+                    val dates = datePattern.findAll(textBeforeAmount).toList()
 
                     if (amount != null && dates.isNotEmpty()) {
                         val finalAmount = if (isDebit) -kotlin.math.abs(amount) else kotlin.math.abs(amount)
 
-                        // Get booking date (first date) and value date (last date)
+                        // Get booking date (first date) and value date (second date if exists)
                         val bookingDateStr = dates.first().groupValues[1]
-                        val valueDateStr = dates.last().groupValues[1]
+                        val valueDateStr = if (dates.size > 1) dates.last().groupValues[1] else bookingDateStr
 
                         val bookingDate = parseShortDateWithYear(bookingDateStr, year)
                         val valueDate = parseShortDateWithYear(valueDateStr, year)
@@ -176,9 +188,10 @@ class ConsorsbankParser : GermanBankParser() {
                         if (bookingDate != null) {
                             // Collect continuation lines for description
                             val descriptionParts = mutableListOf<String>()
+                            var counterpartyName: String? = null
                             var j = i + 1
 
-                            while (j < lines.size && j < i + 15) {
+                            while (j < lines.size && j < i + 20) {
                                 val nextLine = lines[j].trim()
 
                                 if (nextLine.isEmpty()) {
@@ -186,9 +199,14 @@ class ConsorsbankParser : GermanBankParser() {
                                     continue
                                 }
 
-                                // Stop at next transaction
+                                // Stop at next transaction (transaction type at start with amount at end)
                                 val nextIsTx = transactionTypes.any { nextLine.uppercase().startsWith(it) }
                                 if (nextIsTx && amountPattern.containsMatchIn(nextLine)) {
+                                    break
+                                }
+
+                                // Stop at Kontostand (balance) line
+                                if (nextLine.contains("Kontostand")) {
                                     break
                                 }
 
@@ -197,13 +215,24 @@ class ConsorsbankParser : GermanBankParser() {
                                     break
                                 }
 
-                                // Add to description (filter out amount-only lines)
-                                if (!Regex("""^\d+,\d{2}\s*EUR$""").matches(nextLine)) {
+                                // Filter out technical lines
+                                val isAmountLine = Regex("""^\d+,\d{2}\s*EUR$""").matches(nextLine)
+                                val isVisaLine = nextLine.uppercase().startsWith("VISA ")
+                                val isDateNumLine = Regex("""^\d{2}\.\d{2}\.\s+\d+$""").matches(nextLine)
+                                val isIbanLine = nextLine.startsWith("<") || nextLine.contains(Regex("""DE\d{18,22}"""))
+
+                                if (!isAmountLine && !isVisaLine && !isDateNumLine && !isIbanLine) {
+                                    // First meaningful description line is the counterparty name
+                                    if (counterpartyName == null && nextLine.length > 2) {
+                                        counterpartyName = nextLine
+                                    }
                                     descriptionParts.add(nextLine)
                                 }
                                 j++
                             }
 
+                            // Use first description line as main description (counterparty)
+                            val mainDescription = counterpartyName ?: txTypeMatch.trimEnd('.')
                             val fullDescription = descriptionParts.joinToString(" ")
                                 .replace(Regex("""\s+"""), " ")
                                 .trim()
@@ -214,8 +243,8 @@ class ConsorsbankParser : GermanBankParser() {
                                     valueDate = valueDate ?: bookingDate,
                                     amount = finalAmount,
                                     currency = "EUR",
-                                    description = if (fullDescription.isNotBlank()) fullDescription else txTypeMatch,
-                                    counterpartyName = extractConsorsbankCounterparty(fullDescription),
+                                    description = mainDescription,
+                                    counterpartyName = counterpartyName,
                                     transactionType = txTypeMatch.trimEnd('.'),
                                     rawText = "$line\n${descriptionParts.joinToString("\n")}"
                                 )
