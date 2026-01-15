@@ -137,7 +137,6 @@ class ConsorsbankParser : GermanBankParser() {
 
         // Amount pattern: digits with optional thousand separator, comma, 2 decimals, then +/-
         // The +/- can have spaces before it (due to column formatting)
-        // Matches: 39,99- or 25,49+ or 1.234,56+ or 16.544,35+
         val amountPattern = Regex("""(\d{1,3}(?:\.\d{3})*,\d{2})\s*([+-])\s*$""")
 
         // Date pattern: DD.MM. (with or without trailing dot)
@@ -147,13 +146,19 @@ class ConsorsbankParser : GermanBankParser() {
         while (i < lines.size) {
             val line = lines[i].trim()
 
-            if (line.isEmpty() || isConsorsbankHeaderLine(line)) {
+            if (line.isEmpty()) {
                 i++
                 continue
             }
 
-            // Skip Kontostand lines (balance lines)
-            if (line.contains("Kontostand")) {
+            // Skip Kontostand/balance lines (they have amounts but are not transactions)
+            if (line.contains("Kontostand") || line.contains("***")) {
+                i++
+                continue
+            }
+
+            // Skip header/footer lines
+            if (isConsorsbankHeaderLine(line)) {
                 i++
                 continue
             }
@@ -186,56 +191,42 @@ class ConsorsbankParser : GermanBankParser() {
                         val valueDate = parseShortDateWithYear(valueDateStr, year)
 
                         if (bookingDate != null) {
-                            // Collect continuation lines for description
-                            val descriptionParts = mutableListOf<String>()
-                            var counterpartyName: String? = null
+                            // Collect ALL continuation lines (don't filter yet)
+                            val allDescriptionLines = mutableListOf<String>()
                             var j = i + 1
 
-                            while (j < lines.size && j < i + 20) {
+                            while (j < lines.size && j < i + 25) {
                                 val nextLine = lines[j].trim()
 
+                                // Skip empty lines
                                 if (nextLine.isEmpty()) {
                                     j++
                                     continue
                                 }
 
-                                // Stop at next transaction (transaction type at start with amount at end)
+                                // Stop at next transaction
                                 val nextIsTx = transactionTypes.any { nextLine.uppercase().startsWith(it) }
                                 if (nextIsTx && amountPattern.containsMatchIn(nextLine)) {
                                     break
                                 }
 
-                                // Stop at Kontostand (balance) line
-                                if (nextLine.contains("Kontostand")) {
+                                // Stop at Kontostand/balance line
+                                if (nextLine.contains("Kontostand") || nextLine.contains("***")) {
                                     break
                                 }
 
-                                // Stop at header/footer
+                                // Stop at page header/footer
                                 if (isConsorsbankHeaderLine(nextLine)) {
                                     break
                                 }
 
-                                // Filter out technical lines
-                                val isAmountLine = Regex("""^\d+,\d{2}\s*EUR$""").matches(nextLine)
-                                val isVisaLine = nextLine.uppercase().startsWith("VISA ")
-                                val isDateNumLine = Regex("""^\d{2}\.\d{2}\.\s+\d+$""").matches(nextLine)
-                                val isIbanLine = nextLine.startsWith("<") || nextLine.contains(Regex("""DE\d{18,22}"""))
-
-                                if (!isAmountLine && !isVisaLine && !isDateNumLine && !isIbanLine) {
-                                    // First meaningful description line is the counterparty name
-                                    if (counterpartyName == null && nextLine.length > 2) {
-                                        counterpartyName = nextLine
-                                    }
-                                    descriptionParts.add(nextLine)
-                                }
+                                allDescriptionLines.add(nextLine)
                                 j++
                             }
 
-                            // Use first description line as main description (counterparty)
+                            // Extract counterparty name from collected lines
+                            val counterpartyName = extractCounterpartyFromLines(allDescriptionLines)
                             val mainDescription = counterpartyName ?: txTypeMatch.trimEnd('.')
-                            val fullDescription = descriptionParts.joinToString(" ")
-                                .replace(Regex("""\s+"""), " ")
-                                .trim()
 
                             transactions.add(
                                 ParsedTransaction(
@@ -246,7 +237,7 @@ class ConsorsbankParser : GermanBankParser() {
                                     description = mainDescription,
                                     counterpartyName = counterpartyName,
                                     transactionType = txTypeMatch.trimEnd('.'),
-                                    rawText = "$line\n${descriptionParts.joinToString("\n")}"
+                                    rawText = "$line\n${allDescriptionLines.joinToString("\n")}"
                                 )
                             )
 
@@ -261,6 +252,87 @@ class ConsorsbankParser : GermanBankParser() {
         }
 
         return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.description.take(30)}" }
+    }
+
+    /**
+     * Extract counterparty name from description lines.
+     * Look for meaningful text that represents a business/person name.
+     */
+    private fun extractCounterpartyFromLines(lines: List<String>): String? {
+        // Patterns to skip (technical info, not counterparty names)
+        val skipPatterns = listOf(
+            Regex("""^VISA\s+\d+""", RegexOption.IGNORE_CASE),           // VISA card info
+            Regex("""^<[A-Z0-9]+>"""),                                     // BIC in brackets
+            Regex("""^\d{2}\.\d{2}\.\s+\d+$"""),                          // Date + number only
+            Regex("""^\d+,\d{2}\s*EUR$"""),                               // Amount in EUR
+            Regex("""^DE\d{18,22}$"""),                                   // IBAN only
+            Regex("""^\d{6,}$"""),                                        // Long number only
+            Regex("""^T\d{10,}$"""),                                      // T + long number
+        )
+
+        // Combine consecutive short lines that might be split counterparty name
+        val combinedLines = mutableListOf<String>()
+        var currentCombined = StringBuilder()
+
+        for (line in lines) {
+            // Skip lines matching technical patterns
+            if (skipPatterns.any { it.matches(line) }) {
+                if (currentCombined.isNotEmpty()) {
+                    combinedLines.add(currentCombined.toString().trim())
+                    currentCombined = StringBuilder()
+                }
+                continue
+            }
+
+            // Skip lines starting with technical info
+            if (line.uppercase().startsWith("VISA ") ||
+                line.startsWith("<") ||
+                line.contains(Regex("""DE\d{18,22}"""))) {
+                if (currentCombined.isNotEmpty()) {
+                    combinedLines.add(currentCombined.toString().trim())
+                    currentCombined = StringBuilder()
+                }
+                continue
+            }
+
+            // Combine short fragments (might be split name)
+            if (line.length <= 3 && currentCombined.isNotEmpty()) {
+                currentCombined.append(" ").append(line)
+            } else if (line.length <= 3 && currentCombined.isEmpty()) {
+                currentCombined.append(line)
+            } else {
+                // Longer line - save previous combined and start fresh
+                if (currentCombined.isNotEmpty()) {
+                    combinedLines.add(currentCombined.toString().trim())
+                    currentCombined = StringBuilder()
+                }
+                combinedLines.add(line)
+            }
+        }
+
+        // Don't forget last combined
+        if (currentCombined.isNotEmpty()) {
+            combinedLines.add(currentCombined.toString().trim())
+        }
+
+        // Find first line that looks like a counterparty name
+        // Must have letters and be reasonably long
+        for (line in combinedLines) {
+            val hasLetters = line.any { it.isLetter() }
+            val isLongEnough = line.length >= 3
+            val notJustSymbols = !Regex("""^[*()&\s]+$""").matches(line)
+
+            if (hasLetters && isLongEnough && notJustSymbols) {
+                return line
+            }
+        }
+
+        // If nothing found, try joining first few non-technical lines
+        val meaningfulLines = combinedLines.filter {
+            it.any { c -> c.isLetter() } && it.length >= 2
+        }
+
+        return meaningfulLines.firstOrNull()
     }
 
     /**
