@@ -283,26 +283,42 @@ class ConsorsbankParser : GermanBankParser() {
      */
     private fun isConsorsbankHeaderLine(line: String): Boolean {
         val lower = line.lowercase()
+        val trimmed = line.trim()
+
+        // Standalone amount lines (balance amounts on their own line)
+        // Pattern: just an amount with +/- like "15.526,57+" or "16.544,35+"
+        if (Regex("""^\d{1,3}(?:\.\d{3})*,\d{2}[+-]$""").matches(trimmed)) {
+            return true
+        }
+
+        // Column header line
+        if (lower.contains("soll") && lower.contains("haben") && lower.length < 50) {
+            return true
+        }
+
         return lower.contains("kontoauszug") && (lower.contains("konto-nr") || lower.contains("blatt")) ||
-               lower.contains("text/verwendungszweck") && lower.contains("datum") && lower.contains("pnnr") ||
+               lower.contains("text/verwendungszweck") ||
                lower.contains("bankleitzahl") ||
                lower.contains("kontowährung") ||
                lower.contains("buchungssaldo") ||
-               lower.contains("kontostand zum") ||
+               lower.contains("kontostand") ||
                lower.contains("saldo") && lower.length < 30 ||
                lower.contains("summe") ||
                lower.contains("übertrag") ||
                lower.startsWith("blatt ") ||
-               lower.startsWith("iban") && lower.length < 40 ||
+               lower.startsWith("iban") && lower.length < 50 ||
                lower.startsWith("bic") && lower.length < 20 ||
-               lower.startsWith("datum") && lower.length < 20 ||
+               lower.startsWith("datum") && lower.length < 30 ||
                lower.startsWith("kontonummer") ||
                lower.startsWith("kontotyp") ||
                lower.startsWith("kontoinhaber") ||
                lower.startsWith("vermerk") ||
+               // Address lines (before page header repeats)
+               Regex("""^\d{5}\s+\w+$""").matches(trimmed) ||  // ZIP + city like "64404 Bickenbach"
+               lower.contains("90318 nürnberg") ||
                // Footer - BNP Paribas legal text
                lower.contains("consorsbank ist eine") ||
-               lower.contains("bnp paribas") && lower.contains("niederlassung") ||
+               lower.contains("bnp paribas") ||
                lower.contains("standort nürnberg") ||
                lower.contains("bahnhofstraße") ||
                lower.contains("fon +49") ||
@@ -310,7 +326,11 @@ class ConsorsbankParser : GermanBankParser() {
                lower.contains("président") ||
                lower.contains("registergericht") ||
                lower.contains("info@consorsbank") ||
-               lower.contains("consorsbank •") ||
+               lower.contains("consorsbank ") && lower.contains("nürnberg") ||
+               lower.contains("hrb nürnberg") ||
+               lower.contains("ust-idnr") ||
+               lower.contains("generaldirektor") ||
+               lower.contains("verwaltungsrat") ||
                isHeaderOrFooter(line)
     }
 
