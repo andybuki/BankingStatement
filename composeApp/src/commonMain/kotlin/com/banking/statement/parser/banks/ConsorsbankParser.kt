@@ -43,10 +43,13 @@ class ConsorsbankParser : GermanBankParser() {
     )
 
     // Transaction types that start a new transaction
+    // Order matters: more specific types first (D-GUTSCHRIFT before GUTSCHRIFT)
     private val transactionTypes = listOf(
-        "EURO-UEBERW", "GUTSCHRIFT", "LASTSCHRIFT", "DAUERAUFTRAG",
-        "UEBERWEISUNG", "ÜBERWEISUNG", "KARTENZAHLUNG", "GEHALT",
-        "LOHN", "SEPA-LASTSCHRIFT", "SEPA-ÜBERWEISUNG", "ABSCHLUSS"
+        "EURO-UEBERW", "D-GUTSCHRIFT", "GUTSCHRIFT", "LASTSCHRIFT",
+        "DAUERAUFTRAG", "UEBERWEISUNG", "ÜBERWEISUNG", "KARTENZAHLUNG",
+        "GEHALT/RENTE", "GEHALT", "LOHN/GEHALT", "LOHN",
+        "SEPA-LASTSCHRIFT", "SEPA-ÜBERWEISUNG", "SEPA-GUTSCHRIFT",
+        "ABSCHLUSS", "ZINSEN", "ENTGELT", "AUSZAHLUNG", "EINZAHLUNG"
     )
 
     override fun canParse(pdfText: String): Boolean {
