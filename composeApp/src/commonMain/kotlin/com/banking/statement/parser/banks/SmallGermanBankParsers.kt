@@ -60,29 +60,6 @@ class ApoBankParser : GermanBankParser() {
 }
 
 // ============================================================
-// bunq Parser (Dutch neobank)
-// ============================================================
-class BunqParser : GermanBankParser() {
-    override val bankName = "bunq"
-
-    private val identifiers = listOf(
-        "bunq",
-        "bunq b.v",
-        "bunq bank",
-        "bunqnl2a"  // BIC
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "bunq")
-    }
-}
-
-// ============================================================
 // Landesbank Berlin (LBB) Parser
 // ============================================================
 class LandesbankBerlinParser : GermanBankParser() {
