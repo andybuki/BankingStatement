@@ -60,30 +60,6 @@ class ApoBankParser : GermanBankParser() {
 }
 
 // ============================================================
-// Tomorrow Bank Parser (Sustainable/Green Bank)
-// ============================================================
-class TomorrowBankParser : GermanBankParser() {
-    override val bankName = "Tomorrow"
-
-    private val identifiers = listOf(
-        "tomorrow",
-        "tomorrow bank",
-        "tomorrow gmbh",
-        "tomorrowbank",
-        "sobkdehhxxx"  // BIC
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "Tomorrow")
-    }
-}
-
-// ============================================================
 // bunq Parser (Dutch neobank)
 // ============================================================
 class BunqParser : GermanBankParser() {
