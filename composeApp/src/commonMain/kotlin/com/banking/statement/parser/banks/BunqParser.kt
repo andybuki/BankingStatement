@@ -198,9 +198,10 @@ class BunqParser : GermanBankParser() {
 
                 if (amountMatch != null) {
                     val sign = amountMatch.groupValues[1]
+                    // bunq uses DOT as decimal separator (e.g., +€ 150.00)
+                    // and COMMA as thousand separator (e.g., +€ 1,000.00)
                     val amountStr = amountMatch.groupValues[2]
-                        .replace(".", "")  // Remove thousand separators (bunq uses dot)
-                        .replace(",", ".") // Convert comma to dot if present
+                        .replace(",", "")  // Remove thousand separators only
 
                     val amount = amountStr.toDoubleOrNull() ?: 0.0
                     val finalAmount = if (sign == "-") -amount else amount
