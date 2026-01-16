@@ -1,37 +1,30 @@
 package com.banking.statement.parser.banks
 
+import com.banking.statement.parser.BankStatementParser
 import com.banking.statement.parser.ParseResult
-import com.banking.statement.parser.ParsedTransaction
-import kotlinx.datetime.LocalDate
+import com.banking.statement.parser.Transaction
 
 /**
  * Parser for bunq Bank statements (Dutch neobank)
  *
  * Format: Table with columns Datum | Zinsdatum | Gegenpartei | Beschreibung | Betrag
- * Date format: YYYY-MM-DD (ISO format)
+ * Date format: YYYY-MM-DD
  * Amount format: +€ 150.00 or -€ 23.12 (dot as decimal separator)
  */
-class BunqParser : GermanBankParser() {
+class BunqParser : BankStatementParser {
     override val bankName = "bunq"
 
-    // CERTAIN: unique identifiers
+    // Confidence-based identifiers
     private val certainIdentifiers = listOf(
         "bunqnl82",           // BIC
         "bunq b.v.",
         "www.bunq.com"
     )
 
-    // HIGH: strong indicators
-    private val highIdentifiers = listOf(
+    private val highConfidenceIdentifiers = listOf(
         "bunq",
         "naritaweg 131-133",  // bunq address
         "1043bs amsterdam"
-    )
-
-    // MEDIUM: common patterns
-    private val mediumIdentifiers = listOf(
-        "zinsdatum",
-        "gegenpartei"
     )
 
     override fun canParse(pdfText: String): Boolean {
@@ -42,199 +35,145 @@ class BunqParser : GermanBankParser() {
             return true
         }
 
-        // Check for bunq IBAN pattern
-        val hasBunqIban = Regex("""nl\d{2}bunq""", RegexOption.IGNORE_CASE).containsMatchIn(lower)
-        if (hasBunqIban && lower.contains("bunq")) {
+        // Check for high confidence identifiers with bunq IBAN pattern
+        val hasBunqIban = lower.contains("bunq") && Regex("""nl\d{2}bunq""").containsMatchIn(lower)
+        if (hasBunqIban) {
             return true
         }
 
         // Check for multiple high confidence identifiers
-        val matchCount = highIdentifiers.count { lower.contains(it) }
+        val matchCount = highConfidenceIdentifiers.count { lower.contains(it) }
         return matchCount >= 2
     }
 
-    override fun getConfidence(pdfText: String): Pair<DetectionConfidence, List<String>> {
-        return calculateConfidence(pdfText, certainIdentifiers, highIdentifiers, mediumIdentifiers)
-    }
-
     override fun parse(pdfText: String, fileName: String): ParseResult {
-        try {
-            val lines = pdfText.lines()
-            val accountIban = extractIban(pdfText)
-            val statementPeriod = extractBunqPeriod(pdfText)
+        val transactions = mutableListOf<Transaction>()
+        val lines = pdfText.lines()
 
-            val transactions = parseBunqFormat(lines)
+        // Extract year from statement - look for "Kontostand per YYYY-MM-DD" or dates in transactions
+        val year = extractYear(pdfText)
 
-            return if (transactions.isNotEmpty()) {
-                ParseResult(
-                    success = true,
-                    bankName = bankName,
-                    accountIban = accountIban,
-                    statementPeriod = statementPeriod,
-                    transactions = transactions
-                )
-            } else {
-                // Fallback to generic parser
-                val genericTransactions = parseComprehensiveFormat(lines)
-                if (genericTransactions.isNotEmpty()) {
-                    ParseResult(
-                        success = true,
-                        bankName = bankName,
-                        accountIban = accountIban,
-                        statementPeriod = statementPeriod,
-                        transactions = genericTransactions
-                    )
-                } else {
-                    ParseResult(
-                        success = false,
-                        bankName = bankName,
-                        errorMessage = "Could not extract transactions from bunq PDF"
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            return ParseResult(
-                success = false,
-                bankName = bankName,
-                errorMessage = "Error parsing bunq PDF: ${e.message}"
-            )
-        }
-    }
+        // bunq uses ISO date format: YYYY-MM-DD
+        // Amount format: +€ 150.00 or -€ 23.12
 
-    /**
-     * Extract statement period from bunq header
-     * Format: "Kontostand per YYYY-MM-DD"
-     */
-    private fun extractBunqPeriod(text: String): String? {
-        val periodPattern = Regex("""Kontostand\s+per\s+(\d{4}-\d{2}-\d{2}):\s+.+\nKontostand\s+per\s+(\d{4}-\d{2}-\d{2}):""")
-        val match = periodPattern.find(text)
-        if (match != null) {
-            val startDate = convertIsoToGermanDate(match.groupValues[1])
-            val endDate = convertIsoToGermanDate(match.groupValues[2])
-            return "$startDate - $endDate"
-        }
-
-        // Alternative: just find any period dates
-        val singleDatePattern = Regex("""Kontostand\s+per\s+(\d{4}-\d{2}-\d{2})""")
-        val dates = singleDatePattern.findAll(text).map { it.groupValues[1] }.toList()
-        if (dates.size >= 2) {
-            val startDate = convertIsoToGermanDate(dates.first())
-            val endDate = convertIsoToGermanDate(dates.last())
-            return "$startDate - $endDate"
-        }
-
-        return null
-    }
-
-    /**
-     * Parse bunq format:
-     * Datum | Zinsdatum | Gegenpartei | Beschreibung | Betrag
-     * 2024-01-07 | 2024-01-07 | J.A.N. Hagner NL60BUNQ... | | +€ 150.00
-     */
-    private fun parseBunqFormat(lines: List<String>): List<ParsedTransaction> {
-        val transactions = mutableListOf<ParsedTransaction>()
+        // Pattern for transaction lines starting with date
+        val datePattern = Regex("""^(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})\s+(.+)$""")
 
         // Amount pattern: +€ or -€ followed by amount with dot decimal
         val amountPattern = Regex("""([+-])€\s*(\d{1,3}(?:[.,]\d{3})*[.,]\d{2})""")
-
-        // ISO date pattern at start of line
-        val datePattern = Regex("""^(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})?\s*(.*)$""")
 
         var i = 0
         while (i < lines.size) {
             val line = lines[i].trim()
 
             // Skip empty lines and headers
-            if (line.isEmpty() || isBunqHeaderLine(line)) {
+            if (line.isEmpty() || line.startsWith("Datum") || line.contains("Zinsdatum") && line.contains("Gegenpartei")) {
                 i++
                 continue
             }
 
-            // Try to match a line starting with ISO date
+            // Try to match a transaction line starting with date
             val dateMatch = datePattern.find(line)
             if (dateMatch != null) {
                 val bookingDateStr = dateMatch.groupValues[1]  // YYYY-MM-DD
-                val valueDateStr = dateMatch.groupValues[2].ifEmpty { bookingDateStr }  // YYYY-MM-DD
-                var restOfLine = dateMatch.groupValues[3].trim()
+                val valueDateStr = dateMatch.groupValues[2]    // YYYY-MM-DD (Zinsdatum)
+                val restOfLine = dateMatch.groupValues[3]
 
-                // Look for amount in the rest of the line or following lines
-                var amountMatch = amountPattern.find(restOfLine)
-                val descriptionLines = mutableListOf<String>()
-
-                if (amountMatch == null) {
-                    // Amount might be on the same line but we need to search further
-                    val fullLineAmount = amountPattern.find(line)
-                    if (fullLineAmount != null) {
-                        amountMatch = fullLineAmount
-                        restOfLine = line.substringAfter(valueDateStr).substringBefore(fullLineAmount.value).trim()
-                    }
-                }
-
-                // If still no amount, look in following lines
-                var j = i + 1
-                while (amountMatch == null && j < lines.size && j < i + 5) {
-                    val nextLine = lines[j].trim()
-                    if (nextLine.isEmpty()) {
-                        j++
-                        continue
-                    }
-
-                    // Check if next line starts with a new date (new transaction)
-                    if (Regex("""^\d{4}-\d{2}-\d{2}""").containsMatchIn(nextLine)) {
-                        break
-                    }
-
-                    amountMatch = amountPattern.find(nextLine)
-                    if (amountMatch != null) {
-                        val beforeAmount = nextLine.substringBefore(amountMatch.value).trim()
-                        if (beforeAmount.isNotEmpty()) {
-                            descriptionLines.add(beforeAmount)
-                        }
-                    } else {
-                        descriptionLines.add(nextLine)
-                    }
-                    j++
-                }
+                // Extract amount from the line
+                val amountMatch = amountPattern.find(restOfLine)
 
                 if (amountMatch != null) {
                     val sign = amountMatch.groupValues[1]
                     val amountStr = amountMatch.groupValues[2]
-                        .replace(".", "")  // Remove thousand separators (bunq uses dot)
-                        .replace(",", ".") // Convert comma to dot if present
+                        .replace(".", "")  // Remove thousand separators
+                        .replace(",", ".") // Convert decimal comma to dot if present
 
                     val amount = amountStr.toDoubleOrNull() ?: 0.0
                     val finalAmount = if (sign == "-") -amount else amount
 
-                    // Parse dates
-                    val bookingDate = parseIsoDate(bookingDateStr)
-                    val valueDate = parseIsoDate(valueDateStr) ?: bookingDate
+                    // Extract counterparty (everything before the amount)
+                    val beforeAmount = restOfLine.substringBefore(amountMatch.value).trim()
 
-                    if (bookingDate != null) {
-                        // Extract counterparty from rest of line
-                        val beforeAmount = if (amountPattern.containsMatchIn(restOfLine)) {
-                            restOfLine.substringBefore(amountMatch.value).trim()
-                        } else {
-                            restOfLine
+                    // Parse counterparty and description
+                    val (counterparty, description) = parseCounterpartyAndDescription(beforeAmount, lines, i)
+
+                    // Convert date from YYYY-MM-DD to DD.MM.YYYY for consistency
+                    val bookingDate = convertIsoDateToGerman(bookingDateStr)
+                    val valueDate = convertIsoDateToGerman(valueDateStr)
+
+                    transactions.add(
+                        Transaction(
+                            date = bookingDate,
+                            valueDate = valueDate,
+                            description = description.ifEmpty { counterparty },
+                            amount = finalAmount,
+                            counterparty = counterparty
+                        )
+                    )
+                }
+            } else {
+                // Try alternative pattern: line might just have date and rest continues
+                val simpleDatePattern = Regex("""^(\d{4}-\d{2}-\d{2})\s+(.*)$""")
+                val simpleMatch = simpleDatePattern.find(line)
+
+                if (simpleMatch != null) {
+                    val dateStr = simpleMatch.groupValues[1]
+                    var content = simpleMatch.groupValues[2]
+
+                    // Look ahead for more content and amount
+                    val descriptionLines = mutableListOf(content)
+                    var j = i + 1
+                    var foundAmount = false
+                    var amountValue = 0.0
+
+                    while (j < lines.size && j < i + 5) {
+                        val nextLine = lines[j].trim()
+                        if (nextLine.isEmpty()) {
+                            j++
+                            continue
                         }
 
-                        val (counterparty, description) = extractBunqCounterpartyAndDescription(
-                            beforeAmount,
-                            descriptionLines
-                        )
+                        // Check if this line has an amount
+                        val nextAmountMatch = amountPattern.find(nextLine)
+                        if (nextAmountMatch != null) {
+                            val sign = nextAmountMatch.groupValues[1]
+                            val amountStr = nextAmountMatch.groupValues[2]
+                                .replace(".", "")
+                                .replace(",", ".")
+                            amountValue = amountStr.toDoubleOrNull() ?: 0.0
+                            if (sign == "-") amountValue = -amountValue
+
+                            val beforeAmt = nextLine.substringBefore(nextAmountMatch.value).trim()
+                            if (beforeAmt.isNotEmpty()) {
+                                descriptionLines.add(beforeAmt)
+                            }
+                            foundAmount = true
+                            break
+                        }
+
+                        // Check if next line starts with a new date (new transaction)
+                        if (simpleDatePattern.matches(nextLine) || datePattern.matches(nextLine)) {
+                            break
+                        }
+
+                        descriptionLines.add(nextLine)
+                        j++
+                    }
+
+                    if (foundAmount) {
+                        val fullDescription = descriptionLines.joinToString(" ").trim()
+                        val (counterparty, description) = extractCounterpartyFromDescription(fullDescription)
+                        val bookingDate = convertIsoDateToGerman(dateStr)
 
                         transactions.add(
-                            ParsedTransaction(
-                                bookingDate = bookingDate,
-                                valueDate = valueDate,
-                                amount = finalAmount,
-                                currency = "EUR",
+                            Transaction(
+                                date = bookingDate,
+                                valueDate = bookingDate,
                                 description = description.ifEmpty { counterparty },
-                                counterpartyName = counterparty,
-                                transactionType = if (finalAmount >= 0) "Gutschrift" else "Lastschrift",
-                                rawText = line + descriptionLines.joinToString("\n", prefix = "\n")
+                                amount = amountValue,
+                                counterparty = counterparty
                             )
                         )
-
                         i = j
                         continue
                     }
@@ -244,27 +183,32 @@ class BunqParser : GermanBankParser() {
             i++
         }
 
-        return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.counterpartyName?.take(20)}" }
+        return ParseResult(
+            bankName = "bunq",
+            transactions = transactions,
+            rawText = pdfText,
+            fileName = fileName
+        )
     }
 
-    /**
-     * Parse ISO date (YYYY-MM-DD) to LocalDate
-     */
-    private fun parseIsoDate(dateStr: String): LocalDate? {
-        return try {
-            val parts = dateStr.split("-")
-            if (parts.size == 3) {
-                LocalDate(parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
-            } else null
-        } catch (e: Exception) {
-            null
+    private fun extractYear(text: String): Int {
+        // Look for "Kontostand per YYYY-MM-DD" pattern
+        val kontostandPattern = Regex("""Kontostand\s+per\s+(\d{4})-\d{2}-\d{2}""")
+        kontostandPattern.find(text)?.let {
+            return it.groupValues[1].toIntOrNull() ?: 2024
         }
+
+        // Look for any YYYY-MM-DD date
+        val isoDatePattern = Regex("""(\d{4})-\d{2}-\d{2}""")
+        isoDatePattern.find(text)?.let {
+            return it.groupValues[1].toIntOrNull() ?: 2024
+        }
+
+        return 2024
     }
 
-    /**
-     * Convert ISO date to German format
-     */
-    private fun convertIsoToGermanDate(isoDate: String): String {
+    private fun convertIsoDateToGerman(isoDate: String): String {
+        // Convert YYYY-MM-DD to DD.MM.YYYY
         val parts = isoDate.split("-")
         return if (parts.size == 3) {
             "${parts[2]}.${parts[1]}.${parts[0]}"
@@ -273,68 +217,45 @@ class BunqParser : GermanBankParser() {
         }
     }
 
-    /**
-     * Check if line is a bunq header line
-     */
-    private fun isBunqHeaderLine(line: String): Boolean {
-        val lower = line.lowercase()
-        return lower.contains("datum") && lower.contains("zinsdatum") ||
-               lower.contains("gegenpartei") && lower.contains("betrag") ||
-               lower.contains("kontoinhaber") ||
-               lower.contains("bankangaben") ||
-               lower.contains("bankverbindung") ||
-               lower.contains("kontostand per") ||
-               lower.contains("summe eingehende") ||
-               lower.contains("summe ausgehende") ||
-               lower.contains("downloaddatum")
-    }
+    private fun parseCounterpartyAndDescription(text: String, lines: List<String>, currentIndex: Int): Pair<String, String> {
+        // bunq format often has: COUNTERPARTY IBAN on one part, description elsewhere
+        // Or: COUNTERPARTY followed by description on same line
 
-    /**
-     * Extract counterparty and description from bunq format
-     */
-    private fun extractBunqCounterpartyAndDescription(
-        mainText: String,
-        additionalLines: List<String>
-    ): Pair<String, String> {
-        // bunq format: Counterparty name possibly with IBAN below
-        // Split on multiple spaces (column separator)
-        val parts = mainText.split(Regex("""\s{2,}"""))
+        val parts = text.split(Regex("""\s{2,}"""))  // Split on multiple spaces (column separator)
 
-        val counterpartyPart = if (parts.isNotEmpty()) parts[0].trim() else mainText.trim()
-        val descriptionPart = if (parts.size > 1) parts.drop(1).joinToString(" ").trim() else ""
+        return if (parts.size >= 2) {
+            val counterpartyPart = parts[0].trim()
+            val descriptionPart = parts.drop(1).joinToString(" ").trim()
 
-        // Clean counterparty - remove IBAN if present
-        val cleanCounterparty = cleanBunqCounterparty(counterpartyPart)
+            // Clean counterparty - remove IBAN if present on second line
+            val cleanCounterparty = extractCleanCounterparty(counterpartyPart)
 
-        // Build full description
-        val fullDescription = buildString {
-            if (descriptionPart.isNotEmpty()) {
-                append(descriptionPart)
-            }
-            for (line in additionalLines) {
-                val cleanLine = cleanBunqCounterparty(line)
-                if (cleanLine.isNotEmpty() && !cleanLine.equals(cleanCounterparty, ignoreCase = true)) {
-                    if (isNotEmpty()) append(" ")
-                    append(cleanLine)
-                }
-            }
+            Pair(cleanCounterparty, descriptionPart)
+        } else {
+            val cleanCounterparty = extractCleanCounterparty(text)
+            Pair(cleanCounterparty, "")
         }
-
-        return Pair(cleanCounterparty, fullDescription)
     }
 
-    /**
-     * Clean bunq counterparty name - remove IBAN patterns
-     */
-    private fun cleanBunqCounterparty(text: String): String {
-        var cleaned = text.trim()
+    private fun extractCounterpartyFromDescription(text: String): Pair<String, String> {
+        // Try to split counterparty from description
+        val parts = text.split(Regex("""\s{2,}"""))
 
-        // Remove IBAN patterns
-        cleaned = cleaned.replace(Regex("""[A-Z]{2}\d{2}[A-Z0-9]{4,}"""), "").trim()
+        return if (parts.size >= 2) {
+            Pair(extractCleanCounterparty(parts[0]), parts.drop(1).joinToString(" "))
+        } else {
+            Pair(extractCleanCounterparty(text), "")
+        }
+    }
 
-        // Remove trailing country codes
-        cleaned = cleaned.replace(Regex("""\s+[A-Z]{2}$"""), "").trim()
+    private fun extractCleanCounterparty(text: String): String {
+        // Remove IBAN patterns from counterparty
+        val ibanPattern = Regex("""[A-Z]{2}\d{2}[A-Z0-9]{4,}""")
+        var clean = text.replace(ibanPattern, "").trim()
 
-        return cleaned
+        // Remove common suffixes
+        clean = clean.replace(Regex("""\s+NL$"""), "")
+
+        return clean.trim()
     }
 }
