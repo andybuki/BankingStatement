@@ -169,78 +169,89 @@ class TargobankParser : GermanBankParser() {
                 // Find amounts in the line
                 val amounts = amountPattern.findAll(restOfLine).toList()
 
+                // Skip entries that only have balance (no actual transaction)
+                // If only 1 amount, it's just the balance column - skip
+                if (amounts.size < 2) {
+                    i++
+                    continue
+                }
+
                 // Determine transaction type and amount
                 // TARGOBANK format: description | Ausgaben | Einnahmen | Balance
-                // We need to identify if it's expense (Ausgaben) or income (Einnahmen)
+                // If 2 amounts: first is transaction (Ausgaben OR Einnahmen), second is balance
                 val (amount, isDebit) = extractAmountFromTargobankLine(restOfLine, amounts)
 
-                if (amount != null) {
-                    val finalAmount = if (isDebit) -kotlin.math.abs(amount) else kotlin.math.abs(amount)
+                // Skip if no transaction amount found (only balance)
+                if (amount == null) {
+                    i++
+                    continue
+                }
 
-                    // Extract transaction type from beginning of description
-                    val transactionType = extractTargobankTransactionType(restOfLine)
+                val finalAmount = if (isDebit) -kotlin.math.abs(amount) else kotlin.math.abs(amount)
 
-                    // Handle year transition (e.g., December transactions in January statement)
-                    val adjustedYear = if (month > 10 && extractCurrentMonth(lines) < 3) year - 1 else year
+                // Extract transaction type from beginning of description
+                val transactionType = extractTargobankTransactionType(restOfLine)
 
-                    val bookingDate = try {
-                        LocalDate(adjustedYear, month, day)
-                    } catch (e: Exception) {
-                        null
-                    }
+                // Handle year transition (e.g., December transactions in January statement)
+                val adjustedYear = if (month > 10 && extractCurrentMonth(lines) < 3) year - 1 else year
 
-                    if (bookingDate != null) {
-                        // Collect description lines
-                        val descriptionParts = mutableListOf<String>()
-                        var counterpartyName: String? = null
-                        var j = i + 1
+                val bookingDate = try {
+                    LocalDate(adjustedYear, month, day)
+                } catch (e: Exception) {
+                    null
+                }
 
-                        while (j < lines.size && j < i + 15) {
-                            val nextLine = lines[j].trim()
+                if (bookingDate != null) {
+                    // Collect description lines
+                    val descriptionParts = mutableListOf<String>()
+                    var counterpartyName: String? = null
+                    var j = i + 1
 
-                            if (nextLine.isEmpty()) {
-                                j++
-                                continue
-                            }
+                    while (j < lines.size && j < i + 15) {
+                        val nextLine = lines[j].trim()
 
-                            // Stop at next transaction (starts with date + weekday)
-                            if (transactionStartPattern.containsMatchIn(nextLine)) {
-                                break
-                            }
-
-                            // Stop at header/footer
-                            if (isTargobankHeaderLine(nextLine)) {
-                                break
-                            }
-
-                            // Extract counterparty name (first meaningful description line)
-                            if (counterpartyName == null && isCounterpartyLine(nextLine)) {
-                                counterpartyName = cleanCounterpartyName(nextLine)
-                            }
-
-                            descriptionParts.add(nextLine)
+                        if (nextLine.isEmpty()) {
                             j++
+                            continue
                         }
 
-                        // Use counterparty or transaction type as description
-                        val mainDescription = counterpartyName ?: transactionType
+                        // Stop at next transaction (starts with date + weekday)
+                        if (transactionStartPattern.containsMatchIn(nextLine)) {
+                            break
+                        }
 
-                        transactions.add(
-                            ParsedTransaction(
-                                bookingDate = bookingDate,
-                                valueDate = bookingDate,
-                                amount = finalAmount,
-                                currency = "EUR",
-                                description = mainDescription,
-                                counterpartyName = counterpartyName,
-                                transactionType = transactionType,
-                                rawText = "$line\n${descriptionParts.joinToString("\n")}"
-                            )
-                        )
+                        // Stop at header/footer
+                        if (isTargobankHeaderLine(nextLine)) {
+                            break
+                        }
 
-                        i = j
-                        continue
+                        // Extract counterparty name (first meaningful description line)
+                        if (counterpartyName == null && isCounterpartyLine(nextLine)) {
+                            counterpartyName = cleanCounterpartyName(nextLine)
+                        }
+
+                        descriptionParts.add(nextLine)
+                        j++
                     }
+
+                    // Use counterparty or transaction type as description
+                    val mainDescription = counterpartyName ?: transactionType
+
+                    transactions.add(
+                        ParsedTransaction(
+                            bookingDate = bookingDate,
+                            valueDate = bookingDate,
+                            amount = finalAmount,
+                            currency = "EUR",
+                            description = mainDescription,
+                            counterpartyName = counterpartyName,
+                            transactionType = transactionType,
+                            rawText = "$line\n${descriptionParts.joinToString("\n")}"
+                        )
+                    )
+
+                    i = j
+                    continue
                 }
             }
 
@@ -253,49 +264,41 @@ class TargobankParser : GermanBankParser() {
     /**
      * Extract amount and determine if it's a debit or credit
      * TARGOBANK shows expenses in Ausgaben column, income in Einnahmen column
+     *
+     * Format: Description | Ausgaben | Einnahmen | Guthaben/Kredit
+     * - If 2 amounts: first is transaction (Ausgaben OR Einnahmen), second is balance
+     * - Ausgaben column is LEFT of Einnahmen column
+     * - Last amount is always the balance (Guthaben/Kredit)
      */
     private fun extractAmountFromTargobankLine(line: String, amounts: List<MatchResult>): Pair<Double?, Boolean> {
-        if (amounts.isEmpty()) return Pair(null, false)
-
-        // If only one amount (besides balance), it's straightforward
-        // The last amount is usually the balance, so we look at others
-
-        // Try to determine column position based on spacing
-        // Ausgaben is before Einnahmen, which is before Guthaben/Kredit
+        // Need at least 2 amounts (transaction + balance)
+        if (amounts.size < 2) return Pair(null, false)
 
         val lineLength = line.length
-        val amountPositions = amounts.map { it.range.first to it.value }
 
-        // If we have amounts, analyze their positions
-        // Usually: Description | Ausgaben | Einnahmen | Balance
-        // Amounts at position ~60-70% of line = Ausgaben (debit)
-        // Amounts at position ~75-85% of line = Einnahmen (credit)
-        // Amounts at position >85% of line = Balance (ignore)
+        // Last amount is always the balance - ignore it
+        // First amount is the transaction (either Ausgaben or Einnahmen)
+        val transactionAmount = amounts[0]
+        val balanceAmount = amounts.last()
 
-        for ((position, amountStr) in amountPositions) {
-            val relativePos = position.toDouble() / lineLength
+        // Get the transaction amount
+        val amount = parseGermanAmount(transactionAmount.value) ?: return Pair(null, false)
 
-            // Skip balance column (usually at the end)
-            if (relativePos > 0.85) continue
+        // Determine if it's Ausgaben (debit) or Einnahmen (credit) based on position
+        // Ausgaben is roughly at 50-65% of line width
+        // Einnahmen is roughly at 65-80% of line width
+        // Balance is at 80%+ of line width
+        val transactionPos = transactionAmount.range.first.toDouble() / lineLength
+        val balancePos = balanceAmount.range.first.toDouble() / lineLength
 
-            val amount = parseGermanAmount(amountStr)
-            if (amount != null) {
-                // Ausgaben (expense) column is roughly 60-75% of line
-                // Einnahmen (income) column is roughly 75-85% of line
-                val isDebit = relativePos < 0.75
-                return Pair(amount, isDebit)
-            }
-        }
+        // If transaction is much closer to balance position, it's Einnahmen (credit)
+        // If transaction is further left, it's Ausgaben (debit)
+        // The midpoint between typical Ausgaben and Einnahmen positions
+        val midpoint = (balancePos + 0.5) / 2  // Average of ~50% and balance position
 
-        // Fallback: use first non-balance amount
-        if (amounts.size >= 2) {
-            val amount = parseGermanAmount(amounts[amounts.size - 2].value)
-            // Check if it's in expense or income position
-            val pos = amounts[amounts.size - 2].range.first.toDouble() / lineLength
-            return Pair(amount, pos < 0.75)
-        }
+        val isDebit = transactionPos < midpoint
 
-        return Pair(null, false)
+        return Pair(amount, isDebit)
     }
 
     /**
@@ -303,9 +306,10 @@ class TargobankParser : GermanBankParser() {
      */
     private fun extractTargobankTransactionType(line: String): String {
         val types = listOf(
-            "AUSFÜHRUNG DAUERAUFTRAG", "DAUERAUFTRAG", "GUTSCHRIFT",
-            "LASTSCHRIFT", "ÜBERWEISUNG", "KREDITRATE", "KARTENZAHLUNG",
-            "BARGELDAUSZAHLUNG", "GEHALT", "LOHN", "MIETE", "ANFANGSSALDO"
+            "AUSFÜHRUNG DAUERAUFTRAG", "LÖSCHUNG DAUERAUFTRAG", "ÄNDERUNG DAUERAUFTRAG",
+            "DAUERAUFTRAG", "GUTSCHRIFT", "LASTSCHRIFT", "ÜBERWEISUNG",
+            "KREDITRATE", "KARTENZAHLUNG", "BARGELDAUSZAHLUNG", "BARGELDEINZAHLUNG",
+            "GEHALT", "LOHN", "MIETE", "ANFANGSSALDO", "ABSCHLUSS"
         )
 
         for (type in types) {
