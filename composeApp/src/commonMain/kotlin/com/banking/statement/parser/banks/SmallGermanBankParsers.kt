@@ -7,32 +7,6 @@ import com.banking.statement.parser.ParseResult
  */
 
 // ============================================================
-// 1822direkt Parser (Frankfurter Sparkasse subsidiary)
-// ============================================================
-class DirectBank1822Parser : GermanBankParser() {
-    override val bankName = "1822direkt"
-
-    private val identifiers = listOf(
-        "1822direkt",
-        "1822 direkt",
-        "1822direct",
-        "frankfurter sparkasse",
-        "heaborh", // BIC contains this
-        "dsl bank",  // DSL Bank is related to 1822direkt
-        "sepa-basislastschrift"  // Common in 1822direkt statements
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "1822direkt")
-    }
-}
-
-// ============================================================
 // Apobank Parser (Deutsche Apotheker- und Ärztebank)
 // ============================================================
 class ApoBankParser : GermanBankParser() {
