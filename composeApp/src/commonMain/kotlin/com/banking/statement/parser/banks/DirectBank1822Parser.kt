@@ -116,7 +116,8 @@ class DirectBank1822Parser : GermanBankParser() {
 
         // Amount pattern: +/-Amount€ or Amount€ (German format)
         // Examples: -30,82€, +9,00€, -1.000,00€
-        val amountPattern = Regex("""([+-]?\d{1,3}(?:\.\d{3})*,\d{2})\s*€""")
+        // Note: PDF may use Unicode minus (−) instead of ASCII hyphen (-)
+        val amountPattern = Regex("""([+\-−]?\d{1,3}(?:\.\d{3})*,\d{2})\s*€""")
 
         // Date pattern at start of line
         val dateLinePattern = Regex("""^(\d{2}\.\d{2}\.\d{4})\s+(.+)$""")
@@ -224,26 +225,14 @@ class DirectBank1822Parser : GermanBankParser() {
     }
 
     /**
-     * Parse German date (DD.MM.YYYY) to LocalDate
-     */
-    private fun parseGermanDate(dateStr: String): LocalDate? {
-        return try {
-            val parts = dateStr.split(".")
-            if (parts.size == 3) {
-                LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
-            } else null
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    /**
      * Parse German amount string (e.g., "-1.000,50" or "30,82")
      */
     private fun parseGermanAmountString(amountStr: String): Double? {
         return try {
             // German format: dot as thousand separator, comma as decimal
+            // Handle both Unicode minus (−) and ASCII hyphen (-)
             val normalized = amountStr
+                .replace("−", "-")     // Convert Unicode minus to ASCII
                 .replace(".", "")      // Remove thousand separators
                 .replace(",", ".")     // Convert decimal comma to dot
             normalized.toDoubleOrNull()
