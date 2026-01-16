@@ -314,6 +314,7 @@ class TargobankParser : GermanBankParser() {
      */
     private fun extractTargobankTransactionType(line: String): String {
         val types = listOf(
+            "ECHTZEITÜBERWEISUNG INLAND", "ECHTZEITÜBERWEISUNG",
             "AUSFÜHRUNG DAUERAUFTRAG", "LÖSCHUNG DAUERAUFTRAG", "ÄNDERUNG DAUERAUFTRAG",
             "INTERNE UMBUCHUNG HABEN", "INTERNE UMBUCHUNG SOLL", "INTERNE UMBUCHUNG",
             "SEPA LASTSCHRIFT", "SEPA ÜBERWEISUNG", "SEPA GUTSCHRIFT",
@@ -351,13 +352,33 @@ class TargobankParser : GermanBankParser() {
      */
     private fun isCounterpartyLine(line: String): Boolean {
         // Skip lines that are clearly technical
-        if (line.startsWith("BIC:") || line.startsWith("IBAN:")) return false
+        if (line.startsWith("BIC:") || line.startsWith("BIC :")) return false
+        if (line.startsWith("IBAN:") || line.startsWith("IBAN ")) return false
         if (line.contains("BIC:") && line.contains("IBAN:")) return false
+        if (line.contains("BIC ") && line.contains("IBAN")) return false
         if (Regex("""^\d{5,}$""").matches(line)) return false // Just numbers
         if (Regex("""^[A-Z0-9]{8,}$""").matches(line)) return false // Reference numbers
         if (line.startsWith("KREDIT ") && line.contains("PER")) return false
         if (line.startsWith("AUFTRAGSNUMMER")) return false
-        if (line.startsWith("KundenRef:")) return false
+        if (line.startsWith("KundenRef:") || line.startsWith("Kundenreferenz:")) return false
+        if (line.startsWith("Gläubiger-ID")) return false
+        if (line.startsWith("Mandat:")) return false
+        if (line.startsWith("Wertstellung")) return false
+
+        // Skip timestamp lines like "AM 26.11.2024 UM 10.52" or "AM 01.11.2024 UM 21.32.21"
+        if (Regex("""^AM\s+\d{2}\.\d{2}\.\d{4}\s+UM\s+\d{2}[.:]\d{2}""", RegexOption.IGNORE_CASE).containsMatchIn(line)) return false
+
+        // Skip date range lines like "01.12.2024 BIS 31.12.9999"
+        if (Regex("""^\d{2}\.\d{2}\.\d{4}\s+BIS\s+\d{2}\.\d{2}""", RegexOption.IGNORE_CASE).containsMatchIn(line)) return false
+
+        // Skip lines with multiple amounts like "150,00/150,00/150,00 EUR"
+        if (Regex("""\d+,\d{2}/\d+,\d{2}""").containsMatchIn(line)) return false
+
+        // Skip lines that are just "SPAREN" or similar short keywords at end of descriptions
+        if (line.uppercase() == "SPAREN") return false
+
+        // Skip lines starting with "monatlich" (monthly schedule info)
+        if (line.lowercase().startsWith("monatlich")) return false
 
         // Should have letters and be reasonable length
         return line.any { it.isLetter() } && line.length >= 3
