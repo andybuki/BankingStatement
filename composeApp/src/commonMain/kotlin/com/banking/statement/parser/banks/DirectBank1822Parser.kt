@@ -226,7 +226,7 @@ class DirectBank1822Parser : GermanBankParser() {
     /**
      * Parse German date (DD.MM.YYYY) to LocalDate
      */
-    private fun parseGermanDate(dateStr: String): LocalDate? {
+    private fun parse1822Date(dateStr: String): LocalDate? {
         return try {
             val parts = dateStr.split(".")
             if (parts.size == 3) {
