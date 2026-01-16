@@ -269,12 +269,15 @@ class TargobankParser : GermanBankParser() {
      * - If 2 amounts: first is transaction (Ausgaben OR Einnahmen), second is balance
      * - Ausgaben column is LEFT of Einnahmen column
      * - Last amount is always the balance (Guthaben/Kredit)
+     *
+     * Detection method:
+     * - If small gap between transaction amount and balance → Einnahmen (income, +)
+     * - If large gap between transaction amount and balance → Ausgaben (expense, -)
+     * The large gap indicates an empty Einnahmen column between them
      */
     private fun extractAmountFromTargobankLine(line: String, amounts: List<MatchResult>): Pair<Double?, Boolean> {
         // Need at least 2 amounts (transaction + balance)
         if (amounts.size < 2) return Pair(null, false)
-
-        val lineLength = line.length
 
         // Last amount is always the balance - ignore it
         // First amount is the transaction (either Ausgaben or Einnahmen)
@@ -284,19 +287,15 @@ class TargobankParser : GermanBankParser() {
         // Get the transaction amount
         val amount = parseGermanAmount(transactionAmount.value) ?: return Pair(null, false)
 
-        // Determine if it's Ausgaben (debit) or Einnahmen (credit) based on position
-        // Ausgaben is roughly at 50-65% of line width
-        // Einnahmen is roughly at 65-80% of line width
-        // Balance is at 80%+ of line width
-        val transactionPos = transactionAmount.range.first.toDouble() / lineLength
-        val balancePos = balanceAmount.range.first.toDouble() / lineLength
+        // Calculate gap between end of transaction amount and start of balance
+        val transactionEnd = transactionAmount.range.last
+        val balanceStart = balanceAmount.range.first
+        val gap = balanceStart - transactionEnd
 
-        // If transaction is much closer to balance position, it's Einnahmen (credit)
-        // If transaction is further left, it's Ausgaben (debit)
-        // The midpoint between typical Ausgaben and Einnahmen positions
-        val midpoint = (balancePos + 0.5) / 2  // Average of ~50% and balance position
-
-        val isDebit = transactionPos < midpoint
+        // If gap is large (> 15 chars), there's an empty Einnahmen column
+        // meaning the transaction is in Ausgaben (expense/debit)
+        // If gap is small, transaction is in Einnahmen (income/credit)
+        val isDebit = gap > 15
 
         return Pair(amount, isDebit)
     }
@@ -307,6 +306,9 @@ class TargobankParser : GermanBankParser() {
     private fun extractTargobankTransactionType(line: String): String {
         val types = listOf(
             "AUSFÜHRUNG DAUERAUFTRAG", "LÖSCHUNG DAUERAUFTRAG", "ÄNDERUNG DAUERAUFTRAG",
+            "INTERNE UMBUCHUNG HABEN", "INTERNE UMBUCHUNG SOLL", "INTERNE UMBUCHUNG",
+            "SEPA LASTSCHRIFT", "SEPA ÜBERWEISUNG", "SEPA GUTSCHRIFT",
+            "LOHN / GEHALT / RENTE", "LOHN/GEHALT/RENTE",
             "DAUERAUFTRAG", "GUTSCHRIFT", "LASTSCHRIFT", "ÜBERWEISUNG",
             "KREDITRATE", "KARTENZAHLUNG", "BARGELDAUSZAHLUNG", "BARGELDEINZAHLUNG",
             "GEHALT", "LOHN", "MIETE", "ANFANGSSALDO", "ABSCHLUSS"
