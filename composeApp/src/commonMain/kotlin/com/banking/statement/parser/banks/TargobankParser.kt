@@ -265,39 +265,48 @@ class TargobankParser : GermanBankParser() {
      * Extract amount and determine if it's a debit or credit
      * TARGOBANK shows expenses in Ausgaben column, income in Einnahmen column
      *
-     * Format: Description | Ausgaben | Einnahmen | Guthaben/Kredit
-     * - If 2 amounts: first is transaction (Ausgaben OR Einnahmen), second is balance
-     * - Ausgaben column is LEFT of Einnahmen column
-     * - Last amount is always the balance (Guthaben/Kredit)
-     *
-     * Detection method:
-     * - If small gap between transaction amount and balance → Einnahmen (income, +)
-     * - If large gap between transaction amount and balance → Ausgaben (expense, -)
-     * The large gap indicates an empty Einnahmen column between them
+     * Since PDF text extraction doesn't preserve column spacing,
+     * we determine income vs expense based on TRANSACTION TYPE:
+     * - GUTSCHRIFT, LOHN, GEHALT, RENTE, EINZAHLUNG, HABEN → income (+)
+     * - LASTSCHRIFT, ÜBERWEISUNG, KREDITRATE, KARTENZAHLUNG, SOLL → expense (-)
      */
     private fun extractAmountFromTargobankLine(line: String, amounts: List<MatchResult>): Pair<Double?, Boolean> {
         // Need at least 2 amounts (transaction + balance)
         if (amounts.size < 2) return Pair(null, false)
 
-        // Last amount is always the balance - ignore it
-        // First amount is the transaction (either Ausgaben or Einnahmen)
+        // First amount is the transaction, last is the balance
         val transactionAmount = amounts[0]
-        val balanceAmount = amounts.last()
 
         // Get the transaction amount
         val amount = parseGermanAmount(transactionAmount.value) ?: return Pair(null, false)
 
-        // Calculate gap between end of transaction amount and start of balance
-        val transactionEnd = transactionAmount.range.last
-        val balanceStart = balanceAmount.range.first
-        val gap = balanceStart - transactionEnd
-
-        // If gap is large (> 15 chars), there's an empty Einnahmen column
-        // meaning the transaction is in Ausgaben (expense/debit)
-        // If gap is small, transaction is in Einnahmen (income/credit)
-        val isDebit = gap > 15
+        // Determine if it's expense based on transaction type keywords
+        val upperLine = line.uppercase()
+        val isDebit = isExpenseTransaction(upperLine)
 
         return Pair(amount, isDebit)
+    }
+
+    /**
+     * Determine if transaction is an expense based on type keywords
+     */
+    private fun isExpenseTransaction(line: String): Boolean {
+        // Income keywords - if present, it's NOT an expense
+        val incomeKeywords = listOf(
+            "GUTSCHRIFT", "LOHN", "GEHALT", "RENTE", "EINZAHLUNG",
+            "UMBUCHUNG HABEN",  // HABEN = credit side
+            "EINGANG"
+        )
+
+        // If line contains income keyword, it's NOT an expense
+        for (keyword in incomeKeywords) {
+            if (line.contains(keyword)) {
+                return false  // It's income, not expense
+            }
+        }
+
+        // Otherwise it's an expense (LASTSCHRIFT, ÜBERWEISUNG, KREDITRATE, etc.)
+        return true
     }
 
     /**
