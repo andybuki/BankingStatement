@@ -166,6 +166,14 @@ class TargobankParser : GermanBankParser() {
                     continue
                 }
 
+                // Skip RESERV. BETRAG (card reservations/holds) - they are temporary
+                // and will be replaced by actual KARTENZAHLUNG transactions
+                if (restOfLine.contains("RESERV.", ignoreCase = true) ||
+                    restOfLine.contains("RESERVIERUNG", ignoreCase = true)) {
+                    i++
+                    continue
+                }
+
                 // Find amounts in the line
                 val amounts = amountPattern.findAll(restOfLine).toList()
 
@@ -319,8 +327,9 @@ class TargobankParser : GermanBankParser() {
             "INTERNE UMBUCHUNG HABEN", "INTERNE UMBUCHUNG SOLL", "INTERNE UMBUCHUNG",
             "SEPA LASTSCHRIFT", "SEPA ÜBERWEISUNG", "SEPA GUTSCHRIFT",
             "LOHN / GEHALT / RENTE", "LOHN/GEHALT/RENTE",
+            "NFC KARTENZAHLUNG", "KARTENZAHLUNG", "RESERV. BETRAG POS",
             "DAUERAUFTRAG", "GUTSCHRIFT", "LASTSCHRIFT", "ÜBERWEISUNG",
-            "KREDITRATE", "KARTENZAHLUNG", "BARGELDAUSZAHLUNG", "BARGELDEINZAHLUNG",
+            "KREDITRATE", "BARGELDAUSZAHLUNG", "BARGELDEINZAHLUNG",
             "GEHALT", "LOHN", "MIETE", "ANFANGSSALDO", "ABSCHLUSS"
         )
 
