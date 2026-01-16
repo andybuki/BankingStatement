@@ -280,14 +280,14 @@ class BunqParser : GermanBankParser() {
     private fun isBunqHeaderLine(line: String): Boolean {
         val lower = line.lowercase()
         return lower.contains("datum") && lower.contains("zinsdatum") ||
-               lower.contains("gegenpartei") && lower.contains("betrag") ||
-               lower.contains("kontoinhaber") ||
-               lower.contains("bankangaben") ||
-               lower.contains("bankverbindung") ||
-               lower.contains("kontostand per") ||
-               lower.contains("summe eingehende") ||
-               lower.contains("summe ausgehende") ||
-               lower.contains("downloaddatum")
+                lower.contains("gegenpartei") && lower.contains("betrag") ||
+                lower.contains("kontoinhaber") ||
+                lower.contains("bankangaben") ||
+                lower.contains("bankverbindung") ||
+                lower.contains("kontostand per") ||
+                lower.contains("summe eingehende") ||
+                lower.contains("summe ausgehende") ||
+                lower.contains("downloaddatum")
     }
 
     /**
