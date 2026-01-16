@@ -7,29 +7,6 @@ import com.banking.statement.parser.ParseResult
  */
 
 // ============================================================
-// N26 Parser
-// ============================================================
-class N26Parser : GermanBankParser() {
-    override val bankName = "N26"
-
-    private val identifiers = listOf(
-        "n26",
-        "n26 bank",
-        "ntsbdeb1",
-        "number26"
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "N26")
-    }
-}
-
-// ============================================================
 // TARGOBANK Parser
 // ============================================================
 class TargobankParser : GermanBankParser() {
