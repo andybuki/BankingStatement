@@ -7,35 +7,6 @@ import com.banking.statement.parser.ParseResult
  */
 
 // ============================================================
-// TARGOBANK Parser
-// ============================================================
-class TargobankParser : GermanBankParser() {
-    override val bankName = "TARGOBANK"
-
-    private val identifiers = listOf(
-        "targobank",
-        "targo bank",
-        "cmcidedd",
-        "cmcideddxxx",
-        "trbkdebb",
-        "trbkdebbxxx",
-        "targobank.de",
-        "citibank"  // Former name
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        // Also check for Targo-specific format: "Datum Tag Buchungstext Ausgaben Einnahmen"
-        val hasTargoFormat = lower.contains("ausgaben") && lower.contains("einnahmen") && lower.contains("guthaben/kredit")
-        return identifiers.any { lower.contains(it) } || hasTargoFormat
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "TARGOBANK")
-    }
-}
-
-// ============================================================
 // 1822direkt Parser (Frankfurter Sparkasse subsidiary)
 // ============================================================
 class DirectBank1822Parser : GermanBankParser() {
