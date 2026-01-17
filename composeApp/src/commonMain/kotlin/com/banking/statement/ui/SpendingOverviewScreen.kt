@@ -1087,7 +1087,7 @@ fun CategorySpendingItem(
             if (onClick != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "👆 Tap to view top transactions",
+                    text = strings.tapToViewTopTransactions,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                     modifier = Modifier.fillMaxWidth()
@@ -1389,7 +1389,7 @@ fun MerchantHistoryItem(history: MerchantHistory) {
                         color = MaterialTheme.colorScheme.error
                     )
                     Text(
-                        text = "${formatCurrency(history.averageMonthlySpending)}/mo avg",
+                        text = "${formatCurrency(history.averageMonthlySpending)}${strings.perMonthAverage}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1400,7 +1400,7 @@ fun MerchantHistoryItem(history: MerchantHistory) {
             if (history.monthlySpending.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Monthly breakdown:",
+                    text = strings.monthlyBreakdown,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp)

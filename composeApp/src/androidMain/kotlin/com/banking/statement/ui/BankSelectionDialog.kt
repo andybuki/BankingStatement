@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.banking.statement.DetectedBankOption
+import com.banking.statement.LocalStrings
 
 /**
  * Dialog for selecting a bank when automatic detection is uncertain
@@ -27,6 +28,7 @@ fun BankSelectionDialog(
     onDismiss: () -> Unit
 ) {
     var selectedBank by remember { mutableStateOf<String?>(null) }
+    val strings = LocalStrings.current
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -43,7 +45,7 @@ fun BankSelectionDialog(
             ) {
                 // Title
                 Text(
-                    text = "Select Your Bank",
+                    text = strings.selectYourBank,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -53,7 +55,7 @@ fun BankSelectionDialog(
 
                 // Subtitle
                 Text(
-                    text = "Multiple banks were detected. Please select the correct one:",
+                    text = strings.multipleBanksDetected,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -71,7 +73,8 @@ fun BankSelectionDialog(
                         BankOptionItem(
                             bank = bank,
                             isSelected = selectedBank == bank.bankName,
-                            onClick = { selectedBank = bank.bankName }
+                            onClick = { selectedBank = bank.bankName },
+                            strings = strings
                         )
                     }
                 }
@@ -84,7 +87,7 @@ fun BankSelectionDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(strings.cancel)
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -93,7 +96,7 @@ fun BankSelectionDialog(
                         onClick = { selectedBank?.let { onBankSelected(it) } },
                         enabled = selectedBank != null
                     ) {
-                        Text("Select")
+                        Text(strings.select)
                     }
                 }
             }
@@ -105,7 +108,8 @@ fun BankSelectionDialog(
 private fun BankOptionItem(
     bank: DetectedBankOption,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    strings: com.banking.statement.AppStrings
 ) {
     val backgroundColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer
@@ -152,7 +156,7 @@ private fun BankOptionItem(
 
                 if (bank.matchedIdentifiers.isNotEmpty()) {
                     Text(
-                        text = "Matched: ${bank.matchedIdentifiers.take(3).joinToString(", ")}",
+                        text = "${strings.matched} ${bank.matchedIdentifiers.take(3).joinToString(", ")}",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isSelected) {
                             MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
@@ -166,18 +170,18 @@ private fun BankOptionItem(
             }
 
             // Confidence badge
-            ConfidenceBadge(confidence = bank.confidence)
+            ConfidenceBadge(confidence = bank.confidence, strings = strings)
         }
     }
 }
 
 @Composable
-private fun ConfidenceBadge(confidence: String) {
-    val (backgroundColor, textColor) = when (confidence) {
-        "Certain" -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
-        "High" -> MaterialTheme.colorScheme.tertiary to MaterialTheme.colorScheme.onTertiary
-        "Medium" -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
-        else -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+private fun ConfidenceBadge(confidence: String, strings: com.banking.statement.AppStrings) {
+    val (backgroundColor, textColor, localizedText) = when (confidence) {
+        "Certain" -> Triple(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, strings.confidenceCertain)
+        "High" -> Triple(MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.onTertiary, strings.confidenceHigh)
+        "Medium" -> Triple(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary, strings.confidenceMedium)
+        else -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, confidence)
     }
 
     Surface(
@@ -185,7 +189,7 @@ private fun ConfidenceBadge(confidence: String) {
         color = backgroundColor
     ) {
         Text(
-            text = confidence,
+            text = localizedText,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,

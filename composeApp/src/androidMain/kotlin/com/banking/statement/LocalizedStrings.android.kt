@@ -162,5 +162,19 @@ actual fun provideStrings(): AppStrings = AppStrings(
     categoryTransfer = stringResource(R.string.category_transfer),
     categoryEducation = stringResource(R.string.category_education),
     categoryTaxes = stringResource(R.string.category_taxes),
-    categoryOther = stringResource(R.string.category_other)
+    categoryOther = stringResource(R.string.category_other),
+
+    // Spending Details
+    tapToViewTopTransactions = stringResource(R.string.tap_to_view_top_transactions),
+    monthlyBreakdown = stringResource(R.string.monthly_breakdown),
+    perMonthAverage = stringResource(R.string.per_month_average),
+
+    // Bank Selection Dialog
+    selectYourBank = stringResource(R.string.select_your_bank),
+    multipleBanksDetected = stringResource(R.string.multiple_banks_detected),
+    select = stringResource(R.string.select),
+    matched = stringResource(R.string.matched),
+    confidenceCertain = stringResource(R.string.confidence_certain),
+    confidenceHigh = stringResource(R.string.confidence_high),
+    confidenceMedium = stringResource(R.string.confidence_medium)
 )
