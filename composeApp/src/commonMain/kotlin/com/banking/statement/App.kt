@@ -124,9 +124,28 @@ fun App(
     var spendingShareMenuExpanded by remember { mutableStateOf(false) }
     var showChartView by remember { mutableStateOf(false) }
 
-    // Merchants account filter state
-    var merchantsSelectedAccountId by remember { mutableStateOf<Long?>(null) }
-    var merchantsAccountDropdownExpanded by remember { mutableStateOf(false) }
+    // Shared account filter state for Transactions and Merchants tabs
+    var selectedAccountId by remember { mutableStateOf<Long?>(null) }
+    var accountDropdownExpanded by remember { mutableStateOf(false) }
+
+    // Calculate filtered income/expenses based on selected account
+    val filteredIncome = remember(transactions, selectedAccountId) {
+        val filtered = if (selectedAccountId == null) {
+            transactions
+        } else {
+            transactions.filter { it.accountId == selectedAccountId }
+        }
+        filtered.filter { it.amount > 0 }.sumOf { it.amount }
+    }
+
+    val filteredExpenses = remember(transactions, selectedAccountId) {
+        val filtered = if (selectedAccountId == null) {
+            transactions
+        } else {
+            transactions.filter { it.accountId == selectedAccountId }
+        }
+        filtered.filter { it.amount < 0 }.sumOf { it.amount }
+    }
 
     // Track success card visibility at App level to persist across tab switches
     var showSuccessCard by remember { mutableStateOf(false) }
@@ -196,9 +215,53 @@ fun App(
                         NavigationTab.TRANSACTIONS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.tabTransactions,
-                                totalIncome = totalIncome,
-                                totalExpenses = totalExpenses,
+                                totalIncome = filteredIncome,
+                                totalExpenses = filteredExpenses,
                                 actions = {
+                                    // Account filter dropdown
+                                    if (accounts.size > 1) {
+                                        Box {
+                                            FilterChip(
+                                                selected = selectedAccountId != null,
+                                                onClick = { accountDropdownExpanded = true },
+                                                label = {
+                                                    Text(
+                                                        text = selectedAccountId?.let { id ->
+                                                            accounts.find { it.id == id }?.name ?: strings.allAccounts
+                                                        } ?: strings.allAccounts,
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        color = Color.White
+                                                    )
+                                                },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    containerColor = Color(0xFF333333),
+                                                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                                )
+                                            )
+                                            DropdownMenu(
+                                                expanded = accountDropdownExpanded,
+                                                onDismissRequest = { accountDropdownExpanded = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text(strings.allAccounts) },
+                                                    onClick = {
+                                                        selectedAccountId = null
+                                                        accountDropdownExpanded = false
+                                                    }
+                                                )
+                                                accounts.forEach { account ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(account.name) },
+                                                        onClick = {
+                                                            selectedAccountId = account.id
+                                                            accountDropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // Share button
                                     if (onShareTransactions != null && transactions.isNotEmpty()) {
                                         Box {
                                             IconButton(onClick = { transactionsShareMenuExpanded = true }) {
@@ -235,6 +298,8 @@ fun App(
                             TransactionListScreen(
                                 transactions = transactions,
                                 accounts = accounts,
+                                selectedAccountId = selectedAccountId,
+                                onAccountSelected = { selectedAccountId = it },
                                 customCategories = customCategories,
                                 onBackClick = null,
                                 onShare = null,  // Share moved to header
@@ -371,17 +436,17 @@ fun App(
                         NavigationTab.MERCHANTS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.merchantsTitle,
-                                totalIncome = totalIncome,
-                                totalExpenses = totalExpenses,
+                                totalIncome = filteredIncome,
+                                totalExpenses = filteredExpenses,
                                 actions = {
-                                    if (accounts.isNotEmpty()) {
+                                    if (accounts.size > 1) {
                                         Box {
                                             FilterChip(
-                                                selected = merchantsSelectedAccountId != null,
-                                                onClick = { merchantsAccountDropdownExpanded = true },
+                                                selected = selectedAccountId != null,
+                                                onClick = { accountDropdownExpanded = true },
                                                 label = {
                                                     Text(
-                                                        text = merchantsSelectedAccountId?.let { id ->
+                                                        text = selectedAccountId?.let { id ->
                                                             accounts.find { it.id == id }?.name ?: strings.allAccounts
                                                         } ?: strings.allAccounts,
                                                         style = MaterialTheme.typography.labelMedium,
@@ -394,22 +459,22 @@ fun App(
                                                 )
                                             )
                                             DropdownMenu(
-                                                expanded = merchantsAccountDropdownExpanded,
-                                                onDismissRequest = { merchantsAccountDropdownExpanded = false }
+                                                expanded = accountDropdownExpanded,
+                                                onDismissRequest = { accountDropdownExpanded = false }
                                             ) {
                                                 DropdownMenuItem(
                                                     text = { Text(strings.allAccounts) },
                                                     onClick = {
-                                                        merchantsSelectedAccountId = null
-                                                        merchantsAccountDropdownExpanded = false
+                                                        selectedAccountId = null
+                                                        accountDropdownExpanded = false
                                                     }
                                                 )
                                                 accounts.forEach { account ->
                                                     DropdownMenuItem(
                                                         text = { Text(account.name) },
                                                         onClick = {
-                                                            merchantsSelectedAccountId = account.id
-                                                            merchantsAccountDropdownExpanded = false
+                                                            selectedAccountId = account.id
+                                                            accountDropdownExpanded = false
                                                         }
                                                     )
                                                 }
@@ -421,7 +486,7 @@ fun App(
                             MerchantsScreen(
                                 transactions = transactions,
                                 accounts = accounts,
-                                selectedAccountId = merchantsSelectedAccountId
+                                selectedAccountId = selectedAccountId
                             )
                         }
                         NavigationTab.SETTINGS -> Column(modifier = Modifier.fillMaxSize()) {
