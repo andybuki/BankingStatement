@@ -162,21 +162,35 @@ class NorisbankParser : GermanBankParser() {
     }
 
     /**
-     * Parse Norisbank format:
-     * DD.MM.   DD.MM.   Description    Amount (in Soll or Haben column)
+     * Parse Norisbank format (actual format from PDF extraction):
+     *
+     * TransactionType                    Amount
+     * [CounterpartyName]
+     * DD.MM. DD.MM.
+     * Verwendungszweck/ Kundenreferenz
+     * Description lines...
+     *
+     * The dates come AFTER the transaction type/amount line!
      */
     private fun parseNorisbankFormat(lines: List<String>, year: Int): List<ParsedTransaction> {
         val transactions = mutableListOf<ParsedTransaction>()
 
-        // Pattern for transaction line starting with short date
-        // DD.MM.   DD.MM.   Description   [- Amount] [+ Amount]
-        val transactionPattern = Regex("""^(\d{2}\.\d{2}\.)\s+(\d{2}\.\d{2}\.)\s+(.+?)(?:\s+([+−-])\s*(\d{1,3}(?:\.\d{3})*,\d{2}))?$""")
-
-        // Amount pattern for lines that have amount at the end
+        // Amount pattern at end of line: [+/-] Amount (with space between sign and number)
         val amountPattern = Regex("""([+−-])\s*(\d{1,3}(?:\.\d{3})*,\d{2})\s*$""")
 
-        // Short date pattern
-        val shortDatePattern = Regex("""^(\d{2}\.\d{2}\.)\s+(\d{2}\.\d{2}\.)\s+(.*)$""")
+        // Short date pattern: DD.MM. DD.MM. (booking and value date)
+        val shortDatePattern = Regex("""^(\d{2}\.\d{2}\.)\s+(\d{2}\.\d{2}\.)\s*$""")
+
+        // Transaction type patterns (lines that start a new transaction)
+        val transactionTypePatterns = listOf(
+            "Bargeldauszahlung",
+            "SEPA Überweisung",
+            "SEPA Lastschrift",
+            "SEPA-Lastschrift",
+            "Kartenzahlung",
+            "Dauerauftrag",
+            "Verwendungszweck/ Kundenreferenz"  // Sometimes this line has amount
+        )
 
         var i = 0
         while (i < lines.size) {
@@ -188,85 +202,105 @@ class NorisbankParser : GermanBankParser() {
                 continue
             }
 
-            // Try to match a transaction line
-            val dateMatch = shortDatePattern.find(line)
-            if (dateMatch != null) {
-                val bookingDateStr = dateMatch.groupValues[1]
-                val valueDateStr = dateMatch.groupValues[2]
-                var restOfLine = dateMatch.groupValues[3].trim()
+            // Check if this line has an amount at the end (potential transaction start)
+            val amountMatch = amountPattern.find(line)
+            if (amountMatch != null) {
+                val sign = amountMatch.groupValues[1]
+                val amountStr = amountMatch.groupValues[2]
+                val amount = parseNorisbankAmount(sign, amountStr)
 
-                // Check for amount in this line
-                var amount: Double? = null
-                val amountMatch = amountPattern.find(restOfLine)
-                if (amountMatch != null) {
-                    val sign = amountMatch.groupValues[1]
-                    val amountStr = amountMatch.groupValues[2]
-                    amount = parseNorisbankAmount(sign, amountStr)
-                    restOfLine = restOfLine.substringBefore(amountMatch.value).trim()
-                }
+                if (amount != null) {
+                    // Get transaction type from before the amount
+                    val transactionType = line.substringBefore(amountMatch.value).trim()
 
-                // Collect description lines
-                val descriptionParts = mutableListOf(restOfLine)
-                var j = i + 1
-
-                while (j < lines.size) {
-                    val nextLine = lines[j].trim()
-
-                    if (nextLine.isEmpty()) {
-                        j++
+                    // Skip if this is just a header or non-transaction line
+                    if (transactionType.contains("Saldo", ignoreCase = true) ||
+                        transactionType.contains("EUR", ignoreCase = true) && transactionType.length < 10) {
+                        i++
                         continue
                     }
 
-                    // Stop at next transaction (starts with DD.MM.)
-                    if (shortDatePattern.containsMatchIn(nextLine)) {
-                        break
-                    }
+                    // Now look for the date line and collect description
+                    var bookingDate: LocalDate? = null
+                    var valueDate: LocalDate? = null
+                    val descriptionParts = mutableListOf<String>()
+                    var counterparty = ""
 
-                    // Stop at header lines
-                    if (isNorisbankHeaderLine(nextLine)) {
-                        break
-                    }
+                    var j = i + 1
+                    var foundDate = false
 
-                    // Check if this line has an amount (continuation with amount)
-                    val nextAmountMatch = amountPattern.find(nextLine)
-                    if (nextAmountMatch != null && amount == null) {
-                        val sign = nextAmountMatch.groupValues[1]
-                        val amountStr = nextAmountMatch.groupValues[2]
-                        amount = parseNorisbankAmount(sign, amountStr)
-                        val beforeAmount = nextLine.substringBefore(nextAmountMatch.value).trim()
-                        if (beforeAmount.isNotEmpty()) {
-                            descriptionParts.add(beforeAmount)
+                    while (j < lines.size && j < i + 15) {
+                        val nextLine = lines[j].trim()
+
+                        if (nextLine.isEmpty()) {
+                            j++
+                            continue
                         }
-                    } else {
-                        // Regular description continuation
-                        descriptionParts.add(nextLine)
+
+                        // Check for date line
+                        val dateMatch = shortDatePattern.find(nextLine)
+                        if (dateMatch != null && !foundDate) {
+                            bookingDate = parseShortDate(dateMatch.groupValues[1], year)
+                            valueDate = parseShortDate(dateMatch.groupValues[2], year)
+                            foundDate = true
+                            j++
+                            continue
+                        }
+
+                        // Check if we hit a new transaction (line with amount)
+                        if (amountPattern.containsMatchIn(nextLine) && foundDate) {
+                            break
+                        }
+
+                        // Check for header lines
+                        if (isNorisbankHeaderLine(nextLine)) {
+                            break
+                        }
+
+                        // Skip "Verwendungszweck/ Kundenreferenz" header
+                        if (nextLine.equals("Verwendungszweck/ Kundenreferenz", ignoreCase = true)) {
+                            j++
+                            continue
+                        }
+
+                        // Before finding date - might be counterparty name
+                        if (!foundDate && !nextLine.startsWith("Verwendungszweck", ignoreCase = true)) {
+                            if (counterparty.isEmpty()) {
+                                counterparty = nextLine
+                            }
+                        } else if (foundDate) {
+                            // After date - description lines
+                            descriptionParts.add(nextLine)
+                        }
+
+                        j++
                     }
-                    j++
-                }
 
-                // Parse dates with year
-                val bookingDate = parseShortDate(bookingDateStr, year)
-                val valueDate = parseShortDate(valueDateStr, year)
+                    // Create transaction if we found a date
+                    if (bookingDate != null) {
+                        val fullDescription = descriptionParts.joinToString(" ").trim()
 
-                if (bookingDate != null && amount != null) {
-                    val fullDescription = descriptionParts.joinToString(" ").trim()
-                    val (counterparty, cleanDescription) = extractNorisbankDetails(fullDescription)
+                        // Extract counterparty if not set and available from transaction type
+                        if (counterparty.isEmpty()) {
+                            counterparty = extractCounterpartyFromType(transactionType, fullDescription)
+                        }
 
-                    transactions.add(
-                        ParsedTransaction(
-                            bookingDate = bookingDate,
-                            valueDate = valueDate ?: bookingDate,
-                            amount = amount,
-                            currency = "EUR",
-                            description = cleanDescription.ifEmpty { fullDescription },
-                            counterpartyName = counterparty.ifEmpty { null },
-                            transactionType = extractNorisbankTransactionType(fullDescription),
-                            rawText = descriptionParts.joinToString("\n")
+                        transactions.add(
+                            ParsedTransaction(
+                                bookingDate = bookingDate,
+                                valueDate = valueDate ?: bookingDate,
+                                amount = amount,
+                                currency = "EUR",
+                                description = fullDescription.ifEmpty { transactionType },
+                                counterpartyName = counterparty.ifEmpty { null },
+                                transactionType = extractNorisbankTransactionType(transactionType),
+                                rawText = "$transactionType\n${descriptionParts.joinToString("\n")}"
+                            )
                         )
-                    )
 
-                    i = j
-                    continue
+                        i = j
+                        continue
+                    }
                 }
             }
 
@@ -274,6 +308,38 @@ class NorisbankParser : GermanBankParser() {
         }
 
         return transactions.distinctBy { "${it.bookingDate}_${it.amount}_${it.counterpartyName?.take(20)}" }
+    }
+
+    /**
+     * Extract counterparty from transaction type or description
+     */
+    private fun extractCounterpartyFromType(transactionType: String, description: String): String {
+        // For "SEPA Überweisung von NAME" pattern
+        val vonMatch = Regex("""von\s*$""", RegexOption.IGNORE_CASE).find(transactionType)
+        if (vonMatch != null) {
+            // Counterparty should be on next line, already captured
+            return ""
+        }
+
+        // For ATM transactions
+        if (transactionType.contains("Bargeldauszahlung", ignoreCase = true) ||
+            transactionType.contains("GAA", ignoreCase = true)) {
+            val locationMatch = Regex("""//(.+?)/DE""").find(description)
+            if (locationMatch != null) {
+                return "ATM ${locationMatch.groupValues[1]}"
+            }
+            return "ATM"
+        }
+
+        // For Kartenzahlung - extract merchant from description
+        if (transactionType.contains("Kartenzahlung", ignoreCase = true)) {
+            val merchantMatch = Regex("""^(.+?)//""").find(description)
+            if (merchantMatch != null) {
+                return merchantMatch.groupValues[1].trim()
+            }
+        }
+
+        return ""
     }
 
     /**
