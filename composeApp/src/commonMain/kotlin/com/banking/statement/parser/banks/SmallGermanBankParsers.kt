@@ -7,33 +7,6 @@ import com.banking.statement.parser.ParseResult
  */
 
 // ============================================================
-// Apobank Parser (Deutsche Apotheker- und Ärztebank)
-// ============================================================
-class ApoBankParser : GermanBankParser() {
-    override val bankName = "Apobank"
-
-    private val identifiers = listOf(
-        "apobank",
-        "apo bank",
-        "apotheker",
-        "ärztebank",
-        "daaededd",  // BIC
-        "deutsche apotheker"
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        // Also check for Apobank-specific format: "Wertstellung: DD.MM.YYYY"
-        val hasApobankFormat = lower.contains("wertstellung:") && lower.contains("kartenzahlung debitkarte")
-        return identifiers.any { lower.contains(it) } || hasApobankFormat
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "Apobank")
-    }
-}
-
-// ============================================================
 // Landesbank Berlin (LBB) Parser
 // ============================================================
 class LandesbankBerlinParser : GermanBankParser() {
