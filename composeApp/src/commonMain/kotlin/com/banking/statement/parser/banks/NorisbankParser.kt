@@ -25,14 +25,20 @@ class NorisbankParser : GermanBankParser() {
     // CERTAIN: unique identifiers
     private val certainIdentifiers = listOf(
         "norisbank",
-        "norsde51",      // BIC
-        "norsde51xxx"    // BIC full
+        "norisbank gmbh",
+        "norsde51",           // BIC
+        "norsde51xxx",        // BIC full
+        "nors de 51",         // BIC with spaces (OCR issue)
+        "www.norisbank.de"
     )
 
     // HIGH: strong indicators
     private val highIdentifiers = listOf(
         "noris bank",
-        "deutsche bank gruppe"  // Norisbank is part of Deutsche Bank
+        "noris-bank",
+        "deutsche bank gruppe",  // Norisbank is part of Deutsche Bank
+        "(030) 310 66 005",      // Phone number
+        "10910 berlin"           // Postfach address
     )
 
     // MEDIUM: common patterns in Norisbank statements
@@ -40,18 +46,57 @@ class NorisbankParser : GermanBankParser() {
         "kontoauszug vom",
         "kontoinhaber:",
         "alter saldo per",
+        "neuer saldo",
         "verwendungszweck/ kundenreferenz",
-        "bargeldauszahlung gaa"
+        "verwendungszweck/kundenreferenz",
+        "bargeldauszahlung gaa",
+        "buchung",
+        "valuta",
+        "vorgang",
+        "soll",
+        "haben"
     )
 
     override fun canParse(pdfText: String): Boolean {
         val lower = pdfText.lowercase()
-        return certainIdentifiers.any { lower.contains(it) } ||
-               (highIdentifiers.count { lower.contains(it) } >= 1 &&
-                mediumIdentifiers.count { lower.contains(it) } >= 2)
+
+        // Check for certain identifiers
+        if (certainIdentifiers.any { lower.contains(it) }) {
+            return true
+        }
+
+        // Check for "noris" with nearby "bank" (handles spacing issues)
+        if (lower.contains("noris") && lower.contains("bank")) {
+            return true
+        }
+
+        // Check for BIC pattern NORSDE51 with possible spaces
+        if (Regex("""nors\s*de\s*51""", RegexOption.IGNORE_CASE).containsMatchIn(lower)) {
+            return true
+        }
+
+        // Check for high + medium identifiers
+        return highIdentifiers.count { lower.contains(it) } >= 1 &&
+               mediumIdentifiers.count { lower.contains(it) } >= 2
     }
 
     override fun getConfidence(pdfText: String): Pair<DetectionConfidence, List<String>> {
+        val lower = pdfText.lowercase()
+        val matchedIdentifiers = mutableListOf<String>()
+
+        // Check for "noris" + "bank" pattern (handles spacing issues)
+        if (lower.contains("noris") && lower.contains("bank")) {
+            matchedIdentifiers.add("norisbank")
+            return Pair(DetectionConfidence.CERTAIN, matchedIdentifiers)
+        }
+
+        // Check for BIC pattern with possible spaces
+        if (Regex("""nors\s*de\s*51""", RegexOption.IGNORE_CASE).containsMatchIn(pdfText)) {
+            matchedIdentifiers.add("NORSDE51")
+            return Pair(DetectionConfidence.CERTAIN, matchedIdentifiers)
+        }
+
+        // Fall back to standard calculation
         return calculateConfidence(pdfText, certainIdentifiers, highIdentifiers, mediumIdentifiers)
     }
 
