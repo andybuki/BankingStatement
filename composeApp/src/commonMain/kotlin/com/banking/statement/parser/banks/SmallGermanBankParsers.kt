@@ -174,29 +174,6 @@ class SantanderParser : GermanBankParser() {
 }
 
 // ============================================================
-// Sparda Bank Parser
-// ============================================================
-class SpardaBankParser : GermanBankParser() {
-    override val bankName = "Sparda-Bank"
-
-    private val identifiers = listOf(
-        "sparda",
-        "sparda-bank",
-        "sparda bank",
-        "genodef1s"  // BIC prefix for Sparda banks
-    )
-
-    override fun canParse(pdfText: String): Boolean {
-        val lower = pdfText.lowercase()
-        return identifiers.any { lower.contains(it) }
-    }
-
-    override fun parse(pdfText: String, fileName: String): ParseResult {
-        return parseGermanStatement(pdfText, fileName, "Sparda-Bank")
-    }
-}
-
-// ============================================================
 // PSD Bank Parser
 // ============================================================
 class PsdBankParser : GermanBankParser() {
