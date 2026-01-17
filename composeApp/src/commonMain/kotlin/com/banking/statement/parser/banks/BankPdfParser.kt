@@ -92,6 +92,7 @@ object BankParserRegistry {
         register(SpardaBankParser())
         register(PsdBankParser())
         register(NorisbankParser())
+        register(OldenburgischeLandesbankParser())
 
         // International banks
         register(BankwestParser())
