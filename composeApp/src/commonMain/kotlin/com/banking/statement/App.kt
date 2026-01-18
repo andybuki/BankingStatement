@@ -311,9 +311,52 @@ fun App(
                         NavigationTab.SPENDING -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.spendingTitle,
-                                totalIncome = totalIncome,
-                                totalExpenses = totalExpenses,
+                                totalIncome = filteredIncome,
+                                totalExpenses = filteredExpenses,
                                 actions = {
+                                    // Account filter dropdown
+                                    if (accounts.size > 1) {
+                                        Box {
+                                            FilterChip(
+                                                selected = selectedAccountId != null,
+                                                onClick = { accountDropdownExpanded = true },
+                                                label = {
+                                                    Text(
+                                                        text = selectedAccountId?.let { id ->
+                                                            accounts.find { it.id == id }?.name ?: strings.allAccounts
+                                                        } ?: strings.allAccounts,
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        color = Color.White
+                                                    )
+                                                },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    containerColor = Color(0xFF333333),
+                                                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                                )
+                                            )
+                                            DropdownMenu(
+                                                expanded = accountDropdownExpanded,
+                                                onDismissRequest = { accountDropdownExpanded = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text(strings.allAccounts) },
+                                                    onClick = {
+                                                        selectedAccountId = null
+                                                        accountDropdownExpanded = false
+                                                    }
+                                                )
+                                                accounts.forEach { account ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(account.name) },
+                                                        onClick = {
+                                                            selectedAccountId = account.id
+                                                            accountDropdownExpanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
                                     // Chart toggle button
                                     if (categorySpending.isNotEmpty()) {
                                         IconButton(onClick = { showChartView = !showChartView }) {
@@ -422,12 +465,13 @@ fun App(
                                 }
                             )
                             SpendingOverviewScreen(
-                                totalIncome = totalIncome,
-                                totalExpenses = totalExpenses,
+                                totalIncome = filteredIncome,
+                                totalExpenses = filteredExpenses,
                                 categorySpending = categorySpending,
                                 monthlySummary = monthlySummary,
                                 transactions = transactions,
                                 accounts = accounts,
+                                selectedAccountId = selectedAccountId,
                                 onBackClick = null,
                                 onShare = null,  // Share moved to header
                                 showChartView = showChartView
