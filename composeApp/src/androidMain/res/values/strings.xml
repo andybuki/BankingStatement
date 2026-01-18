@@ -114,6 +114,11 @@
     <string name="error_unsupported_format">Unsupported file format</string>
     <string name="error_not_bank_statement">This does not appear to be a bank statement</string>
     <string name="import_cancelled">Import cancelled</string>
+    <string name="error_invalid_pdf">File is not a valid PDF</string>
+    <string name="error_pdf_no_text">Could not extract text from PDF. It may be a scanned document.</string>
+    <string name="error_low_score">This does not appear to be a bank statement (Score: %d/50 required)</string>
+    <string name="error_parser_not_found">Parser not found for %s</string>
+    <string name="bank_selection_cancelled">Bank selection cancelled</string>
 
     <!-- Export -->
     <string name="export">Export</string>

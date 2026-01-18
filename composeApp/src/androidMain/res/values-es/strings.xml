@@ -125,6 +125,11 @@
     <string name="error_unsupported_format">Formato de archivo no soportado</string>
     <string name="error_not_bank_statement">Esto no parece ser un extracto bancario</string>
     <string name="import_cancelled">Importación cancelada</string>
+    <string name="error_invalid_pdf">El archivo no es un PDF válido</string>
+    <string name="error_pdf_no_text">No se pudo extraer texto del PDF. Puede ser un documento escaneado.</string>
+    <string name="error_low_score">Esto no parece ser un extracto bancario (Puntuación: %d/50 requerido)</string>
+    <string name="error_parser_not_found">Analizador no encontrado para %s</string>
+    <string name="bank_selection_cancelled">Selección de banco cancelada</string>
 
     <!-- Export -->
     <string name="export">Exportar</string>

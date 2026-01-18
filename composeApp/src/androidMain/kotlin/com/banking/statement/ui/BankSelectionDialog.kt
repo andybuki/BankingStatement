@@ -11,12 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.banking.statement.DetectedBankOption
-import com.banking.statement.LocalStrings
+import com.banking.statement.R
 
 /**
  * Dialog for selecting a bank when automatic detection is uncertain
@@ -28,7 +29,6 @@ fun BankSelectionDialog(
     onDismiss: () -> Unit
 ) {
     var selectedBank by remember { mutableStateOf<String?>(null) }
-    val strings = LocalStrings.current
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -45,7 +45,7 @@ fun BankSelectionDialog(
             ) {
                 // Title
                 Text(
-                    text = strings.selectYourBank,
+                    text = stringResource(R.string.select_your_bank),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -55,7 +55,7 @@ fun BankSelectionDialog(
 
                 // Subtitle
                 Text(
-                    text = strings.multipleBanksDetected,
+                    text = stringResource(R.string.multiple_banks_detected),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -73,8 +73,7 @@ fun BankSelectionDialog(
                         BankOptionItem(
                             bank = bank,
                             isSelected = selectedBank == bank.bankName,
-                            onClick = { selectedBank = bank.bankName },
-                            strings = strings
+                            onClick = { selectedBank = bank.bankName }
                         )
                     }
                 }
@@ -87,7 +86,7 @@ fun BankSelectionDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text(strings.cancel)
+                        Text(stringResource(R.string.cancel))
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -96,7 +95,7 @@ fun BankSelectionDialog(
                         onClick = { selectedBank?.let { onBankSelected(it) } },
                         enabled = selectedBank != null
                     ) {
-                        Text(strings.select)
+                        Text(stringResource(R.string.select))
                     }
                 }
             }
@@ -108,8 +107,7 @@ fun BankSelectionDialog(
 private fun BankOptionItem(
     bank: DetectedBankOption,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    strings: com.banking.statement.AppStrings
+    onClick: () -> Unit
 ) {
     val backgroundColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer
@@ -122,6 +120,8 @@ private fun BankOptionItem(
     } else {
         MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
     }
+
+    val matchedLabel = stringResource(R.string.matched)
 
     Surface(
         modifier = Modifier
@@ -156,7 +156,7 @@ private fun BankOptionItem(
 
                 if (bank.matchedIdentifiers.isNotEmpty()) {
                     Text(
-                        text = "${strings.matched} ${bank.matchedIdentifiers.take(3).joinToString(", ")}",
+                        text = "$matchedLabel ${bank.matchedIdentifiers.take(3).joinToString(", ")}",
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isSelected) {
                             MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
@@ -170,17 +170,21 @@ private fun BankOptionItem(
             }
 
             // Confidence badge
-            ConfidenceBadge(confidence = bank.confidence, strings = strings)
+            ConfidenceBadge(confidence = bank.confidence)
         }
     }
 }
 
 @Composable
-private fun ConfidenceBadge(confidence: String, strings: com.banking.statement.AppStrings) {
+private fun ConfidenceBadge(confidence: String) {
+    val certainLabel = stringResource(R.string.confidence_certain)
+    val highLabel = stringResource(R.string.confidence_high)
+    val mediumLabel = stringResource(R.string.confidence_medium)
+
     val (backgroundColor, textColor, localizedText) = when (confidence) {
-        "Certain" -> Triple(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, strings.confidenceCertain)
-        "High" -> Triple(MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.onTertiary, strings.confidenceHigh)
-        "Medium" -> Triple(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary, strings.confidenceMedium)
+        "Certain" -> Triple(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, certainLabel)
+        "High" -> Triple(MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.onTertiary, highLabel)
+        "Medium" -> Triple(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary, mediumLabel)
         else -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, confidence)
     }
 
