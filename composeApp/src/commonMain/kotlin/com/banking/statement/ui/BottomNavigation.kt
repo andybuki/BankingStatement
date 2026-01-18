@@ -95,6 +95,7 @@ fun AppBottomNavigation(
                         style = MaterialTheme.typography.labelSmall
                     )
                 },
+                alwaysShowLabel = false,  // Only show label when selected (saves space on narrow screens)
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,

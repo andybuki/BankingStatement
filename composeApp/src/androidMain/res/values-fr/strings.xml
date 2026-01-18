@@ -163,10 +163,10 @@
 
     <!-- Bottom Navigation Tabs -->
     <string name="tab_home">Accueil</string>
-    <string name="tab_transactions">Transactions</string>
+    <string name="tab_transactions">Activité</string>
     <string name="tab_spending">Dépenses</string>
     <string name="tab_merchants">Marchands</string>
-    <string name="tab_settings">Paramètres</string>
+    <string name="tab_settings">Plus</string>
 
     <!-- Merchants Screen -->
     <string name="merchants_title">Top Marchands</string>

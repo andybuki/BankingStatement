@@ -315,7 +315,7 @@ fun defaultEnglishStrings() = AppStrings(
 
     // Bottom Navigation Tabs
     tabHome = "Home",
-    tabTransactions = "Transactions",
+    tabTransactions = "Activity",
     tabSpending = "Spending",
     tabMerchants = "Merchants",
     tabSettings = "Settings",

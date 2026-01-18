@@ -163,10 +163,10 @@
 
     <!-- Bottom Navigation Tabs -->
     <string name="tab_home">Inicio</string>
-    <string name="tab_transactions">Transacciones</string>
+    <string name="tab_transactions">Actividad</string>
     <string name="tab_spending">Gastos</string>
     <string name="tab_merchants">Comercios</string>
-    <string name="tab_settings">Ajustes</string>
+    <string name="tab_settings">Más</string>
 
     <!-- Merchants Screen -->
     <string name="merchants_title">Top Comercios</string>
