@@ -163,7 +163,7 @@
 
     <!-- Bottom Navigation Tabs -->
     <string name="tab_home">Home</string>
-    <string name="tab_transactions">Transactions</string>
+    <string name="tab_transactions">Activity</string>
     <string name="tab_spending">Spending</string>
     <string name="tab_merchants">Merchants</string>
     <string name="tab_settings">Settings</string>

@@ -163,7 +163,7 @@
 
     <!-- Bottom Navigation Tabs -->
     <string name="tab_home">Start</string>
-    <string name="tab_transactions">Buchungen</string>
+    <string name="tab_transactions">Umsätze</string>
     <string name="tab_spending">Ausgaben</string>
     <string name="tab_merchants">Händler</string>
     <string name="tab_settings">Mehr</string>
