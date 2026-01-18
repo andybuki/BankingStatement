@@ -161,7 +161,7 @@
     <string name="tab_transactions">Buchungen</string>
     <string name="tab_spending">Ausgaben</string>
     <string name="tab_merchants">Händler</string>
-    <string name="tab_settings">Einstellungen</string>
+    <string name="tab_settings">Mehr</string>
 
     <!-- Merchants Screen -->
     <string name="merchants_title">Top Händler</string>
@@ -187,4 +187,18 @@
     <string name="delete_category_confirm">Möchten Sie diese Kategorie wirklich löschen?</string>
     <string name="no_categories_yet">Noch keine eigenen Kategorien</string>
     <string name="create_first_category">Erstellen Sie Ihre erste eigene Kategorie</string>
+
+    <!-- Spending Details -->
+    <string name="tap_to_view_top_transactions">👆 Tippen für Top-Buchungen</string>
+    <string name="monthly_breakdown">Monatliche Aufschlüsselung:</string>
+    <string name="per_month_average">/Monat Ø</string>
+
+    <!-- Bank Selection Dialog -->
+    <string name="select_your_bank">Bank auswählen</string>
+    <string name="multiple_banks_detected">Mehrere Banken erkannt. Bitte wählen Sie die richtige:</string>
+    <string name="select">Auswählen</string>
+    <string name="matched">Erkannt:</string>
+    <string name="confidence_certain">Sicher</string>
+    <string name="confidence_high">Hoch</string>
+    <string name="confidence_medium">Mittel</string>
 </resources>

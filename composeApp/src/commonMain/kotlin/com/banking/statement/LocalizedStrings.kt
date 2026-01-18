@@ -178,7 +178,21 @@ data class AppStrings(
     val categoryTransfer: String,
     val categoryEducation: String,
     val categoryTaxes: String,
-    val categoryOther: String
+    val categoryOther: String,
+
+    // Spending Details
+    val tapToViewTopTransactions: String,
+    val monthlyBreakdown: String,
+    val perMonthAverage: String,
+
+    // Bank Selection Dialog
+    val selectYourBank: String,
+    val multipleBanksDetected: String,
+    val select: String,
+    val matched: String,
+    val confidenceCertain: String,
+    val confidenceHigh: String,
+    val confidenceMedium: String
 )
 
 /**
@@ -348,5 +362,19 @@ fun defaultEnglishStrings() = AppStrings(
     categoryTransfer = "Transfer",
     categoryEducation = "Education",
     categoryTaxes = "Taxes",
-    categoryOther = "Other"
+    categoryOther = "Other",
+
+    // Spending Details
+    tapToViewTopTransactions = "👆 Tap to view top transactions",
+    monthlyBreakdown = "Monthly breakdown:",
+    perMonthAverage = "/mo avg",
+
+    // Bank Selection Dialog
+    selectYourBank = "Select Your Bank",
+    multipleBanksDetected = "Multiple banks were detected. Please select the correct one:",
+    select = "Select",
+    matched = "Matched:",
+    confidenceCertain = "Certain",
+    confidenceHigh = "High",
+    confidenceMedium = "Medium"
 )

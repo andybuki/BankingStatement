@@ -187,4 +187,18 @@
     <string name="delete_category_confirm">Are you sure you want to delete this category?</string>
     <string name="no_categories_yet">No custom categories yet</string>
     <string name="create_first_category">Create your first custom category</string>
+
+    <!-- Spending Details -->
+    <string name="tap_to_view_top_transactions">👆 Tap to view top transactions</string>
+    <string name="monthly_breakdown">Monthly breakdown:</string>
+    <string name="per_month_average">/mo avg</string>
+
+    <!-- Bank Selection Dialog -->
+    <string name="select_your_bank">Select Your Bank</string>
+    <string name="multiple_banks_detected">Multiple banks were detected. Please select the correct one:</string>
+    <string name="select">Select</string>
+    <string name="matched">Matched:</string>
+    <string name="confidence_certain">Certain</string>
+    <string name="confidence_high">High</string>
+    <string name="confidence_medium">Medium</string>
 </resources>

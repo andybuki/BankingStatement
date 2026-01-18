@@ -187,4 +187,18 @@
     <string name="delete_category_confirm">¿Está seguro de que desea eliminar esta categoría?</string>
     <string name="no_categories_yet">Aún no hay categorías personalizadas</string>
     <string name="create_first_category">Cree su primera categoría personalizada</string>
+
+    <!-- Spending Details -->
+    <string name="tap_to_view_top_transactions">👆 Toque para ver las transacciones principales</string>
+    <string name="monthly_breakdown">Desglose mensual:</string>
+    <string name="per_month_average">/mes prom.</string>
+
+    <!-- Bank Selection Dialog -->
+    <string name="select_your_bank">Seleccione su banco</string>
+    <string name="multiple_banks_detected">Se detectaron varios bancos. Por favor seleccione el correcto:</string>
+    <string name="select">Seleccionar</string>
+    <string name="matched">Detectado:</string>
+    <string name="confidence_certain">Seguro</string>
+    <string name="confidence_high">Alto</string>
+    <string name="confidence_medium">Medio</string>
 </resources>
