@@ -125,6 +125,11 @@
     <string name="error_unsupported_format">Nicht unterstütztes Dateiformat</string>
     <string name="error_not_bank_statement">Dies scheint kein Kontoauszug zu sein</string>
     <string name="import_cancelled">Import abgebrochen</string>
+    <string name="error_invalid_pdf">Datei ist keine gültige PDF</string>
+    <string name="error_pdf_no_text">Text konnte nicht aus PDF extrahiert werden. Möglicherweise ein gescanntes Dokument.</string>
+    <string name="error_low_score">Dies scheint kein Kontoauszug zu sein (Bewertung: %d/50 erforderlich)</string>
+    <string name="error_parser_not_found">Parser nicht gefunden für %s</string>
+    <string name="bank_selection_cancelled">Bankauswahl abgebrochen</string>
 
     <!-- Export -->
     <string name="export">Exportieren</string>
@@ -141,7 +146,7 @@
     <string name="period_month">Monat</string>
     <string name="period_year">Jahr</string>
     <string name="period_all">Alle</string>
-    <string name="period_custom">Benutzerdefiniert</string>
+    <string name="period_custom">Zeitraum</string>
     <string name="select_date_range">Datumsbereich auswählen</string>
     <string name="start_date">Startdatum</string>
     <string name="end_date">Enddatum</string>

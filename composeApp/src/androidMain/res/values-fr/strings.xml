@@ -125,6 +125,11 @@
     <string name="error_unsupported_format">Format de fichier non pris en charge</string>
     <string name="error_not_bank_statement">Ceci ne semble pas être un relevé bancaire</string>
     <string name="import_cancelled">Importation annulée</string>
+    <string name="error_invalid_pdf">Le fichier n\'est pas un PDF valide</string>
+    <string name="error_pdf_no_text">Impossible d\'extraire le texte du PDF. Il s\'agit peut-être d\'un document numérisé.</string>
+    <string name="error_low_score">Ceci ne semble pas être un relevé bancaire (Score : %d/50 requis)</string>
+    <string name="error_parser_not_found">Analyseur non trouvé pour %s</string>
+    <string name="bank_selection_cancelled">Sélection de banque annulée</string>
 
     <!-- Export -->
     <string name="export">Exporter</string>

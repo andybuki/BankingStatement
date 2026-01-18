@@ -523,7 +523,7 @@ class MainActivity : ComponentActivity() {
                     dialogState = ImportDialogState()
                     importState = ImportState(
                         isProcessing = false,
-                        errorMessage = "Import cancelled"
+                        errorMessage = getString(R.string.import_cancelled)
                     )
                 }
             }
@@ -563,7 +563,7 @@ class MainActivity : ComponentActivity() {
                 errorResult = ParseResult(
                     success = false,
                     bankName = "Unknown",
-                    errorMessage = "File is not a valid PDF"
+                    errorMessage = getString(R.string.error_invalid_pdf)
                 )
             )
         }
@@ -577,7 +577,7 @@ class MainActivity : ComponentActivity() {
                 errorResult = ParseResult(
                     success = false,
                     bankName = "Unknown",
-                    errorMessage = "Could not extract text from PDF. It may be a scanned document."
+                    errorMessage = getString(R.string.error_pdf_no_text)
                 )
             )
         }
@@ -593,7 +593,7 @@ class MainActivity : ComponentActivity() {
                 errorResult = ParseResult(
                     success = false,
                     bankName = "Unknown",
-                    errorMessage = "This does not appear to be a bank statement (Score: ${validationResult.score}/50 required)"
+                    errorMessage = getString(R.string.error_low_score, validationResult.score)
                 )
             )
         }
@@ -689,7 +689,7 @@ class MainActivity : ComponentActivity() {
             ParseResult(
                 success = false,
                 bankName = bankName,
-                errorMessage = "Parser not found for $bankName"
+                errorMessage = getString(R.string.error_parser_not_found, bankName)
             )
         }
     }
@@ -742,7 +742,7 @@ class MainActivity : ComponentActivity() {
         )
         importState = ImportState(
             isProcessing = false,
-            errorMessage = "Bank selection cancelled"
+            errorMessage = getString(R.string.bank_selection_cancelled)
         )
     }
 
