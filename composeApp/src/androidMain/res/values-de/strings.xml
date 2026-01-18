@@ -41,7 +41,7 @@
     <string name="back">Zurück</string>
 
     <!-- Spending Overview -->
-    <string name="spending_title">Ausgabenübersicht</string>
+    <string name="spending_title">Ausgaben</string>
     <string name="total_income">Gesamteinnahmen</string>
     <string name="total_expenses">Gesamtausgaben</string>
     <string name="net_balance">Nettosaldo</string>

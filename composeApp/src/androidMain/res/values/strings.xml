@@ -41,7 +41,7 @@
     <string name="back">Back</string>
 
     <!-- Spending Overview -->
-    <string name="spending_title">Spending Overview</string>
+    <string name="spending_title">Spending</string>
     <string name="total_income">Total Income</string>
     <string name="total_expenses">Total Expenses</string>
     <string name="net_balance">Net Balance</string>
