@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.ThemeMode
 import org.jetbrains.compose.resources.painterResource
 
@@ -306,7 +307,7 @@ private fun AccountManagementCard(
                             text = formatBalance(balance),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
-                            color = if (balance >= 0) Color(0xFF4CAF50) else Color(0xFFE57373)
+                            color = if (balance >= 0) AppColors.Income else AppColors.Expenses
                         )
                     } ?: Text(
                         text = "—",

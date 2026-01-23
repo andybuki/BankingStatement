@@ -14,70 +14,110 @@ enum class ThemeMode {
     SYSTEM
 }
 
-// Light theme colors
+/**
+ * App color palette - centralized color definitions
+ * Based on modern banking app design (similar to Revolut, N26)
+ */
+object AppColors {
+    // Main background
+    val MainBackground = Color(0xFF0F2A44)  // Dark navy blue
+
+    // Header colors
+    val HeaderBackground = Color(0xFF0F2A44)  // Dark navy blue
+    val HeaderText = Color(0xFFFFFFFF)  // White
+    val HeaderIcons = Color(0xFFE5E7EB)  // Light gray
+    val HeaderSeparator = Color(0xFF1E3A5F)  // Slightly lighter navy
+    val HeaderSecondaryText = Color(0xFF94A3B8)  // Gray for labels like "Income", "Expenses"
+
+    // Footer (Bottom Navigation) colors
+    val FooterBackground = Color(0xFFFFFFFF)  // White
+    val FooterTopLine = Color(0xFFE5E7EB)  // Light gray border
+    val FooterActiveIcon = Color(0xFF2563EB)  // Blue
+    val FooterActiveText = Color(0xFF2563EB)  // Blue
+    val FooterInactiveIcon = Color(0xFF94A3B8)  // Gray
+    val FooterInactiveText = Color(0xFF94A3B8)  // Gray
+
+    // Data colors
+    val Income = Color(0xFF16A34A)  // Green
+    val Expenses = Color(0xFFDC2626)  // Red
+
+    // Button colors
+    val ButtonPrimary = Color(0xFF2563EB)  // Blue
+    val ButtonPrimaryText = Color(0xFFFFFFFF)  // White
+    val ButtonDisabled = Color(0xFFCBD5E1)  // Light gray
+    val ButtonDisabledText = Color(0xFF94A3B8)  // Gray
+
+    // Card/Block colors
+    val CardBackground = Color(0xFFFFFFFF)  // White
+    val CardBorder = Color(0xFFE5E7EB)  // Light gray
+    val CardPrimaryText = Color(0xFF0F172A)  // Very dark blue/black
+    val CardSecondaryText = Color(0xFF475569)  // Dark gray
+
+    // Accent/Primary color
+    val Primary = Color(0xFF2563EB)  // Blue
+    val PrimaryLight = Color(0xFF3B82F6)  // Lighter blue
+    val PrimaryDark = Color(0xFF1D4ED8)  // Darker blue
+}
+
+// Light theme colors - with new color scheme
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF1565C0),
+    primary = AppColors.Primary,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD1E4FF),
-    onPrimaryContainer = Color(0xFF001D36),
-    secondary = Color(0xFF545F71),
+    primaryContainer = Color(0xFFDBEAFE),  // Light blue container
+    onPrimaryContainer = Color(0xFF1E3A8A),
+    secondary = Color(0xFF64748B),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFD8E3F8),
-    onSecondaryContainer = Color(0xFF111C2B),
-    tertiary = Color(0xFF6D5E7A),
+    secondaryContainer = Color(0xFFE2E8F0),
+    onSecondaryContainer = Color(0xFF1E293B),
+    tertiary = Color(0xFF7C3AED),  // Purple for accents
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFF6E1FF),
-    onTertiaryContainer = Color(0xFF271B33),
-    error = Color(0xFFBA1A1A),
-    errorContainer = Color(0xFFFFDAD6),
+    tertiaryContainer = Color(0xFFEDE9FE),
+    onTertiaryContainer = Color(0xFF4C1D95),
+    error = AppColors.Expenses,
+    errorContainer = Color(0xFFFEE2E2),
     onError = Color.White,
-    onErrorContainer = Color(0xFF410002),
-    background = Color(0xFFFDFBFF),
-    onBackground = Color(0xFF1A1C1E),
-    surface = Color(0xFFFDFBFF),
-    onSurface = Color(0xFF1A1C1E),
-    surfaceVariant = Color(0xFFDFE2EB),
-    onSurfaceVariant = Color(0xFF43474E),
-    outline = Color(0xFF73777F),
-    inverseOnSurface = Color(0xFFF1F0F4),
-    inverseSurface = Color(0xFF2F3033),
-    inversePrimary = Color(0xFFA0CAFD)
+    onErrorContainer = Color(0xFF7F1D1D),
+    background = AppColors.MainBackground,
+    onBackground = Color.White,
+    surface = AppColors.CardBackground,
+    onSurface = AppColors.CardPrimaryText,
+    surfaceVariant = Color(0xFFF1F5F9),  // Light gray for card variants
+    onSurfaceVariant = AppColors.CardSecondaryText,
+    outline = AppColors.CardBorder,
+    inverseOnSurface = Color(0xFF1E293B),
+    inverseSurface = Color(0xFFF1F5F9),
+    inversePrimary = Color(0xFF93C5FD)
 )
 
-// Dark theme colors - using black/raven color scheme
-// Footer/Header: Pure black (0xFF000000)
-// Main content area: Jet black/Raven (0xFF1A1A1A / 0xFF212121)
+// Dark theme colors - keeping dark mode option available
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFA0CAFD),
-    onPrimary = Color(0xFF003258),
-    primaryContainer = Color(0xFF004880),
-    onPrimaryContainer = Color(0xFFD1E4FF),
-    secondary = Color(0xFFBCC7DC),
-    onSecondary = Color(0xFF263141),
-    secondaryContainer = Color(0xFF3C4758),
-    onSecondaryContainer = Color(0xFFD8E3F8),
-    tertiary = Color(0xFFDAC5E8),
-    onTertiary = Color(0xFF3D2F4A),
-    tertiaryContainer = Color(0xFF554662),
-    onTertiaryContainer = Color(0xFFF6E1FF),
-    error = Color(0xFFFFB4AB),
-    errorContainer = Color(0xFF93000A),
-    onError = Color(0xFF690005),
-    onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF212121),  // Raven/jet black for main content
-    onBackground = Color(0xFFE3E2E6),
-    surface = Color(0xFF000000),     // Pure black for header/footer
-    onSurface = Color(0xFFE3E2E6),
-    surfaceVariant = Color(0xFF2D2D2D),  // Slightly lighter for cards
-    onSurfaceVariant = Color(0xFFC3C6CF),
-    outline = Color(0xFF8D9199),
-    inverseOnSurface = Color(0xFF1A1C1E),
-    inverseSurface = Color(0xFFE3E2E6),
-    inversePrimary = Color(0xFF1565C0)
+    primary = Color(0xFF93C5FD),  // Light blue for dark mode
+    onPrimary = Color(0xFF1E3A8A),
+    primaryContainer = Color(0xFF1E40AF),
+    onPrimaryContainer = Color(0xFFDBEAFE),
+    secondary = Color(0xFF94A3B8),
+    onSecondary = Color(0xFF1E293B),
+    secondaryContainer = Color(0xFF334155),
+    onSecondaryContainer = Color(0xFFE2E8F0),
+    tertiary = Color(0xFFA78BFA),
+    onTertiary = Color(0xFF4C1D95),
+    tertiaryContainer = Color(0xFF5B21B6),
+    onTertiaryContainer = Color(0xFFEDE9FE),
+    error = Color(0xFFFCA5A5),
+    errorContainer = Color(0xFF7F1D1D),
+    onError = Color(0xFF7F1D1D),
+    onErrorContainer = Color(0xFFFEE2E2),
+    background = Color(0xFF0F172A),  // Dark blue background
+    onBackground = Color(0xFFF1F5F9),
+    surface = Color(0xFF1E293B),  // Dark surface
+    onSurface = Color(0xFFF1F5F9),
+    surfaceVariant = Color(0xFF334155),
+    onSurfaceVariant = Color(0xFFCBD5E1),
+    outline = Color(0xFF475569),
+    inverseOnSurface = Color(0xFF0F172A),
+    inverseSurface = Color(0xFFF1F5F9),
+    inversePrimary = Color(0xFF2563EB)
 )
-
-// Custom colors for header/footer bar (same as navigation surface)
-val NavBarColor = Color(0xFF000000)  // Pure black for navigation bar
 
 /**
  * Theme preference storage - platform-specific implementation

@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.theme.AppColors
 
 /**
  * Navigation tabs for the bottom navigation bar
@@ -51,7 +52,7 @@ enum class NavigationTab(
 }
 
 /**
- * Bottom navigation bar component - compact black style
+ * Bottom navigation bar component - white footer style
  */
 @Composable
 fun AppBottomNavigation(
@@ -60,14 +61,12 @@ fun AppBottomNavigation(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
-    // Pure black for the navigation bar
-    val navBarColor = Color(0xFF000000)
 
     NavigationBar(
-        modifier = modifier.height(88.dp),  // Increased height to prevent overlap
-        containerColor = navBarColor,
-        contentColor = Color.White,
-        tonalElevation = 0.dp  // No elevation tint
+        modifier = modifier.height(88.dp),
+        containerColor = AppColors.FooterBackground,
+        contentColor = AppColors.FooterInactiveText,
+        tonalElevation = 0.dp
     ) {
         NavigationTab.entries.forEach { tab ->
             val selected = currentTab == tab
@@ -86,7 +85,7 @@ fun AppBottomNavigation(
                     Icon(
                         imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                         contentDescription = label,
-                        modifier = Modifier.size(24.dp)  // Standard icon size
+                        modifier = Modifier.size(24.dp)
                     )
                 },
                 label = {
@@ -95,13 +94,12 @@ fun AppBottomNavigation(
                         style = MaterialTheme.typography.labelSmall
                     )
                 },
-                alwaysShowLabel = false,  // Only show label when selected (saves space on narrow screens)
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = Color(0xFF1A1A1A),  // Subtle dark indicator
-                    unselectedIconColor = Color(0xFF888888),  // Gray for unselected
-                    unselectedTextColor = Color(0xFF888888)
+                    selectedIconColor = AppColors.FooterActiveIcon,
+                    selectedTextColor = AppColors.FooterActiveText,
+                    indicatorColor = AppColors.FooterBackground,  // No visible indicator
+                    unselectedIconColor = AppColors.FooterInactiveIcon,
+                    unselectedTextColor = AppColors.FooterInactiveText
                 )
             )
         }

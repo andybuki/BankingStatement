@@ -35,6 +35,7 @@ import com.banking.statement.export.SpendingExportData
 import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.*
+import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.BankingStatementTheme
 import com.banking.statement.ui.theme.ThemeMode
 import kotlinx.coroutines.delay
@@ -234,7 +235,7 @@ fun App(
                                                     )
                                                 },
                                                 colors = FilterChipDefaults.filterChipColors(
-                                                    containerColor = Color(0xFF333333),
+                                                    containerColor = AppColors.HeaderSeparator,
                                                     selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                                                 )
                                             )
@@ -372,9 +373,9 @@ fun App(
                                                         val lineHeight = 2.5.dp.toPx()
                                                         val spacing = size.height / 4
                                                         val colors = listOf(
-                                                            Color(0xFF4CAF50),
-                                                            Color(0xFFE57373),
-                                                            Color(0xFF2196F3)
+                                                            AppColors.Income,
+                                                            AppColors.Expenses,
+                                                            AppColors.Primary
                                                         )
                                                         colors.forEachIndexed { index, color ->
                                                             val y = spacing * (index + 1)
@@ -392,7 +393,7 @@ fun App(
                                                     Canvas(modifier = Modifier.size(18.dp)) {
                                                         val strokeWidth = 3.dp.toPx()
                                                         drawArc(
-                                                            color = Color(0xFF4CAF50),
+                                                            color = AppColors.Income,
                                                             startAngle = -90f,
                                                             sweepAngle = 120f,
                                                             useCenter = false,
@@ -400,7 +401,7 @@ fun App(
                                                             size = Size(size.width, size.height)
                                                         )
                                                         drawArc(
-                                                            color = Color(0xFFE57373),
+                                                            color = AppColors.Expenses,
                                                             startAngle = 30f,
                                                             sweepAngle = 100f,
                                                             useCenter = false,
@@ -408,7 +409,7 @@ fun App(
                                                             size = Size(size.width, size.height)
                                                         )
                                                         drawArc(
-                                                            color = Color(0xFF2196F3),
+                                                            color = AppColors.Primary,
                                                             startAngle = 130f,
                                                             sweepAngle = 140f,
                                                             useCenter = false,
@@ -498,7 +499,7 @@ fun App(
                                                     )
                                                 },
                                                 colors = FilterChipDefaults.filterChipColors(
-                                                    containerColor = Color(0xFF333333),
+                                                    containerColor = AppColors.HeaderSeparator,
                                                     selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                                                 )
                                             )
@@ -763,7 +764,7 @@ fun AppHeader(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(elevation = 8.dp)
-            .background(Color(0xFF000000))
+            .background(AppColors.HeaderBackground)
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Column {
@@ -777,7 +778,7 @@ fun AppHeader(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = AppColors.HeaderText
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -800,13 +801,13 @@ fun AppHeader(
                         Text(
                             text = strings.income,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF888888)
+                            color = AppColors.HeaderSecondaryText
                         )
                         Text(
                             text = formatHeaderAmount(totalIncome),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4CAF50)
+                            color = AppColors.Income
                         )
                     }
 
@@ -815,13 +816,13 @@ fun AppHeader(
                         Text(
                             text = strings.expenses,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF888888)
+                            color = AppColors.HeaderSecondaryText
                         )
                         Text(
                             text = formatHeaderAmount(totalExpenses),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE57373)
+                            color = AppColors.Expenses
                         )
                     }
                 }
