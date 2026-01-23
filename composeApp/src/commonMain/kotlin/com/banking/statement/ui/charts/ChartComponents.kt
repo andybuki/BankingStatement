@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.MonthlySummary
 import kotlin.math.abs
@@ -106,7 +107,7 @@ fun CategorySpendingDonutChart(
                         text = formatCurrencyChart(totalExpenses),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE57373)
+                        color = AppColors.Expenses
                     )
                 }
             }
@@ -249,8 +250,8 @@ fun MonthlySpendingLineChart(
                     maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
                 }
 
-                val incomeColor = Color(0xFF4CAF50)
-                val expensesColor = Color(0xFFE57373)
+                val incomeColor = AppColors.Income
+                val expensesColor = AppColors.Expenses
                 val gridColor = MaterialTheme.colorScheme.outlineVariant
 
                 Canvas(
@@ -332,12 +333,12 @@ fun MonthlySpendingLineChart(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     LegendItem(
-                        color = Color(0xFF4CAF50),
+                        color = AppColors.Income,
                         label = strings.income
                     )
                     Spacer(modifier = Modifier.width(24.dp))
                     LegendItem(
-                        color = Color(0xFFE57373),
+                        color = AppColors.Expenses,
                         label = strings.expenses
                     )
                 }
@@ -361,13 +362,13 @@ fun MonthlySpendingLineChart(
                             Text(
                                 text = "+${formatAmountShort(month.income)}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF4CAF50)
+                                color = AppColors.Income
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = formatAmountShort(month.expenses),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFFE57373)
+                                color = AppColors.Expenses
                             )
                         }
                     }
@@ -433,8 +434,8 @@ fun IncomeVsExpensesBarChart(
                     maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
                 }
 
-                val incomeColor = Color(0xFF4CAF50)
-                val expensesColor = Color(0xFFE57373)
+                val incomeColor = AppColors.Income
+                val expensesColor = AppColors.Expenses
                 val gridColor = MaterialTheme.colorScheme.outlineVariant
 
                 Canvas(
@@ -501,12 +502,12 @@ fun IncomeVsExpensesBarChart(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     LegendItem(
-                        color = Color(0xFF4CAF50),
+                        color = AppColors.Income,
                         label = strings.income
                     )
                     Spacer(modifier = Modifier.width(24.dp))
                     LegendItem(
-                        color = Color(0xFFE57373),
+                        color = AppColors.Expenses,
                         label = strings.expenses
                     )
                 }
@@ -537,7 +538,7 @@ fun IncomeVsExpensesBarChart(
                                 Text(
                                     text = "+${formatAmountShort(month.income)}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF4CAF50)
+                                    color = AppColors.Income
                                 )
                                 Text(
                                     text = " / ",
@@ -547,7 +548,7 @@ fun IncomeVsExpensesBarChart(
                                 Text(
                                     text = formatAmountShort(month.expenses),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFFE57373)
+                                    color = AppColors.Expenses
                                 )
                                 Text(
                                     text = " = ",
@@ -558,7 +559,7 @@ fun IncomeVsExpensesBarChart(
                                     text = if (netAmount >= 0) "+${formatAmountShort(netAmount)}" else formatAmountShort(netAmount),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (netAmount >= 0) Color(0xFF4CAF50) else Color(0xFFE57373)
+                                    color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
                                 )
                             }
                         }

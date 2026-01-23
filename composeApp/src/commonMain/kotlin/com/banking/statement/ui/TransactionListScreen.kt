@@ -22,6 +22,7 @@ import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import bankingstatement.composeapp.generated.resources.share
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import org.jetbrains.compose.resources.painterResource
@@ -456,7 +457,7 @@ fun TransactionItem(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = if (transaction.amount >= 0) {
-                    Color(0xFF4CAF50) // Green for positive
+                    AppColors.Income // Green for positive
                 } else {
                     MaterialTheme.colorScheme.onSurface
                 }

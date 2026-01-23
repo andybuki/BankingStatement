@@ -28,6 +28,7 @@ import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import bankingstatement.composeapp.generated.resources.share
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
@@ -314,13 +315,13 @@ fun SpendingOverviewScreen(
                     SummaryCard(
                         title = strings.income,
                         amount = displayIncome,
-                        color = Color(0xFF4CAF50),
+                        color = AppColors.Income,
                         modifier = Modifier.weight(1f)
                     )
                     SummaryCard(
                         title = strings.expenses,
                         amount = displayExpenses,
-                        color = Color(0xFFE57373),
+                        color = AppColors.Expenses,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -333,9 +334,9 @@ fun SpendingOverviewScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = if (netAmount >= 0) {
-                            Color(0xFF4CAF50).copy(alpha = 0.1f)
+                            AppColors.Income.copy(alpha = 0.1f)
                         } else {
-                            Color(0xFFE57373).copy(alpha = 0.1f)
+                            AppColors.Expenses.copy(alpha = 0.1f)
                         }
                     ),
                     shape = RoundedCornerShape(12.dp)
@@ -355,7 +356,7 @@ fun SpendingOverviewScreen(
                             text = formatCurrency(netAmount),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = if (netAmount >= 0) Color(0xFF4CAF50) else Color(0xFFE57373)
+                            color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
                         )
                     }
                 }
@@ -672,7 +673,7 @@ private fun CategoryDetailsDialog(
                                     text = formatCurrency(tx.amount),
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFE57373)
+                                    color = AppColors.Expenses
                                 )
                             }
                         }
@@ -695,7 +696,7 @@ private fun CategoryDetailsDialog(
                             text = formatCurrency(transactions.sumOf { it.amount }),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE57373)
+                            color = AppColors.Expenses
                         )
                     }
                 }
@@ -784,7 +785,7 @@ private fun SpendingPieChart(
                         text = formatCurrency(totalExpenses),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE57373)
+                        color = AppColors.Expenses
                     )
                 }
             }
@@ -1133,7 +1134,7 @@ fun MonthlyItem(summary: MonthlySummary) {
                     Text(
                         text = formatCurrency(summary.income),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFF4CAF50)
+                        color = AppColors.Income
                     )
                 }
                 Column {
@@ -1145,7 +1146,7 @@ fun MonthlyItem(summary: MonthlySummary) {
                     Text(
                         text = formatCurrency(summary.expenses),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFFE57373)
+                        color = AppColors.Expenses
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -1158,7 +1159,7 @@ fun MonthlyItem(summary: MonthlySummary) {
                         text = formatCurrency(summary.netAmount),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        color = if (summary.netAmount >= 0) Color(0xFF4CAF50) else Color(0xFFE57373)
+                        color = if (summary.netAmount >= 0) AppColors.Income else AppColors.Expenses
                     )
                 }
             }

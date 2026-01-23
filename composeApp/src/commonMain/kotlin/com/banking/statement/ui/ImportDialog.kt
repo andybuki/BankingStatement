@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.theme.AppColors
 
 /**
  * Represents an existing account for selection
@@ -363,7 +364,7 @@ private fun AccountSelectionItem(
                         text = formatAmount(account.balance, "EUR"),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = if (account.balance >= 0) Color(0xFF4CAF50) else Color(0xFFE57373)
+                        color = if (account.balance >= 0) AppColors.Income else AppColors.Expenses
                     )
                 }
             }
