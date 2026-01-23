@@ -113,14 +113,13 @@ fun SpendingOverviewScreen(
     monthlySummary: List<MonthlySummary>,
     transactions: List<TransactionDisplay> = emptyList(),
     accounts: List<AccountFilterOption> = emptyList(),
+    selectedAccountId: Long? = null,  // Controlled from outside (App level)
     onBackClick: (() -> Unit)? = null,
     onShare: ((ExportFormat, SpendingExportData) -> Unit)? = null,
     showChartView: Boolean = false  // Controlled by App level
 ) {
     val strings = LocalStrings.current
-    var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     var selectedPeriod by remember { mutableStateOf(TimePeriod.ALL) }
-    var dropdownExpanded by remember { mutableStateOf(false) }
 
     // Custom date range state
     var customDateRange by remember { mutableStateOf(CustomDateRange()) }
@@ -188,15 +187,6 @@ fun SpendingOverviewScreen(
     val displayCategorySpending = filteredData.categorySpending
     val displayMonthlySummary = filteredData.monthlySummary
 
-    // Get selected account name for display
-    val selectedAccountName = remember(selectedAccountId, accounts) {
-        if (selectedAccountId == null) {
-            strings.allAccounts
-        } else {
-            accounts.find { it.id == selectedAccountId }?.name ?: strings.allAccounts
-        }
-    }
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -204,53 +194,6 @@ fun SpendingOverviewScreen(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-            // Account filter dropdown (only show if multiple accounts)
-            if (accounts.size > 1) {
-                item {
-                    Box {
-                        OutlinedButton(
-                            onClick = { dropdownExpanded = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = selectedAccountName,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text(" ▼")
-                        }
-
-                        DropdownMenu(
-                            expanded = dropdownExpanded,
-                            onDismissRequest = { dropdownExpanded = false },
-                            modifier = Modifier.fillMaxWidth(0.9f)
-                        ) {
-                            // All Accounts option
-                            DropdownMenuItem(
-                                text = { Text(strings.allAccounts) },
-                                onClick = {
-                                    selectedAccountId = null
-                                    dropdownExpanded = false
-                                }
-                            )
-                            HorizontalDivider()
-                            // Individual accounts
-                            accounts.forEach { account ->
-                                if (account.id != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(account.name) },
-                                        onClick = {
-                                            selectedAccountId = account.id
-                                            dropdownExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // Time period toggle
             item {
                 SingleChoiceSegmentedButtonRow(
