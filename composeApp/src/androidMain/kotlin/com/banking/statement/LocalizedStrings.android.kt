@@ -55,6 +55,8 @@ actual fun provideStrings(): AppStrings = AppStrings(
     importComplete = stringResource(R.string.import_complete),
     done = stringResource(R.string.done),
     add = stringResource(R.string.add),
+    duplicateStatement = stringResource(R.string.duplicate_statement),
+    duplicateStatementMessage = stringResource(R.string.duplicate_statement_message),
 
     manageAccounts = stringResource(R.string.manage_accounts),
     noAccounts = stringResource(R.string.no_accounts),

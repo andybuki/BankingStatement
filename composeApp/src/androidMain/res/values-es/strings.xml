@@ -3,7 +3,7 @@
     <string name="app_name">Bank++</string>
 
     <!-- Home Screen -->
-    <string name="home_title">Analizador de Extractos</string>
+    <string name="home_title">Bank++</string>
     <string name="home_subtitle">Importa tus extractos bancarios para analizar</string>
     <string name="import_button">Importar Extracto</string>
     <string name="processing">Procesando…</string>
@@ -69,6 +69,8 @@
     <string name="new_account_message">Se ha creado la nueva cuenta \"%s\".</string>
     <string name="transactions_imported_count">✓ %d transacciones importadas</string>
     <string name="duplicates_skipped">○ %d duplicados omitidos</string>
+    <string name="duplicate_statement">Este extracto ya fue importado</string>
+    <string name="duplicate_statement_message">Este archivo ya ha sido importado. No se añadieron nuevas transacciones.</string>
     <string name="done">Listo</string>
     <string name="add">Añadir</string>
 

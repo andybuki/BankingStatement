@@ -124,6 +124,13 @@ SELECT COUNT(*) FROM statements;
 getStatementCountByAccount:
 SELECT COUNT(*) FROM statements WHERE account_id = ?;
 
+-- Check for duplicate statement by file_name and account_id
+findDuplicateStatement:
+SELECT id FROM statements
+WHERE account_id = ?
+  AND file_name = ?
+LIMIT 1;
+
 deleteStatementsByAccount:
 DELETE FROM statements WHERE account_id = ?;
 

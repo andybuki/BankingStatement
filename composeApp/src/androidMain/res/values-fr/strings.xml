@@ -3,7 +3,7 @@
     <string name="app_name">Bank++</string>
 
     <!-- Home Screen -->
-    <string name="home_title">Analyseur de Relevés</string>
+    <string name="home_title">Bank++</string>
     <string name="home_subtitle">Importez vos relevés bancaires pour les analyser</string>
     <string name="import_button">Importer un Relevé</string>
     <string name="processing">Traitement…</string>
@@ -69,6 +69,8 @@
     <string name="new_account_message">Le nouveau compte \"%s\" a été créé.</string>
     <string name="transactions_imported_count">✓ %d transactions importées</string>
     <string name="duplicates_skipped">○ %d doublons ignorés</string>
+    <string name="duplicate_statement">Ce relevé a déjà été importé</string>
+    <string name="duplicate_statement_message">Ce fichier a déjà été importé. Aucune nouvelle transaction n\'a été ajoutée.</string>
     <string name="done">Terminé</string>
     <string name="add">Ajouter</string>
 

@@ -3,7 +3,7 @@
     <string name="app_name">Bank++</string>
 
     <!-- Home Screen -->
-    <string name="home_title">Bank Statement Analyzer</string>
+    <string name="home_title">Bank++</string>
     <string name="home_subtitle">Import your bank statements to analyze</string>
     <string name="import_button">Import Statement</string>
     <string name="processing">Processing…</string>
@@ -69,6 +69,8 @@
     <string name="new_account_message">New account \"%s\" has been created.</string>
     <string name="transactions_imported_count">✓ %d transactions imported</string>
     <string name="duplicates_skipped">○ %d duplicates skipped</string>
+    <string name="duplicate_statement">This statement was already imported</string>
+    <string name="duplicate_statement_message">This file has already been imported. No new transactions were added.</string>
     <string name="done">Done</string>
     <string name="add">Add</string>
 

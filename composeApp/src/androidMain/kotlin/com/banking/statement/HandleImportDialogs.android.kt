@@ -45,6 +45,7 @@ actual fun HandleImportDialogs(
             transactionsImported = result.transactionsImported,
             duplicatesSkipped = result.duplicatesSkipped,
             isNewAccount = result.isNewAccount,
+            isDuplicateStatement = result.isDuplicateStatement,
             onDismiss = {
                 onDismissSuccessDialog?.invoke()
             }
