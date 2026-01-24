@@ -18,6 +18,7 @@ data class AppStrings(
     val accounts: String,
     val statements: String,
     val transactions: String,
+    val total: String,
     val viewTransactions: String,
     val viewSpending: String,
 
@@ -73,6 +74,7 @@ data class AppStrings(
     val deleteAccount: String,
     val deleteAccountConfirm: String,
     val delete: String,
+    val dangerZone: String,
     val clearAllData: String,
     val clearAllDataConfirm: String,
     val clear: String,
@@ -217,6 +219,7 @@ fun defaultEnglishStrings() = AppStrings(
     accounts = "Accounts",
     statements = "Statements",
     transactions = "Transactions",
+    total = "Total",
     viewTransactions = "Transactions",
     viewSpending = "Spending",
 
@@ -266,6 +269,7 @@ fun defaultEnglishStrings() = AppStrings(
     deleteAccount = "Delete Account",
     deleteAccountConfirm = "Are you sure you want to delete \"%s\"? This will remove all statements and transactions for this account.",
     delete = "Delete",
+    dangerZone = "Danger Zone",
     clearAllData = "Clear All Data",
     clearAllDataConfirm = "Are you sure you want to delete all data? This will remove all accounts, statements, and transactions. This action cannot be undone.",
     clear = "Clear",

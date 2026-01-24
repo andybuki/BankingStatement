@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -44,126 +45,118 @@ fun CategoryManagementScreen(
     var editingCategory by remember { mutableStateOf<CustomCategory?>(null) }
     var deletingCategory by remember { mutableStateOf<CustomCategory?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = strings.manageCategories,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Image(
-                            painter = painterResource(Res.drawable.back),
-                            contentDescription = strings.back,
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Compact header row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(onClick = onBackClick) {
+                    Image(
+                        painter = painterResource(Res.drawable.back),
+                        contentDescription = strings.back,
+                        modifier = Modifier.size(24.dp),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                    )
+                }
                 Text(
-                    text = "+",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Custom Categories Section
-            item {
-                Text(
-                    text = strings.customCategories,
-                    style = MaterialTheme.typography.titleLarge,
+                    text = strings.manageCategories,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                    modifier = Modifier.weight(1f)
                 )
+                // Add button in header instead of FAB
+                FilledTonalButton(
+                    onClick = { showAddDialog = true },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "+ ${strings.add}",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
             }
 
-            if (customCategories.isEmpty()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Custom Categories Section
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                    Text(
+                        text = strings.customCategories,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                    )
+                }
+
+                if (customCategories.isEmpty()) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text(
-                                text = "🏷️",
-                                style = MaterialTheme.typography.displayMedium
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = strings.noCategoriesYet,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = strings.createFirstCategory,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = strings.noCategoriesYet,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = strings.createFirstCategory,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
+                } else {
+                    items(customCategories) { category ->
+                        CustomCategoryItem(
+                            category = category,
+                            onEdit = { editingCategory = category },
+                            onDelete = { deletingCategory = category }
+                        )
+                    }
                 }
-            } else {
-                items(customCategories) { category ->
-                    CustomCategoryItem(
-                        category = category,
-                        onEdit = { editingCategory = category },
-                        onDelete = { deletingCategory = category }
+
+                // Predefined Categories Section
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = strings.predefinedCategories,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
-            }
 
-            // Predefined Categories Section
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = strings.predefinedCategories,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    text = "These categories are built-in and cannot be modified",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                items(TransactionCategory.entries.toList()) { category ->
+                    PredefinedCategoryItem(category = category)
+                }
 
-            items(TransactionCategory.entries.toList()) { category ->
-                PredefinedCategoryItem(category = category)
-            }
-
-            // Bottom spacing
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
+                // Bottom spacing
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }

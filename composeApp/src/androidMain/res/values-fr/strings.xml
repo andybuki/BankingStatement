@@ -22,6 +22,7 @@
     <string name="accounts">Comptes</string>
     <string name="statements">Relevés</string>
     <string name="transactions">Transactions</string>
+    <string name="total">Total</string>
     <string name="view_transactions">Transactions</string>
     <string name="view_spending">Dépenses</string>
 
@@ -100,6 +101,7 @@
     <string name="delete_account">Supprimer le Compte</string>
     <string name="delete_account_confirm">Êtes-vous sûr de vouloir supprimer \"%s\"? Tous les relevés et transactions de ce compte seront supprimés.</string>
     <string name="delete">Supprimer</string>
+    <string name="danger_zone">Zone de Danger</string>
     <string name="clear_all_data">Effacer Toutes les Données</string>
     <string name="clear_all_data_confirm">Êtes-vous sûr de vouloir supprimer toutes les données? Tous les comptes, relevés et transactions seront supprimés. Cette action est irréversible.</string>
     <string name="clear">Effacer</string>

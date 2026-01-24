@@ -22,6 +22,7 @@
     <string name="accounts">Cuentas</string>
     <string name="statements">Extractos</string>
     <string name="transactions">Transacciones</string>
+    <string name="total">Total</string>
     <string name="view_transactions">Transacciones</string>
     <string name="view_spending">Gastos</string>
 
@@ -100,6 +101,7 @@
     <string name="delete_account">Eliminar Cuenta</string>
     <string name="delete_account_confirm">¿Estás seguro de que deseas eliminar \"%s\"? Se eliminarán todos los extractos y transacciones de esta cuenta.</string>
     <string name="delete">Eliminar</string>
+    <string name="danger_zone">Zona de Peligro</string>
     <string name="clear_all_data">Borrar Todos los Datos</string>
     <string name="clear_all_data_confirm">¿Estás seguro de que deseas eliminar todos los datos? Se eliminarán todas las cuentas, extractos y transacciones. Esta acción no se puede deshacer.</string>
     <string name="clear">Borrar</string>
