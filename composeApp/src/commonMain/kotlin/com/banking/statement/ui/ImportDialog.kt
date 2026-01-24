@@ -432,6 +432,7 @@ fun ImportSuccessDialog(
     transactionsImported: Int,
     duplicatesSkipped: Int,
     isNewAccount: Boolean,
+    isDuplicateStatement: Boolean = false,
     onDismiss: () -> Unit
 ) {
     val strings = LocalStrings.current
@@ -440,21 +441,29 @@ fun ImportSuccessDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (isNewAccount) strings.accountCreated else strings.importComplete,
+                text = when {
+                    isDuplicateStatement -> strings.duplicateStatement
+                    isNewAccount -> strings.accountCreated
+                    else -> strings.importComplete
+                },
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (isNewAccount) {
-                    Text("New account \"$accountName\" has been created.")
-                }
-                Text("✓ $transactionsImported ${strings.transactions.lowercase()}")
-                if (duplicatesSkipped > 0) {
-                    Text(
-                        "○ $duplicatesSkipped duplicates skipped",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                if (isDuplicateStatement) {
+                    Text(strings.duplicateStatementMessage)
+                } else {
+                    if (isNewAccount) {
+                        Text("New account \"$accountName\" has been created.")
+                    }
+                    Text("✓ $transactionsImported ${strings.transactions.lowercase()}")
+                    if (duplicatesSkipped > 0) {
+                        Text(
+                            "○ $duplicatesSkipped duplicates skipped",
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
                 }
             }
         },

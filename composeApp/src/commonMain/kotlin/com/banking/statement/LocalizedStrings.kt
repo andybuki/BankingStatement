@@ -63,6 +63,8 @@ data class AppStrings(
     val importComplete: String,
     val done: String,
     val add: String,
+    val duplicateStatement: String,
+    val duplicateStatementMessage: String,
 
     // Account Management
     val manageAccounts: String,
@@ -206,7 +208,7 @@ expect fun provideStrings(): AppStrings
  */
 fun defaultEnglishStrings() = AppStrings(
     appName = "Bank++",
-    homeTitle = "Bank Statement Analyzer",
+    homeTitle = "Bank++",
     homeSubtitle = "Import your bank statements to analyze",
     importButton = "Import Statement",
     processing = "Processing...",
@@ -255,6 +257,8 @@ fun defaultEnglishStrings() = AppStrings(
     importComplete = "Import Complete!",
     done = "Done",
     add = "Add",
+    duplicateStatement = "This statement was already imported",
+    duplicateStatementMessage = "This file has already been imported. No new transactions were added.",
 
     manageAccounts = "Manage Accounts",
     noAccounts = "No accounts yet",

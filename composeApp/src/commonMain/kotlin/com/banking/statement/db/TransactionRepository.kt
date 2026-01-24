@@ -33,7 +33,8 @@ data class ImportResult(
     val accountId: Long,
     val transactionsImported: Int,
     val duplicatesSkipped: Int,
-    val isNewAccount: Boolean
+    val isNewAccount: Boolean,
+    val isDuplicateStatement: Boolean = false
 )
 
 class TransactionRepository(
@@ -173,9 +174,25 @@ class TransactionRepository(
         filePath: String?,
         sourceType: String
     ): ImportResult {
-        //val importDate = kotlin.time.Clock.System.now().epochSeconds
-        val importDate = Clock.System.now().epochSeconds
+        // Check for duplicate statement first
+        val existingStatement = queries.findDuplicateStatement(
+            account_id = accountId,
+            file_name = fileName
+        ).executeAsOneOrNull()
 
+        if (existingStatement != null) {
+            // Statement already exists - don't create a duplicate
+            return ImportResult(
+                statementId = existingStatement,
+                accountId = accountId,
+                transactionsImported = 0,
+                duplicatesSkipped = parseResult.transactions.size,
+                isNewAccount = false,
+                isDuplicateStatement = true
+            )
+        }
+
+        val importDate = Clock.System.now().epochSeconds
 
         // Insert statement record
         queries.insertStatement(

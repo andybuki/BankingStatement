@@ -3,7 +3,7 @@
     <string name="app_name">Bank++</string>
 
     <!-- Home Screen -->
-    <string name="home_title">Kontoauszug Analysator</string>
+    <string name="home_title">Bank++</string>
     <string name="home_subtitle">Importieren Sie Ihre Kontoauszüge zur Analyse</string>
     <string name="import_button">Auszug importieren</string>
     <string name="processing">Verarbeitung…</string>
@@ -69,6 +69,8 @@
     <string name="new_account_message">Neues Konto \"%s\" wurde erstellt.</string>
     <string name="transactions_imported_count">✓ %d Buchungen importiert</string>
     <string name="duplicates_skipped">○ %d Duplikate übersprungen</string>
+    <string name="duplicate_statement">Dieser Auszug wurde bereits importiert</string>
+    <string name="duplicate_statement_message">Diese Datei wurde bereits importiert. Es wurden keine neuen Buchungen hinzugefügt.</string>
     <string name="done">Fertig</string>
     <string name="add">Hinzufügen</string>
 
