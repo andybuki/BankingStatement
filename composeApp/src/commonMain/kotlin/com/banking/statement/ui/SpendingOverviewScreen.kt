@@ -585,11 +585,15 @@ private fun CategoryDetailsDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
-                    // Transaction list
-                    Column(
+                    // Scrollable transaction list with max height
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 300.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        transactions.forEachIndexed { index, tx ->
+                        items(transactions.size) { index ->
+                            val tx = transactions[index]
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()

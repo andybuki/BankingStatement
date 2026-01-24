@@ -15,6 +15,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     accounts = stringResource(R.string.accounts),
     statements = stringResource(R.string.statements),
     transactions = stringResource(R.string.transactions),
+    total = stringResource(R.string.total),
     viewTransactions = stringResource(R.string.view_transactions),
     viewSpending = stringResource(R.string.view_spending),
 
@@ -64,6 +65,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     deleteAccount = stringResource(R.string.delete_account),
     deleteAccountConfirm = stringResource(R.string.delete_account_confirm),
     delete = stringResource(R.string.delete),
+    dangerZone = stringResource(R.string.danger_zone),
     clearAllData = stringResource(R.string.clear_all_data),
     clearAllDataConfirm = stringResource(R.string.clear_all_data_confirm),
     clear = stringResource(R.string.clear),

@@ -129,6 +129,10 @@ fun App(
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     var accountDropdownExpanded by remember { mutableStateOf(false) }
 
+    // Time period selector for Spending tab
+    var selectedTimePeriod by remember { mutableStateOf("month") }
+    var timePeriodDropdownExpanded by remember { mutableStateOf(false) }
+
     // Calculate filtered income/expenses based on selected account
     val filteredIncome = remember(transactions, selectedAccountId) {
         val filtered = if (selectedAccountId == null) {
@@ -208,6 +212,7 @@ fun App(
                             onPickFile = onPickFile,
                             importState = importState,
                             stats = stats,
+                            accounts = accountsForManagement,
                             totalIncome = totalIncome,
                             totalExpenses = totalExpenses,
                             showSuccessCard = showSuccessCard,
@@ -312,9 +317,65 @@ fun App(
                         NavigationTab.SPENDING -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.spendingTitle,
-                                totalIncome = filteredIncome,
-                                totalExpenses = filteredExpenses,
+                                showSummary = false,
                                 actions = {
+                                    // Time period selector
+                                    Box {
+                                        FilterChip(
+                                            selected = true,
+                                            onClick = { timePeriodDropdownExpanded = true },
+                                            label = {
+                                                Text(
+                                                    text = when (selectedTimePeriod) {
+                                                        "week" -> strings.periodWeek
+                                                        "month" -> strings.periodMonth
+                                                        "year" -> strings.periodYear
+                                                        "all" -> strings.periodAll
+                                                        else -> strings.periodMonth
+                                                    },
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = Color.White
+                                                )
+                                            },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                containerColor = AppColors.HeaderSeparator,
+                                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                            )
+                                        )
+                                        DropdownMenu(
+                                            expanded = timePeriodDropdownExpanded,
+                                            onDismissRequest = { timePeriodDropdownExpanded = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text(strings.periodWeek) },
+                                                onClick = {
+                                                    selectedTimePeriod = "week"
+                                                    timePeriodDropdownExpanded = false
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(strings.periodMonth) },
+                                                onClick = {
+                                                    selectedTimePeriod = "month"
+                                                    timePeriodDropdownExpanded = false
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(strings.periodYear) },
+                                                onClick = {
+                                                    selectedTimePeriod = "year"
+                                                    timePeriodDropdownExpanded = false
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text(strings.periodAll) },
+                                                onClick = {
+                                                    selectedTimePeriod = "all"
+                                                    timePeriodDropdownExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
                                     // Account filter dropdown
                                     if (accounts.size > 1) {
                                         Box {
@@ -331,7 +392,7 @@ fun App(
                                                     )
                                                 },
                                                 colors = FilterChipDefaults.filterChipColors(
-                                                    containerColor = Color(0xFF333333),
+                                                    containerColor = AppColors.HeaderSeparator,
                                                     selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                                                 )
                                             )
@@ -593,6 +654,7 @@ fun HomeScreen(
     onPickFile: ((List<String>) -> Unit)?,
     importState: ImportState,
     stats: DatabaseStats,
+    accounts: List<AccountManagementItem> = emptyList(),
     totalIncome: Double = 0.0,
     totalExpenses: Double = 0.0,
     showSuccessCard: Boolean = false,  // Controlled by App level state
@@ -632,7 +694,7 @@ fun HomeScreen(
 
             // Stats Card (simplified - no navigation buttons)
             if (stats.totalStatements > 0 || stats.totalTransactions > 0 || stats.totalAccounts > 0) {
-                StatsCard(stats = stats)
+                StatsCard(stats = stats, accounts = accounts)
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
@@ -765,10 +827,10 @@ fun AppHeader(
             .fillMaxWidth()
             .shadow(elevation = 8.dp)
             .background(AppColors.HeaderBackground)
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Column {
-            // Title row with actions
+            // Compact single-row layout with title, summary, and actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -776,7 +838,7 @@ fun AppHeader(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.HeaderText
                 )
@@ -789,38 +851,39 @@ fun AppHeader(
             }
 
             if (showSummary) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Income and Expenses summary row
+                // Compact income and expenses summary row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Income
-                    Column {
+                    // Income - compact inline layout
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = strings.income,
+                            text = "${strings.income}: ",
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.HeaderSecondaryText
                         )
                         Text(
                             text = formatHeaderAmount(totalIncome),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.Income
                         )
                     }
 
-                    // Expenses
-                    Column(horizontalAlignment = Alignment.End) {
+                    // Expenses - compact inline layout
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = strings.expenses,
+                            text = "${strings.expenses}: ",
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.HeaderSecondaryText
                         )
                         Text(
                             text = formatHeaderAmount(totalExpenses),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = AppColors.Expenses
                         )
@@ -833,7 +896,8 @@ fun AppHeader(
 
 @Composable
 fun StatsCard(
-    stats: DatabaseStats
+    stats: DatabaseStats,
+    accounts: List<AccountManagementItem> = emptyList()
 ) {
     val strings = LocalStrings.current
 
@@ -847,23 +911,74 @@ fun StatsCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            // Stats row with better styling
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatItem(
-                    label = strings.accounts,
-                    value = stats.totalAccounts.toString()
-                )
-                StatItem(
-                    label = strings.statements,
-                    value = stats.totalStatements.toString()
-                )
-                StatItem(
-                    label = strings.transactions,
-                    value = stats.totalTransactions.toString()
-                )
+            // Show per-bank breakdown if we have account data
+            if (accounts.isNotEmpty()) {
+                accounts.forEach { account ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = account.bankName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${account.statementCount} ${strings.statements.lowercase()}, ${account.transactionCount} ${strings.transactions.lowercase()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+
+                if (accounts.size > 1) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                    )
+                    // Total row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = strings.total,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${stats.totalStatements} ${strings.statements.lowercase()}, ${stats.totalTransactions} ${strings.transactions.lowercase()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            } else {
+                // Fallback to simple stats row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatItem(
+                        label = strings.accounts,
+                        value = stats.totalAccounts.toString()
+                    )
+                    StatItem(
+                        label = strings.statements,
+                        value = stats.totalStatements.toString()
+                    )
+                    StatItem(
+                        label = strings.transactions,
+                        value = stats.totalTransactions.toString()
+                    )
+                }
             }
         }
     }

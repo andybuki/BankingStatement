@@ -114,23 +114,44 @@ fun AccountManagementScreen(
             onThemeModeChange = onThemeModeChange
         )
 
-        // Clear all data button (only show if there's data)
+        // Danger Zone Section (only show if there's data)
         if (accounts.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            OutlinedButton(
-                onClick = { showClearAllDialog = true },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                ),
-                border = ButtonDefaults.outlinedButtonBorder.copy(
-                    brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.error)
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
                 )
             ) {
-                Text(strings.clearAllData)
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = strings.dangerZone,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = { showClearAllDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        )
+                    ) {
+                        Text(strings.clearAllData)
+                    }
+                }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 
     // Delete account confirmation dialog
