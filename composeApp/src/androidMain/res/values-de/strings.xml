@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Bank++</string>
+    <string name="app_name">Bankwise</string>
 
     <!-- Home Screen -->
-    <string name="home_title">Bank++</string>
+    <string name="home_title">Bankwise</string>
     <string name="home_subtitle">Importieren Sie Ihre Kontoauszüge zur Analyse</string>
     <string name="import_button">Auszug importieren</string>
     <string name="processing">Verarbeitung…</string>
