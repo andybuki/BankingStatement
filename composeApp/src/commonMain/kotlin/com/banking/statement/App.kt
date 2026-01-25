@@ -432,8 +432,7 @@ fun App(
                                                             totalIncome = filteredIncome,
                                                             totalExpenses = filteredExpenses,
                                                             categorySpending = categorySpending,
-                                                            monthlySummary = monthlySummary,
-                                                            selectedPeriod = selectedTimePeriod
+                                                            monthlySummary = monthlySummary
                                                         )
                                                         onShareSpending(ExportFormat.CSV, exportData)
                                                     }
@@ -446,8 +445,7 @@ fun App(
                                                             totalIncome = filteredIncome,
                                                             totalExpenses = filteredExpenses,
                                                             categorySpending = categorySpending,
-                                                            monthlySummary = monthlySummary,
-                                                            selectedPeriod = selectedTimePeriod
+                                                            monthlySummary = monthlySummary
                                                         )
                                                         onShareSpending(ExportFormat.PDF, exportData)
                                                     }
