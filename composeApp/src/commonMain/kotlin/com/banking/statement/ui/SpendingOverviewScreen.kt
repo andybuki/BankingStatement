@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -116,10 +117,19 @@ fun SpendingOverviewScreen(
     selectedAccountId: Long? = null,  // Controlled from outside (App level)
     onBackClick: (() -> Unit)? = null,
     onShare: ((ExportFormat, SpendingExportData) -> Unit)? = null,
-    showChartView: Boolean = false  // Controlled by App level
+    showChartView: Boolean = false,  // Controlled by App level
+    selectedTimePeriod: String = "all",  // Controlled by App level
+    onTimePeriodChange: ((String) -> Unit)? = null  // Callback for custom date
 ) {
     val strings = LocalStrings.current
-    var selectedPeriod by remember { mutableStateOf(TimePeriod.ALL) }
+    // Convert string to TimePeriod enum
+    val selectedPeriod = when (selectedTimePeriod) {
+        "week" -> TimePeriod.WEEK
+        "month" -> TimePeriod.MONTH
+        "year" -> TimePeriod.YEAR
+        "custom" -> TimePeriod.CUSTOM
+        else -> TimePeriod.ALL
+    }
 
     // Custom date range state
     var customDateRange by remember { mutableStateOf(CustomDateRange()) }
@@ -127,6 +137,13 @@ fun SpendingOverviewScreen(
 
     // Category drill-down state
     var selectedCategoryForDetails by remember { mutableStateOf<TransactionCategory?>(null) }
+
+    // Auto-open date picker when custom is selected
+    LaunchedEffect(selectedPeriod) {
+        if (selectedPeriod == TimePeriod.CUSTOM && customDateRange.startDate == null) {
+            showDateRangeDialog = true
+        }
+    }
 
     // Filter transactions based on selected account and time period
     val filteredData = remember(transactions, selectedAccountId, selectedPeriod, customDateRange) {
@@ -194,57 +211,45 @@ fun SpendingOverviewScreen(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-            // Time period toggle
+            // Custom date range display and dialog trigger (time period selector is in App header)
             item {
-                SingleChoiceSegmentedButtonRow(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    TimePeriod.entries.forEachIndexed { index, period ->
-                        SegmentedButton(
-                            selected = selectedPeriod == period,
-                            onClick = {
-                                if (period == TimePeriod.CUSTOM) {
-                                    showDateRangeDialog = true
-                                }
-                                selectedPeriod = period
-                            },
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = TimePeriod.entries.size
-                            )
+                // Show selected custom date range when Custom is selected
+                if (selectedPeriod == TimePeriod.CUSTOM) {
+                    if (customDateRange.startDate != null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                                .clickable { showDateRangeDialog = true }
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = when (period) {
-                                    TimePeriod.WEEK -> strings.periodWeek
-                                    TimePeriod.MONTH -> strings.periodMonth
-                                    TimePeriod.YEAR -> strings.periodYear
-                                    TimePeriod.ALL -> strings.periodAll
-                                    TimePeriod.CUSTOM -> strings.periodCustom
-                                },
-                                style = MaterialTheme.typography.labelMedium
+                                text = "📅 ${customDateRange.startDate ?: ""} - ${customDateRange.endDate ?: ""}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
-                    }
-                }
-
-                // Show selected custom date range
-                if (selectedPeriod == TimePeriod.CUSTOM && customDateRange.startDate != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-                            .clickable { showDateRangeDialog = true }
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "📅 ${customDateRange.startDate ?: ""} - ${customDateRange.endDate ?: ""}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                    } else {
+                        // Show prompt to select date range
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                                .clickable { showDateRangeDialog = true }
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "📅 ${strings.selectDateRange}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
