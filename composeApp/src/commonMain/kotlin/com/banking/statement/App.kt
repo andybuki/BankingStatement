@@ -131,7 +131,6 @@ fun App(
 
     // Time period selector for Spending tab
     var selectedTimePeriod by remember { mutableStateOf("month") }
-    var timePeriodDropdownExpanded by remember { mutableStateOf(false) }
 
     // Calculate filtered income/expenses based on selected account
     val filteredIncome = remember(transactions, selectedAccountId) {
@@ -197,7 +196,10 @@ fun App(
                 bottomBar = {
                     AppBottomNavigation(
                         currentTab = currentTab,
-                        onTabSelected = { currentTab = it }
+                        onTabSelected = {
+                            currentTab = it
+                            showCategoryManagement = false  // Close category management when switching tabs
+                        }
                     )
                 }
             ) { paddingValues ->
@@ -315,25 +317,33 @@ fun App(
                             )
                         }
                         NavigationTab.SPENDING -> Column(modifier = Modifier.fillMaxSize()) {
-                            AppHeader(
-                                title = strings.spendingTitle,
-                                showSummary = false,
-                                actions = {
-                                    // Time period selector
+                            // Time period tabs in header
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(AppColors.HeaderBackground)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = strings.spendingTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppColors.HeaderText
+                                )
+                                // Account filter (if multiple accounts)
+                                if (accounts.size > 1) {
                                     Box {
                                         FilterChip(
-                                            selected = true,
-                                            onClick = { timePeriodDropdownExpanded = true },
+                                            selected = selectedAccountId != null,
+                                            onClick = { accountDropdownExpanded = true },
                                             label = {
                                                 Text(
-                                                    text = when (selectedTimePeriod) {
-                                                        "week" -> strings.periodWeek
-                                                        "month" -> strings.periodMonth
-                                                        "year" -> strings.periodYear
-                                                        "all" -> strings.periodAll
-                                                        else -> strings.periodMonth
-                                                    },
-                                                    style = MaterialTheme.typography.labelMedium,
+                                                    text = selectedAccountId?.let { id ->
+                                                        accounts.find { it.id == id }?.name ?: strings.allAccounts
+                                                    } ?: strings.allAccounts,
+                                                    style = MaterialTheme.typography.labelSmall,
                                                     color = Color.White
                                                 )
                                             },
@@ -343,189 +353,65 @@ fun App(
                                             )
                                         )
                                         DropdownMenu(
-                                            expanded = timePeriodDropdownExpanded,
-                                            onDismissRequest = { timePeriodDropdownExpanded = false }
+                                            expanded = accountDropdownExpanded,
+                                            onDismissRequest = { accountDropdownExpanded = false }
                                         ) {
                                             DropdownMenuItem(
-                                                text = { Text(strings.periodWeek) },
+                                                text = { Text(strings.allAccounts) },
                                                 onClick = {
-                                                    selectedTimePeriod = "week"
-                                                    timePeriodDropdownExpanded = false
+                                                    selectedAccountId = null
+                                                    accountDropdownExpanded = false
                                                 }
                                             )
-                                            DropdownMenuItem(
-                                                text = { Text(strings.periodMonth) },
-                                                onClick = {
-                                                    selectedTimePeriod = "month"
-                                                    timePeriodDropdownExpanded = false
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text(strings.periodYear) },
-                                                onClick = {
-                                                    selectedTimePeriod = "year"
-                                                    timePeriodDropdownExpanded = false
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text(strings.periodAll) },
-                                                onClick = {
-                                                    selectedTimePeriod = "all"
-                                                    timePeriodDropdownExpanded = false
-                                                }
-                                            )
-                                        }
-                                    }
-                                    // Account filter dropdown
-                                    if (accounts.size > 1) {
-                                        Box {
-                                            FilterChip(
-                                                selected = selectedAccountId != null,
-                                                onClick = { accountDropdownExpanded = true },
-                                                label = {
-                                                    Text(
-                                                        text = selectedAccountId?.let { id ->
-                                                            accounts.find { it.id == id }?.name ?: strings.allAccounts
-                                                        } ?: strings.allAccounts,
-                                                        style = MaterialTheme.typography.labelMedium,
-                                                        color = Color.White
-                                                    )
-                                                },
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    containerColor = AppColors.HeaderSeparator,
-                                                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                                                )
-                                            )
-                                            DropdownMenu(
-                                                expanded = accountDropdownExpanded,
-                                                onDismissRequest = { accountDropdownExpanded = false }
-                                            ) {
+                                            accounts.forEach { account ->
                                                 DropdownMenuItem(
-                                                    text = { Text(strings.allAccounts) },
+                                                    text = { Text(account.name) },
                                                     onClick = {
-                                                        selectedAccountId = null
+                                                        selectedAccountId = account.id
                                                         accountDropdownExpanded = false
-                                                    }
-                                                )
-                                                accounts.forEach { account ->
-                                                    DropdownMenuItem(
-                                                        text = { Text(account.name) },
-                                                        onClick = {
-                                                            selectedAccountId = account.id
-                                                            accountDropdownExpanded = false
-                                                        }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                    // Chart toggle button
-                                    if (categorySpending.isNotEmpty()) {
-                                        IconButton(onClick = { showChartView = !showChartView }) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(24.dp)
-                                                    .clip(RoundedCornerShape(4.dp)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                if (showChartView) {
-                                                    // List icon - three colored horizontal lines
-                                                    Canvas(modifier = Modifier.size(18.dp)) {
-                                                        val lineHeight = 2.5.dp.toPx()
-                                                        val spacing = size.height / 4
-                                                        val colors = listOf(
-                                                            AppColors.Income,
-                                                            AppColors.Expenses,
-                                                            AppColors.Primary
-                                                        )
-                                                        colors.forEachIndexed { index, color ->
-                                                            val y = spacing * (index + 1)
-                                                            drawLine(
-                                                                color = color,
-                                                                start = Offset(0f, y),
-                                                                end = Offset(size.width, y),
-                                                                strokeWidth = lineHeight,
-                                                                cap = StrokeCap.Round
-                                                            )
-                                                        }
-                                                    }
-                                                } else {
-                                                    // Pie chart icon - three colored arcs
-                                                    Canvas(modifier = Modifier.size(18.dp)) {
-                                                        val strokeWidth = 3.dp.toPx()
-                                                        drawArc(
-                                                            color = AppColors.Income,
-                                                            startAngle = -90f,
-                                                            sweepAngle = 120f,
-                                                            useCenter = false,
-                                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                                            size = Size(size.width, size.height)
-                                                        )
-                                                        drawArc(
-                                                            color = AppColors.Expenses,
-                                                            startAngle = 30f,
-                                                            sweepAngle = 100f,
-                                                            useCenter = false,
-                                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                                            size = Size(size.width, size.height)
-                                                        )
-                                                        drawArc(
-                                                            color = AppColors.Primary,
-                                                            startAngle = 130f,
-                                                            sweepAngle = 140f,
-                                                            useCenter = false,
-                                                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                                                            size = Size(size.width, size.height)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    // Share button
-                                    if (onShareSpending != null && categorySpending.isNotEmpty()) {
-                                        Box {
-                                            IconButton(onClick = { spendingShareMenuExpanded = true }) {
-                                                Image(
-                                                    painter = painterResource(Res.drawable.share),
-                                                    contentDescription = strings.share,
-                                                    modifier = Modifier.size(24.dp),
-                                                    colorFilter = ColorFilter.tint(Color.White)
-                                                )
-                                            }
-                                            DropdownMenu(
-                                                expanded = spendingShareMenuExpanded,
-                                                onDismissRequest = { spendingShareMenuExpanded = false }
-                                            ) {
-                                                DropdownMenuItem(
-                                                    text = { Text(strings.exportCsv) },
-                                                    onClick = {
-                                                        spendingShareMenuExpanded = false
-                                                        onShareSpending(ExportFormat.CSV, SpendingExportData(
-                                                            totalIncome = totalIncome,
-                                                            totalExpenses = totalExpenses,
-                                                            categorySpending = categorySpending,
-                                                            monthlySummary = monthlySummary
-                                                        ))
-                                                    }
-                                                )
-                                                DropdownMenuItem(
-                                                    text = { Text(strings.exportPdf) },
-                                                    onClick = {
-                                                        spendingShareMenuExpanded = false
-                                                        onShareSpending(ExportFormat.PDF, SpendingExportData(
-                                                            totalIncome = totalIncome,
-                                                            totalExpenses = totalExpenses,
-                                                            categorySpending = categorySpending,
-                                                            monthlySummary = monthlySummary
-                                                        ))
                                                     }
                                                 )
                                             }
                                         }
                                     }
                                 }
-                            )
+                            }
+
+                            // Time period tab row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(AppColors.HeaderBackground)
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                listOf("week", "month", "year", "all").forEach { period ->
+                                    FilterChip(
+                                        selected = selectedTimePeriod == period,
+                                        onClick = { selectedTimePeriod = period },
+                                        label = {
+                                            Text(
+                                                text = when (period) {
+                                                    "week" -> strings.periodWeek
+                                                    "month" -> strings.periodMonth
+                                                    "year" -> strings.periodYear
+                                                    "all" -> strings.periodAll
+                                                    else -> period
+                                                },
+                                                style = MaterialTheme.typography.labelSmall
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            containerColor = AppColors.HeaderSeparator.copy(alpha = 0.5f),
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            labelColor = Color.White.copy(alpha = 0.7f),
+                                            selectedLabelColor = Color.White
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+
                             SpendingOverviewScreen(
                                 totalIncome = filteredIncome,
                                 totalExpenses = filteredExpenses,
