@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.share
@@ -893,7 +894,10 @@ fun StatsCard(
                             text = account.bankName,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f).padding(end = 12.dp)
                         )
                         Text(
                             text = "${account.statementCount} ${strings.statements.lowercase()}, ${account.transactionCount} ${strings.transactions.lowercase()}",
@@ -918,7 +922,10 @@ fun StatsCard(
                             text = strings.total,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f).padding(end = 12.dp)
                         )
                         Text(
                             text = "${stats.totalStatements} ${strings.statements.lowercase()}, ${stats.totalTransactions} ${strings.transactions.lowercase()}",
