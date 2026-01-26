@@ -210,4 +210,13 @@
     <string name="confidence_certain">Sicher</string>
     <string name="confidence_high">Hoch</string>
     <string name="confidence_medium">Mittel</string>
+
+    <!-- Welcome Tutorial & Contact -->
+    <string name="welcome_title">Willkommen bei Bankwise!</string>
+    <string name="welcome_bullet_1">PDF/CSV Kontoauszüge importieren</string>
+    <string name="welcome_bullet_2">Ausgaben nach Kategorie verfolgen</string>
+    <string name="welcome_bullet_3">Trends im Zeitverlauf analysieren</string>
+    <string name="welcome_button">Verstanden, los geht\'s</string>
+    <string name="contact_email">bankwise.info@gmail.com</string>
+    <string name="contact_hint">Fragen oder Feedback? Wir freuen uns von Ihnen zu hören!</string>
 </resources>

@@ -45,6 +45,10 @@ fun MainViewController() = ComposeUIViewController {
     val themePreferences = remember { ThemePreferences() }
     var currentThemeMode by remember { mutableStateOf(themePreferences.getThemeMode()) }
 
+    // Tutorial/onboarding state
+    val appPreferences = remember { AppPreferences() }
+    var showTutorial by remember { mutableStateOf(!appPreferences.isTutorialDismissed()) }
+
     // Initialize database driver
     val driverFactory = remember { DatabaseDriverFactory() }
 
@@ -223,8 +227,26 @@ fun MainViewController() = ComposeUIViewController {
                     )
                 }
             }
+        },
+        showTutorial = showTutorial,
+        onDismissTutorial = {
+            showTutorial = false
+            appPreferences.setTutorialDismissed(true)
+        },
+        onEmailClick = { email ->
+            // iOS email handling - use platform URL scheme
+            openEmailOnIOS(email)
         }
     )
+}
+
+/**
+ * Open email client on iOS using mailto: URL scheme
+ */
+private fun openEmailOnIOS(email: String) {
+    platform.Foundation.NSURL.URLWithString("mailto:$email?subject=Bankwise%20Feedback")?.let { url ->
+        platform.UIKit.UIApplication.sharedApplication.openURL(url)
+    }
 }
 
 private suspend fun updateStats(

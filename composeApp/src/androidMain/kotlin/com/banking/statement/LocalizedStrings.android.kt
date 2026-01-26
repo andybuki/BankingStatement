@@ -180,5 +180,14 @@ actual fun provideStrings(): AppStrings = AppStrings(
     matched = stringResource(R.string.matched),
     confidenceCertain = stringResource(R.string.confidence_certain),
     confidenceHigh = stringResource(R.string.confidence_high),
-    confidenceMedium = stringResource(R.string.confidence_medium)
+    confidenceMedium = stringResource(R.string.confidence_medium),
+
+    // Welcome Tutorial & Contact
+    welcomeTitle = stringResource(R.string.welcome_title),
+    welcomeBullet1 = stringResource(R.string.welcome_bullet_1),
+    welcomeBullet2 = stringResource(R.string.welcome_bullet_2),
+    welcomeBullet3 = stringResource(R.string.welcome_bullet_3),
+    welcomeButton = stringResource(R.string.welcome_button),
+    contactEmail = stringResource(R.string.contact_email),
+    contactHint = stringResource(R.string.contact_hint)
 )

@@ -125,8 +125,10 @@ class MainActivity : ComponentActivity() {
     private var accountsForManagement by mutableStateOf<List<AccountManagementItem>>(emptyList())
     private var currentThemeMode by mutableStateOf(ThemeMode.SYSTEM)
     private var customCategories by mutableStateOf<List<CustomCategory>>(emptyList())
+    private var showTutorial by mutableStateOf(false)
 
     private lateinit var repository: TransactionRepository
+    private lateinit var appPreferences: AppPreferences
     private lateinit var fileExporter: FileExporter
     private lateinit var pdfGenerator: PdfGenerator
     private lateinit var themePreferences: ThemePreferences
@@ -207,6 +209,10 @@ class MainActivity : ComponentActivity() {
         themePreferences = ThemePreferences(applicationContext)
         currentThemeMode = themePreferences.getThemeMode()
 
+        // Initialize app preferences and tutorial state
+        appPreferences = AppPreferences(applicationContext)
+        showTutorial = !appPreferences.isTutorialDismissed()
+
         // Clean up old export files
         fileExporter.cleanupOldExports()
 
@@ -264,6 +270,14 @@ class MainActivity : ComponentActivity() {
                 },
                 onDeleteCustomCategory = { id ->
                     deleteCustomCategory(id)
+                },
+                showTutorial = showTutorial,
+                onDismissTutorial = {
+                    showTutorial = false
+                    appPreferences.setTutorialDismissed(true)
+                },
+                onEmailClick = { email ->
+                    openEmailClient(email)
                 }
             )
 
@@ -1461,5 +1475,32 @@ class MainActivity : ComponentActivity() {
             if (updatedCount > 1) "$updatedCount transactions updated to '${customCategory.name}'" else "Category updated to '${customCategory.name}'",
             Toast.LENGTH_SHORT
         ).show()
+    }
+
+    /**
+     * Open email client with the given email address
+     */
+    private fun openEmailClient(email: String) {
+        try {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("mailto:$email")
+                putExtra(Intent.EXTRA_SUBJECT, "Bankwise Feedback")
+            }
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+            } else {
+                // Fallback: copy email to clipboard
+                val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+                val clip = android.content.ClipData.newPlainText("email", email)
+                clipboard?.setPrimaryClip(clip)
+                Toast.makeText(this, "Email copied to clipboard: $email", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            // Fallback: copy email to clipboard
+            val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+            val clip = android.content.ClipData.newPlainText("email", email)
+            clipboard?.setPrimaryClip(clip)
+            Toast.makeText(this, "Email copied to clipboard: $email", Toast.LENGTH_SHORT).show()
+        }
     }
 }
