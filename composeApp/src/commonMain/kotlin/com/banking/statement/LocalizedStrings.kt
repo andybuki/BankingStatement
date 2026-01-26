@@ -196,7 +196,16 @@ data class AppStrings(
     val matched: String,
     val confidenceCertain: String,
     val confidenceHigh: String,
-    val confidenceMedium: String
+    val confidenceMedium: String,
+
+    // Welcome Tutorial & Contact
+    val welcomeTitle: String,
+    val welcomeBullet1: String,
+    val welcomeBullet2: String,
+    val welcomeBullet3: String,
+    val welcomeButton: String,
+    val contactEmail: String,
+    val contactHint: String
 )
 
 /**
@@ -384,5 +393,14 @@ fun defaultEnglishStrings() = AppStrings(
     matched = "Matched:",
     confidenceCertain = "Certain",
     confidenceHigh = "High",
-    confidenceMedium = "Medium"
+    confidenceMedium = "Medium",
+
+    // Welcome Tutorial & Contact
+    welcomeTitle = "Welcome to Bankwise!",
+    welcomeBullet1 = "Import PDF/CSV bank statements",
+    welcomeBullet2 = "Track spending by category",
+    welcomeBullet3 = "Analyze trends over time",
+    welcomeButton = "Got it, let's start",
+    contactEmail = "bankwise.info@gmail.com",
+    contactHint = "Questions or feedback? We'd love to hear from you!"
 )

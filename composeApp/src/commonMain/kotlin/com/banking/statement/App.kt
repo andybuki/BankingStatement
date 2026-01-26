@@ -114,7 +114,11 @@ fun App(
     onCustomCategoryChange: ((TransactionDisplay, Long) -> Unit)? = null,
     onAddCustomCategory: ((name: String, icon: String, color: String) -> Unit)? = null,
     onEditCustomCategory: ((id: Long, name: String, icon: String, color: String) -> Unit)? = null,
-    onDeleteCustomCategory: ((Long) -> Unit)? = null
+    onDeleteCustomCategory: ((Long) -> Unit)? = null,
+    // Tutorial & Contact
+    showTutorial: Boolean = false,
+    onDismissTutorial: () -> Unit = {},
+    onEmailClick: (String) -> Unit = {}
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     var showCategoryManagement by remember { mutableStateOf(false) }
@@ -219,7 +223,10 @@ fun App(
                             totalIncome = totalIncome,
                             totalExpenses = totalExpenses,
                             showSuccessCard = showSuccessCard,
-                            showErrorCard = showErrorCard
+                            showErrorCard = showErrorCard,
+                            showTutorial = showTutorial,
+                            onDismissTutorial = onDismissTutorial,
+                            onEmailClick = onEmailClick
                         )
                         NavigationTab.TRANSACTIONS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
@@ -652,7 +659,10 @@ fun HomeScreen(
     totalIncome: Double = 0.0,
     totalExpenses: Double = 0.0,
     showSuccessCard: Boolean = false,  // Controlled by App level state
-    showErrorCard: Boolean = false     // Controlled by App level state for errors
+    showErrorCard: Boolean = false,    // Controlled by App level state for errors
+    showTutorial: Boolean = false,     // Show welcome tutorial on first launch
+    onDismissTutorial: () -> Unit = {},
+    onEmailClick: (String) -> Unit = {}
 ) {
     val strings = LocalStrings.current
 
@@ -685,6 +695,18 @@ fun HomeScreen(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            // Welcome Tutorial Card - shown on first launch
+            AnimatedVisibility(
+                visible = showTutorial,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Column {
+                    WelcomeTutorialCard(onDismiss = onDismissTutorial)
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
 
             // Stats Card (simplified - no navigation buttons)
             if (stats.totalStatements > 0 || stats.totalTransactions > 0 || stats.totalAccounts > 0) {
@@ -763,6 +785,11 @@ fun HomeScreen(
                     ValidationFailedCard(result = result)
                 }
             }
+
+            // Contact Info Card - always visible at the bottom
+            Spacer(modifier = Modifier.height(24.dp))
+            ContactInfoCard(onEmailClick = onEmailClick)
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -1196,6 +1223,126 @@ fun ProcessingCard(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
+ * Welcome tutorial card - shown on first launch, dismissible
+ */
+@Composable
+fun WelcomeTutorialCard(
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Text(
+                text = strings.welcomeTitle,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Bullet points
+            BulletPoint(text = strings.welcomeBullet1)
+            BulletPoint(text = strings.welcomeBullet2)
+            BulletPoint(text = strings.welcomeBullet3)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Dismiss button
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = strings.welcomeButton,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BulletPoint(text: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "•",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(end = 12.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    }
+}
+
+/**
+ * Contact info card - always visible at the bottom of home screen
+ */
+@Composable
+fun ContactInfoCard(
+    onEmailClick: (String) -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Email row - clickable
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = strings.contactEmail,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = strings.contactHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
