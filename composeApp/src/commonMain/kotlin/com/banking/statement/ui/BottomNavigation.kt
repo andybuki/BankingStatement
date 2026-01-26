@@ -1,7 +1,10 @@
 package com.banking.statement.ui
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Receipt
@@ -63,10 +66,13 @@ fun AppBottomNavigation(
     val strings = LocalStrings.current
 
     NavigationBar(
-        modifier = modifier.height(88.dp),
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .height(72.dp),
         containerColor = AppColors.FooterBackground,
         contentColor = AppColors.FooterInactiveText,
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
+        windowInsets = WindowInsets(0)
     ) {
         NavigationTab.entries.forEach { tab ->
             val selected = currentTab == tab

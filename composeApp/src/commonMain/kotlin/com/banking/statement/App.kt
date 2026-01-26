@@ -484,8 +484,8 @@ fun App(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(AppColors.HeaderBackground)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 listOf("week", "month", "year", "all", "custom").forEach { period ->
                                     FilterChip(
@@ -501,7 +501,10 @@ fun App(
                                                     "custom" -> strings.periodCustom
                                                     else -> period
                                                 },
-                                                style = MaterialTheme.typography.labelSmall
+                                                style = MaterialTheme.typography.labelSmall,
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         },
                                         colors = FilterChipDefaults.filterChipColors(
