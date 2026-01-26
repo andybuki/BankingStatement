@@ -381,29 +381,51 @@ fun App(
                                         }
                                     }
 
-                                    // Chart toggle button
+                                    // Chart/List toggle button - shows different icon based on current view
                                     IconButton(
                                         onClick = { showChartView = !showChartView },
                                         modifier = Modifier.size(32.dp)
                                     ) {
                                         Canvas(modifier = Modifier.size(20.dp)) {
-                                            val iconColor = if (showChartView) Color.White else Color.White.copy(alpha = 0.7f)
-                                            // Draw simple bar chart icon
-                                            drawRect(
-                                                color = iconColor,
-                                                topLeft = Offset(0f, size.height * 0.5f),
-                                                size = Size(size.width * 0.25f, size.height * 0.5f)
-                                            )
-                                            drawRect(
-                                                color = iconColor,
-                                                topLeft = Offset(size.width * 0.35f, size.height * 0.2f),
-                                                size = Size(size.width * 0.25f, size.height * 0.8f)
-                                            )
-                                            drawRect(
-                                                color = iconColor,
-                                                topLeft = Offset(size.width * 0.7f, size.height * 0.35f),
-                                                size = Size(size.width * 0.25f, size.height * 0.65f)
-                                            )
+                                            val iconColor = Color.White
+                                            if (showChartView) {
+                                                // Show list icon when chart view is active (clicking will switch to list)
+                                                val lineHeight = size.height * 0.12f
+                                                val lineSpacing = size.height * 0.28f
+                                                // Three horizontal lines for list icon
+                                                drawRect(
+                                                    color = iconColor,
+                                                    topLeft = Offset(0f, size.height * 0.15f),
+                                                    size = Size(size.width, lineHeight)
+                                                )
+                                                drawRect(
+                                                    color = iconColor,
+                                                    topLeft = Offset(0f, size.height * 0.15f + lineSpacing),
+                                                    size = Size(size.width, lineHeight)
+                                                )
+                                                drawRect(
+                                                    color = iconColor,
+                                                    topLeft = Offset(0f, size.height * 0.15f + lineSpacing * 2),
+                                                    size = Size(size.width, lineHeight)
+                                                )
+                                            } else {
+                                                // Show bar chart icon when list view is active (clicking will switch to chart)
+                                                drawRect(
+                                                    color = iconColor,
+                                                    topLeft = Offset(0f, size.height * 0.5f),
+                                                    size = Size(size.width * 0.25f, size.height * 0.5f)
+                                                )
+                                                drawRect(
+                                                    color = iconColor,
+                                                    topLeft = Offset(size.width * 0.35f, size.height * 0.2f),
+                                                    size = Size(size.width * 0.25f, size.height * 0.8f)
+                                                )
+                                                drawRect(
+                                                    color = iconColor,
+                                                    topLeft = Offset(size.width * 0.7f, size.height * 0.35f),
+                                                    size = Size(size.width * 0.25f, size.height * 0.65f)
+                                                )
+                                            }
                                         }
                                     }
 
