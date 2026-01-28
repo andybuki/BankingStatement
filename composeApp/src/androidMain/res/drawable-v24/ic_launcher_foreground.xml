@@ -5,10 +5,10 @@
     android:viewportHeight="108">
   <!-- Sova owl logo scaled and centered for adaptive icon (safe zone ~66dp) -->
   <group
-      android:scaleX="0.55"
-      android:scaleY="0.55"
-      android:translateX="21"
-      android:translateY="26">
+      android:scaleX="1.1"
+      android:scaleY="1.1"
+      android:translateX="-9"
+      android:translateY="2">
     <!-- Background circle with stroke -->
     <path
         android:pathData="M57.43,78.04a30.51,30.51 0,1 0,0 -61.02a30.51,30.51 0,1 0,0 61.02"
