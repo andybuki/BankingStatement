@@ -3,18 +3,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-  <!-- Sova owl logo scaled and centered for adaptive icon (safe zone ~66dp) -->
+  <!-- Sova owl logo scaled to fill adaptive icon -->
   <group
-      android:scaleX="0.55"
-      android:scaleY="0.55"
-      android:translateX="21"
-      android:translateY="26">
-    <!-- Background circle with stroke -->
-    <path
-        android:pathData="M57.43,78.04a30.51,30.51 0,1 0,0 -61.02a30.51,30.51 0,1 0,0 61.02"
-        android:fillColor="#f4eff0"
-        android:strokeColor="#000000"
-        android:strokeWidth="0.5"/>
+      android:scaleX="1.1"
+      android:scaleY="1.1"
+      android:translateX="-9"
+      android:translateY="2">
     <!-- Main body shape -->
     <path
         android:pathData="M57.43,74.11c-14.47,0 -26.24,-11.77 -26.24,-26.24c0,-6.65 5.61,-12.06 12.26,-12.06s12.26,5.41 12.26,12.06v11.75h3.6v-11.75h0.04c0,-6.65 5.41,-12.06 12.06,-12.06s12.26,5.41 12.26,12.06c0,14.47 -11.77,26.24 -26.24,26.24Z"
