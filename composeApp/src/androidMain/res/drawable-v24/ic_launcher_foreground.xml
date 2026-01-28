@@ -5,10 +5,10 @@
     android:viewportHeight="108">
   <!-- Sova owl logo scaled to fill adaptive icon -->
   <group
-      android:scaleX="1.1"
-      android:scaleY="1.1"
-      android:translateX="-9"
-      android:translateY="2">
+      android:scaleX="1.4"
+      android:scaleY="1.4"
+      android:translateX="-26"
+      android:translateY="-12">
     <!-- Main body shape -->
     <path
         android:pathData="M57.43,74.11c-14.47,0 -26.24,-11.77 -26.24,-26.24c0,-6.65 5.61,-12.06 12.26,-12.06s12.26,5.41 12.26,12.06v11.75h3.6v-11.75h0.04c0,-6.65 5.41,-12.06 12.06,-12.06s12.26,5.41 12.26,12.06c0,14.47 -11.77,26.24 -26.24,26.24Z"
