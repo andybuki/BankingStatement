@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "123990572168",
+    "project_id": "bank-analyzer-104af",
+    "storage_bucket": "bank-analyzer-104af.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123990572168:android:0bafa1ae7302fe3a6db33d",
+        "android_client_info": {
+          "package_name": "com.dva.bankingstatement"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCM10uovqj_Rkdpxi-rksbaG1OHt5KmMZ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
