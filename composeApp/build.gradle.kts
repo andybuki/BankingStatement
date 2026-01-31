@@ -55,11 +55,11 @@ kotlin {
 }
 
 android {
-    namespace = "com.banking.statement"
+    namespace = "com.bankwise.app"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.banking.statement"
+        applicationId = "com.bankwise.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 3
@@ -97,7 +97,7 @@ dependencies {
 sqldelight {
     databases {
         create("BankingDatabase") {
-            packageName.set("com.banking.statement.db")
+            packageName.set("com.bankwise.app.db")
         }
     }
 }
