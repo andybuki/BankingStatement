@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:123990572168:android:0bafa1ae7302fe3a6db33d",
         "android_client_info": {
-          "package_name": "com.dva.bankingstatement"
+          "package_name": "com.bankwise.app"
         }
       },
       "oauth_client": [],
