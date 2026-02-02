@@ -32,14 +32,14 @@ jobs:
       continue-on-error: true
 
     - name: Upload APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: android-debug-apk
         path: composeApp/build/outputs/apk/debug/*.apk
         retention-days: 7
 
     - name: Upload test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: test-results
@@ -68,7 +68,7 @@ jobs:
       run: ./gradlew :composeApp:assembleRelease
 
     - name: Upload Release APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: android-release-apk
         path: composeApp/build/outputs/apk/release/*.apk

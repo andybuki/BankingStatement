@@ -37,13 +37,13 @@ jobs:
       continue-on-error: true
 
     - name: Upload APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: android-release-apk
         path: composeApp/build/outputs/apk/release/*.apk
 
     - name: Upload AAB
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: success()
       with:
         name: android-release-aab
