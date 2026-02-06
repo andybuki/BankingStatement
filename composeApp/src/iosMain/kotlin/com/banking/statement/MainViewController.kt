@@ -1,4 +1,4 @@
-@file:OptIn(kotlin.time.ExperimentalTime::class)
+@file:OptIn(kotlin.time.ExperimentalTime::class, kotlinx.cinterop.ExperimentalForeignApi::class)
 
 package com.banking.statement
 
@@ -12,9 +12,18 @@ import com.banking.statement.categorization.CategoryOverrideManager
 import com.banking.statement.categorization.KeywordDatabase
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
+import com.banking.statement.db.AccountMatchResult
 import com.banking.statement.db.DatabaseDriverFactory
+import com.banking.statement.db.ImportResult
 import com.banking.statement.db.TransactionRepository
+import com.banking.statement.parser.CsvParser
+import com.banking.statement.parser.ImportFileType
+import com.banking.statement.parser.ParseResult
+import com.banking.statement.pdf.PdfProcessor
+import com.banking.statement.parser.banks.BankParserRegistry
+import com.banking.statement.parser.banks.DetectionConfidence
 import com.banking.statement.ui.AccountManagementItem
+import com.banking.statement.ui.AccountOption
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.MonthlySummary
@@ -23,14 +32,56 @@ import com.banking.statement.ui.theme.ThemeMode
 import com.banking.statement.ui.theme.ThemePreferences
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import platform.Foundation.NSData
+import platform.Foundation.create
+import platform.UIKit.UIViewController
+import platform.posix.memcpy
 
-fun MainViewController() = ComposeUIViewController {
+/**
+ * Pending import waiting for user decision (iOS version)
+ */
+data class IosPendingImport(
+    val parseResult: ParseResult,
+    val fileName: String,
+    val fileType: ImportFileType,
+    val matchResult: AccountMatchResult
+)
+
+/**
+ * State for showing import dialogs (iOS version)
+ */
+data class IosImportDialogState(
+    val showAccountDialog: Boolean = false,
+    val showSuccessDialog: Boolean = false,
+    val pendingImport: IosPendingImport? = null,
+    val existingAccounts: List<AccountOption> = emptyList(),
+    val importResult: ImportResult? = null
+)
+
+/**
+ * Convert NSData to ByteArray
+ */
+@kotlinx.cinterop.ExperimentalForeignApi
+fun NSData.toByteArray(): ByteArray {
+    val length = this.length.toInt()
+    if (length == 0) return ByteArray(0)
+
+    val bytes = ByteArray(length)
+    bytes.usePinned { pinned ->
+        memcpy(pinned.addressOf(0), this.bytes, this.length)
+    }
+    return bytes
+}
+
+fun MainViewController(): UIViewController = ComposeUIViewController {
     // Initialize state
     var importState by remember { mutableStateOf(ImportState()) }
     var stats by remember { mutableStateOf(DatabaseStats()) }
@@ -40,6 +91,7 @@ fun MainViewController() = ComposeUIViewController {
     var totalIncome by remember { mutableStateOf(0.0) }
     var totalExpenses by remember { mutableStateOf(0.0) }
     var accountsForManagement by remember { mutableStateOf<List<AccountManagementItem>>(emptyList()) }
+    var dialogState by remember { mutableStateOf(IosImportDialogState()) }
 
     // Theme management
     val themePreferences = remember { ThemePreferences() }
@@ -74,7 +126,264 @@ fun MainViewController() = ComposeUIViewController {
         TransactionRepository(driverFactory, transactionCategorizer)
     }
 
+    // Initialize PDF processor
+    val pdfProcessor = remember { PdfProcessor() }
+
     val coroutineScope = rememberCoroutineScope()
+
+    // Helper function to update stats
+    fun refreshStats() {
+        coroutineScope.launch {
+            updateStats(repository) { newStats ->
+                stats = newStats
+            }
+        }
+    }
+
+    // Helper function to refresh all data
+    fun refreshAllData() {
+        coroutineScope.launch {
+            updateStats(repository) { newStats -> stats = newStats }
+            loadAccountsData(repository) { accounts -> accountsForManagement = accounts }
+            loadTransactionData(
+                repository = repository,
+                categoryOverrideManager = categoryOverrideManager,
+                merchantDatabase = merchantDatabase,
+                onTransactionsLoaded = { txList, catSpending, monthSummary, income, expenses ->
+                    transactions = txList
+                    categorySpending = catSpending
+                    monthlySummary = monthSummary
+                    totalIncome = income
+                    totalExpenses = expenses
+                }
+            )
+        }
+    }
+
+    // Handle successful parse
+    fun handleSuccessfulParse(
+        parseResult: ParseResult,
+        fileName: String,
+        fileType: ImportFileType
+    ) {
+        coroutineScope.launch {
+            // Check for matching accounts
+            val matchResult = withContext(Dispatchers.Default) {
+                repository.findMatchingAccount(
+                    bankName = parseResult.bankName,
+                    iban = parseResult.accountIban
+                )
+            }
+
+            when (matchResult) {
+                is AccountMatchResult.IbanMatch -> {
+                    // Auto-add to matching account
+                    val result = withContext(Dispatchers.Default) {
+                        repository.saveImportToAccount(
+                            accountId = matchResult.account.id,
+                            parseResult = parseResult,
+                            fileName = fileName,
+                            filePath = null,
+                            sourceType = fileType.name
+                        )
+                    }
+
+                    importState = ImportState(
+                        isProcessing = false,
+                        parseResult = parseResult,
+                        savedToDatabase = true,
+                        transactionCount = result.transactionsImported
+                    )
+
+                    // Show success dialog
+                    dialogState = dialogState.copy(
+                        showSuccessDialog = true,
+                        importResult = result.copy(isNewAccount = false)
+                    )
+
+                    refreshAllData()
+                }
+
+                is AccountMatchResult.BankMatch, AccountMatchResult.NoMatch -> {
+                    // Need user decision - show dialog
+                    val existingAccounts = withContext(Dispatchers.Default) {
+                        repository.getAccountSummary().map { summary ->
+                            AccountOption(
+                                id = summary.id,
+                                name = summary.name,
+                                bankName = summary.bank_name,
+                                iban = summary.iban,
+                                color = summary.color,
+                                transactionCount = summary.transaction_count,
+                                balance = summary.balance
+                            )
+                        }
+                    }
+
+                    importState = ImportState(isProcessing = false)
+
+                    dialogState = IosImportDialogState(
+                        showAccountDialog = true,
+                        pendingImport = IosPendingImport(
+                            parseResult = parseResult,
+                            fileName = fileName,
+                            fileType = fileType,
+                            matchResult = matchResult
+                        ),
+                        existingAccounts = existingAccounts
+                    )
+                }
+            }
+        }
+    }
+
+    // Process file data
+    fun processFileData(data: ByteArray, fileName: String) {
+        coroutineScope.launch {
+            importState = ImportState(
+                isProcessing = true,
+                progress = 0,
+                progressMessage = "Reading file..."
+            )
+
+            try {
+                importState = importState.copy(progress = 10, progressMessage = "Reading file...")
+
+                importState = importState.copy(progress = 20, progressMessage = "Detecting format...")
+
+                // Detect file type
+                val fileType = ImportFileType.fromFileName(fileName)
+                    ?: detectFileType(data, pdfProcessor)
+                    ?: throw Exception("Unsupported file format. Please use CSV or PDF files.")
+
+                importState = importState.copy(progress = 30, progressMessage = "Parsing...")
+
+                // Parse file
+                val parseResult = withContext(Dispatchers.Default) {
+                    when (fileType) {
+                        ImportFileType.CSV -> {
+                            withContext(Dispatchers.Main) {
+                                importState = importState.copy(progress = 40, progressMessage = "Parsing CSV...")
+                            }
+                            parseCsv(data, fileName)
+                        }
+                        ImportFileType.PDF -> {
+                            withContext(Dispatchers.Main) {
+                                importState = importState.copy(progress = 40, progressMessage = "Extracting PDF text...")
+                            }
+                            parsePdf(data, fileName, pdfProcessor)
+                        }
+                        ImportFileType.EXCEL -> {
+                            // Excel not yet supported on iOS
+                            ParseResult(
+                                success = false,
+                                transactions = emptyList(),
+                                bankName = "",
+                                errorMessage = "Excel files are not yet supported on iOS. Please export as CSV."
+                            )
+                        }
+                    }
+                }
+
+                importState = importState.copy(progress = 70, progressMessage = "Processing...")
+
+                if (parseResult.success && parseResult.transactions.isNotEmpty()) {
+                    importState = importState.copy(progress = 80, progressMessage = "Saving...")
+                    handleSuccessfulParse(parseResult, fileName, fileType)
+                } else {
+                    importState = ImportState(
+                        isProcessing = false,
+                        parseResult = parseResult,
+                        savedToDatabase = false,
+                        errorMessage = parseResult.errorMessage ?: "No transactions found in file"
+                    )
+                }
+
+            } catch (e: Exception) {
+                importState = ImportState(
+                    isProcessing = false,
+                    errorMessage = "Error: ${e.message}"
+                )
+            }
+        }
+    }
+
+    // Handle import choice from dialog
+    fun handleImportChoice(choice: ImportChoice) {
+        val pending = dialogState.pendingImport ?: return
+
+        coroutineScope.launch {
+            when (choice) {
+                is ImportChoice.CreateNew -> {
+                    dialogState = dialogState.copy(showAccountDialog = false)
+                    importState = ImportState(isProcessing = true, progress = 80, progressMessage = "Saving...")
+
+                    val result = withContext(Dispatchers.Default) {
+                        repository.saveImportWithNewAccount(
+                            accountName = choice.accountName,
+                            parseResult = pending.parseResult,
+                            fileName = pending.fileName,
+                            filePath = null,
+                            sourceType = pending.fileType.name
+                        )
+                    }
+
+                    importState = ImportState(
+                        isProcessing = false,
+                        parseResult = pending.parseResult,
+                        savedToDatabase = true,
+                        transactionCount = result.transactionsImported,
+                        progress = 100
+                    )
+
+                    dialogState = IosImportDialogState(
+                        showSuccessDialog = true,
+                        importResult = result
+                    )
+
+                    refreshAllData()
+                }
+
+                is ImportChoice.AddToExisting -> {
+                    dialogState = dialogState.copy(showAccountDialog = false)
+                    importState = ImportState(isProcessing = true, progress = 80, progressMessage = "Saving...")
+
+                    val result = withContext(Dispatchers.Default) {
+                        repository.saveImportToAccount(
+                            accountId = choice.accountId,
+                            parseResult = pending.parseResult,
+                            fileName = pending.fileName,
+                            filePath = null,
+                            sourceType = pending.fileType.name
+                        )
+                    }
+
+                    importState = ImportState(
+                        isProcessing = false,
+                        parseResult = pending.parseResult,
+                        savedToDatabase = true,
+                        transactionCount = result.transactionsImported,
+                        progress = 100
+                    )
+
+                    dialogState = IosImportDialogState(
+                        showSuccessDialog = true,
+                        importResult = result
+                    )
+
+                    refreshAllData()
+                }
+
+                ImportChoice.Cancel -> {
+                    dialogState = IosImportDialogState()
+                    importState = ImportState(
+                        isProcessing = false,
+                        errorMessage = "Import cancelled"
+                    )
+                }
+            }
+        }
+    }
 
     // Load data on first composition
     remember {
@@ -113,8 +422,14 @@ fun MainViewController() = ComposeUIViewController {
     }
 
     App(
-        // File picker not yet implemented for iOS
-        onPickFile = null,
+        // File picker callback for iOS
+        onPickFile = { _ ->
+            triggerFilePicker { data, fileName ->
+                if (data != null && fileName != null) {
+                    processFileData(data, fileName)
+                }
+            }
+        },
         importState = importState,
         stats = stats,
         transactions = transactions,
@@ -122,29 +437,18 @@ fun MainViewController() = ComposeUIViewController {
         monthlySummary = monthlySummary,
         totalIncome = totalIncome,
         totalExpenses = totalExpenses,
-        dialogState = null,
-        onImportChoice = null,
-        onDismissSuccessDialog = null,
+        dialogState = dialogState,
+        onImportChoice = { choice -> handleImportChoice(choice) },
+        onDismissSuccessDialog = {
+            dialogState = dialogState.copy(showSuccessDialog = false, importResult = null)
+        },
         accountsForManagement = accountsForManagement,
         onDeleteAccount = { accountId ->
             coroutineScope.launch {
                 withContext(Dispatchers.Default) {
                     repository.deleteAccount(accountId)
                 }
-                updateStats(repository) { newStats -> stats = newStats }
-                loadAccountsData(repository) { accounts -> accountsForManagement = accounts }
-                loadTransactionData(
-                    repository = repository,
-                    categoryOverrideManager = categoryOverrideManager,
-                    merchantDatabase = merchantDatabase,
-                    onTransactionsLoaded = { txList, catSpending, monthSummary, income, expenses ->
-                        transactions = txList
-                        categorySpending = catSpending
-                        monthlySummary = monthSummary
-                        totalIncome = income
-                        totalExpenses = expenses
-                    }
-                )
+                refreshAllData()
             }
         },
         onEditAccount = { accountId, newName ->
@@ -160,25 +464,16 @@ fun MainViewController() = ComposeUIViewController {
                 withContext(Dispatchers.Default) {
                     repository.clearAllData()
                 }
-                updateStats(repository) { newStats -> stats = newStats }
-                loadAccountsData(repository) { accounts -> accountsForManagement = accounts }
-                loadTransactionData(
-                    repository = repository,
-                    categoryOverrideManager = categoryOverrideManager,
-                    merchantDatabase = merchantDatabase,
-                    onTransactionsLoaded = { txList, catSpending, monthSummary, income, expenses ->
-                        transactions = txList
-                        categorySpending = catSpending
-                        monthlySummary = monthSummary
-                        totalIncome = income
-                        totalExpenses = expenses
-                    }
-                )
+                refreshAllData()
             }
         },
-        // Share callbacks not yet implemented for iOS
-        onShareTransactions = null,
-        onShareSpending = null,
+        // Share callbacks for iOS
+        onShareTransactions = { format, txList, accountName ->
+            IosShareHelper.shareTransactions(format, txList, accountName)
+        },
+        onShareSpending = { format, data ->
+            IosShareHelper.shareSpending(format, data)
+        },
         themeMode = currentThemeMode,
         onThemeModeChange = { mode ->
             currentThemeMode = mode
@@ -205,11 +500,9 @@ fun MainViewController() = ComposeUIViewController {
                 }
 
                 // Save to database in background
-                // For PayPal, use the extracted display name so each merchant gets its own category
                 val counterpartyLower = transaction.counterparty?.lowercase() ?: ""
                 val descriptionLower = transaction.description.lowercase()
                 val effectiveCounterparty = if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
-                    // Use the smart display name (e.g., "PayPal · Wolt") for PayPal transactions
                     TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description)
                 } else {
                     transaction.counterparty
@@ -224,6 +517,141 @@ fun MainViewController() = ComposeUIViewController {
                 }
             }
         }
+    )
+}
+
+/**
+ * iOS Share helper - bridges to Swift implementation
+ */
+object IosShareHelper {
+    fun shareTransactions(format: ExportFormat, transactions: List<TransactionDisplay>, accountName: String?) {
+        val content = when (format) {
+            ExportFormat.CSV -> generateCsvContent(transactions)
+            ExportFormat.PDF -> generateTextContent(transactions) // Simplified for now
+            ExportFormat.EXCEL -> generateCsvContent(transactions) // Fall back to CSV
+        }
+
+        val fileName = "transactions_${accountName ?: "all"}.${format.name.lowercase()}"
+        shareContent(content, fileName)
+    }
+
+    fun shareSpending(format: ExportFormat, data: SpendingExportData) {
+        val content = generateSpendingContent(data)
+        val fileName = "spending_report.${format.name.lowercase()}"
+        shareContent(content, fileName)
+    }
+
+    private fun generateCsvContent(transactions: List<TransactionDisplay>): String {
+        val sb = StringBuilder()
+        sb.appendLine("Date,Description,Amount,Currency,Category,Counterparty")
+        transactions.forEach { tx ->
+            sb.appendLine("${tx.date},\"${tx.description.replace("\"", "\"\"")}\",${tx.amount},${tx.currency},${tx.category.name},\"${tx.counterparty?.replace("\"", "\"\"") ?: ""}\"")
+        }
+        return sb.toString()
+    }
+
+    private fun generateTextContent(transactions: List<TransactionDisplay>): String {
+        val sb = StringBuilder()
+        sb.appendLine("Transaction Report")
+        sb.appendLine("==================")
+        sb.appendLine()
+        transactions.forEach { tx ->
+            sb.appendLine("${tx.date}: ${tx.description}")
+            sb.appendLine("  Amount: ${tx.amount} ${tx.currency}")
+            sb.appendLine("  Category: ${tx.category.name}")
+            sb.appendLine()
+        }
+        return sb.toString()
+    }
+
+    private fun generateSpendingContent(data: SpendingExportData): String {
+        val sb = StringBuilder()
+        sb.appendLine("Spending Report")
+        sb.appendLine("===============")
+        sb.appendLine()
+        sb.appendLine("Total Income: ${data.totalIncome}")
+        sb.appendLine("Total Expenses: ${data.totalExpenses}")
+        sb.appendLine()
+        sb.appendLine("By Category:")
+        data.categorySpending.forEach { cat ->
+            sb.appendLine("  ${cat.category.name}: ${cat.totalAmount}")
+        }
+        return sb.toString()
+    }
+
+    private fun shareContent(content: String, fileName: String) {
+        // Post notification to trigger Swift share sheet
+        platform.Foundation.NSNotificationCenter.defaultCenter.postNotificationName(
+            "ShareContent",
+            `object` = mapOf("content" to content, "fileName" to fileName)
+        )
+    }
+}
+
+// Helper functions
+
+private fun detectFileType(bytes: ByteArray, pdfProcessor: PdfProcessor): ImportFileType? {
+    return when {
+        pdfProcessor.isPdfFile(bytes) -> ImportFileType.PDF
+        isLikelyCsv(bytes) -> ImportFileType.CSV
+        else -> null
+    }
+}
+
+private fun isLikelyCsv(bytes: ByteArray): Boolean {
+    val text = bytes.decodeToString()
+    val lines = text.split("\n").take(5)
+    return lines.any { it.contains(",") || it.contains(";") || it.contains("\t") }
+}
+
+private fun parseCsv(bytes: ByteArray, fileName: String): ParseResult {
+    val content = bytes.decodeToString()
+    return CsvParser.parse(content, fileName)
+}
+
+private fun parsePdf(bytes: ByteArray, fileName: String, pdfProcessor: PdfProcessor): ParseResult {
+    val text = pdfProcessor.extractText(bytes)
+    if (text.isNullOrBlank()) {
+        return ParseResult(
+            success = false,
+            transactions = emptyList(),
+            bankName = "",
+            errorMessage = "Could not extract text from PDF. The file may be image-based or protected."
+        )
+    }
+
+    // Try to detect and parse with bank-specific parsers
+    val detectedBanks = BankParserRegistry.detectBanks(text)
+
+    if (detectedBanks.isEmpty()) {
+        return ParseResult(
+            success = false,
+            transactions = emptyList(),
+            bankName = "",
+            errorMessage = "Could not detect bank format. This bank statement format may not be supported yet."
+        )
+    }
+
+    // Use the highest confidence match
+    val bestMatch = detectedBanks.maxByOrNull {
+        when (it.confidence) {
+            DetectionConfidence.HIGH -> 3
+            DetectionConfidence.MEDIUM -> 2
+            DetectionConfidence.LOW -> 1
+        }
+    } ?: return ParseResult(
+        success = false,
+        transactions = emptyList(),
+        bankName = "",
+        errorMessage = "Could not determine bank format."
+    )
+
+    val parser = BankParserRegistry.getParser(bestMatch.bankName)
+    return parser?.parse(text) ?: ParseResult(
+        success = false,
+        transactions = emptyList(),
+        bankName = bestMatch.bankName,
+        errorMessage = "Parser not found for ${bestMatch.bankName}"
     )
 }
 
