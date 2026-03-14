@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.banking.statement.categorization.CategoryOverrideManager
@@ -36,6 +33,10 @@ import com.banking.statement.ui.theme.ThemeMode
 import com.banking.statement.ui.theme.ThemePreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -43,36 +44,49 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 /**
+ * Consolidated UI state for the financial data displayed across screens.
+ */
+data class FinancialUiState(
+    val transactions: List<TransactionDisplay> = emptyList(),
+    val categorySpending: List<CategorySpending> = emptyList(),
+    val monthlySummary: List<MonthlySummary> = emptyList(),
+    val totalIncome: Double = 0.0,
+    val totalExpenses: Double = 0.0
+)
+
+/**
+ * Consolidated UI state for app-level settings and preferences.
+ */
+data class AppSettingsState(
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val showTutorial: Boolean = false,
+    val customCategories: List<CustomCategory> = emptyList()
+)
+
+/**
  * Main ViewModel holding all app state and business logic.
- * Extracted from the monolithic MainActivity.
+ * Uses StateFlow for reactive, lifecycle-aware state management.
  */
 class MainViewModel(private val context: Context) : ViewModel() {
 
-    // --- Observable State ---
-    var importState by mutableStateOf(ImportState())
-        private set
-    var stats by mutableStateOf(DatabaseStats())
-        private set
-    var transactions by mutableStateOf<List<TransactionDisplay>>(emptyList())
-        private set
-    var categorySpending by mutableStateOf<List<CategorySpending>>(emptyList())
-        private set
-    var monthlySummary by mutableStateOf<List<MonthlySummary>>(emptyList())
-        private set
-    var totalIncome by mutableStateOf(0.0)
-        private set
-    var totalExpenses by mutableStateOf(0.0)
-        private set
-    var dialogState by mutableStateOf(ImportDialogState())
-        private set
-    var accountsForManagement by mutableStateOf<List<AccountManagementItem>>(emptyList())
-        private set
-    var currentThemeMode by mutableStateOf(ThemeMode.SYSTEM)
-        private set
-    var customCategories by mutableStateOf<List<CustomCategory>>(emptyList())
-        private set
-    var showTutorial by mutableStateOf(false)
-        private set
+    // --- Observable State (StateFlow) ---
+    private val _importState = MutableStateFlow(ImportState())
+    val importState: StateFlow<ImportState> = _importState.asStateFlow()
+
+    private val _stats = MutableStateFlow(DatabaseStats())
+    val stats: StateFlow<DatabaseStats> = _stats.asStateFlow()
+
+    private val _financialState = MutableStateFlow(FinancialUiState())
+    val financialState: StateFlow<FinancialUiState> = _financialState.asStateFlow()
+
+    private val _dialogState = MutableStateFlow(ImportDialogState())
+    val dialogState: StateFlow<ImportDialogState> = _dialogState.asStateFlow()
+
+    private val _accountsForManagement = MutableStateFlow<List<AccountManagementItem>>(emptyList())
+    val accountsForManagement: StateFlow<List<AccountManagementItem>> = _accountsForManagement.asStateFlow()
+
+    private val _appSettings = MutableStateFlow(AppSettingsState())
+    val appSettings: StateFlow<AppSettingsState> = _appSettings.asStateFlow()
 
     // --- Dependencies ---
     val repository: TransactionRepository
@@ -132,11 +146,15 @@ class MainViewModel(private val context: Context) : ViewModel() {
 
         // Initialize theme preferences
         themePreferences = ThemePreferences(context)
-        currentThemeMode = themePreferences.getThemeMode()
 
         // Initialize app preferences and tutorial state
         appPreferences = AppPreferences(context)
-        showTutorial = !appPreferences.isTutorialDismissed()
+        _appSettings.update {
+            it.copy(
+                themeMode = themePreferences.getThemeMode(),
+                showTutorial = !appPreferences.isTutorialDismissed()
+            )
+        }
 
         // Clean up old export files
         fileExporter.cleanupOldExports()
@@ -154,7 +172,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
 
     fun processFile(uri: Uri) {
         coroutineScope.launch {
-            importState = ImportState(
+            _importState.value = ImportState(
                 isProcessing = true,
                 progress = 0,
                 progressMessage = context.getString(R.string.processing_reading)
@@ -162,45 +180,45 @@ class MainViewModel(private val context: Context) : ViewModel() {
 
             try {
                 val fileName = fileImportProcessor.getFileName(uri) ?: "document"
-                importState = importState.copy(progress = 10, progressMessage = context.getString(R.string.processing_reading))
+                _importState.update { it.copy(progress = 10, progressMessage = context.getString(R.string.processing_reading)) }
 
                 val bytes = fileImportProcessor.readFileBytes(uri) ?: throw Exception("Could not read file")
-                importState = importState.copy(progress = 20, progressMessage = context.getString(R.string.processing_detecting))
+                _importState.update { it.copy(progress = 20, progressMessage = context.getString(R.string.processing_detecting)) }
 
                 val fileType = ImportFileType.fromFileName(fileName)
                     ?: fileImportProcessor.detectFileType(bytes)
                     ?: throw Exception("Unsupported file format")
-                importState = importState.copy(progress = 30, progressMessage = context.getString(R.string.processing_parsing))
+                _importState.update { it.copy(progress = 30, progressMessage = context.getString(R.string.processing_parsing)) }
 
                 val parseResult = withContext(Dispatchers.IO) {
                     when (fileType) {
                         ImportFileType.CSV -> {
                             withContext(Dispatchers.Main) {
-                                importState = importState.copy(progress = 40, progressMessage = context.getString(R.string.processing_csv))
+                                _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_csv)) }
                             }
                             fileImportProcessor.parseCsv(bytes, fileName)
                         }
                         ImportFileType.EXCEL -> {
                             withContext(Dispatchers.Main) {
-                                importState = importState.copy(progress = 40, progressMessage = context.getString(R.string.processing_excel))
+                                _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_excel)) }
                             }
                             fileImportProcessor.parseExcel(bytes, fileName)
                         }
                         ImportFileType.PDF -> {
                             withContext(Dispatchers.Main) {
-                                importState = importState.copy(progress = 40, progressMessage = context.getString(R.string.processing_pdf))
+                                _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_pdf)) }
                             }
 
                             val preProcessResult = fileImportProcessor.preProcessPdf(bytes)
 
                             if (preProcessResult.needsUserSelection && preProcessResult.detectedBanks.isNotEmpty()) {
                                 withContext(Dispatchers.Main) {
-                                    dialogState = dialogState.copy(
+                                    _dialogState.update { it.copy(
                                         showBankSelectionDialog = true,
                                         detectedBanks = preProcessResult.detectedBanks,
                                         pendingPdfData = PendingPdfData(bytes, preProcessResult.text ?: "", fileName, uri)
-                                    )
-                                    importState = ImportState(isProcessing = false)
+                                    ) }
+                                    _importState.value = ImportState(isProcessing = false)
                                 }
                                 null
                             } else {
@@ -214,19 +232,19 @@ class MainViewModel(private val context: Context) : ViewModel() {
                     return@launch
                 }
 
-                importState = importState.copy(progress = 70, progressMessage = context.getString(R.string.processing_categorizing))
+                _importState.update { it.copy(progress = 70, progressMessage = context.getString(R.string.processing_categorizing)) }
 
                 if (parseResult.success && parseResult.transactions.isNotEmpty()) {
-                    importState = importState.copy(progress = 80, progressMessage = context.getString(R.string.processing_saving))
+                    _importState.update { it.copy(progress = 80, progressMessage = context.getString(R.string.processing_saving)) }
 
                     val filePath = if (fileType == ImportFileType.PDF) {
                         fileImportProcessor.savePdfToStorage(uri, fileName)
                     } else null
 
-                    importState = importState.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing))
+                    _importState.update { it.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing)) }
                     handleSuccessfulParse(parseResult, fileName, filePath, fileType)
                 } else {
-                    importState = ImportState(
+                    _importState.value = ImportState(
                         isProcessing = false,
                         parseResult = parseResult,
                         savedToDatabase = false,
@@ -235,7 +253,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                 }
 
             } catch (e: Exception) {
-                importState = ImportState(
+                _importState.value = ImportState(
                     isProcessing = false,
                     errorMessage = "Error: ${e.message}"
                 )
@@ -268,17 +286,17 @@ class MainViewModel(private val context: Context) : ViewModel() {
                     )
                 }
 
-                importState = ImportState(
+                _importState.value = ImportState(
                     isProcessing = false,
                     parseResult = parseResult,
                     savedToDatabase = true,
                     transactionCount = result.transactionsImported
                 )
 
-                dialogState = dialogState.copy(
+                _dialogState.update { it.copy(
                     showSuccessDialog = true,
                     importResult = result.copy(isNewAccount = false)
-                )
+                ) }
 
                 updateStats()
             }
@@ -298,9 +316,9 @@ class MainViewModel(private val context: Context) : ViewModel() {
                     }
                 }
 
-                importState = ImportState(isProcessing = false)
+                _importState.value = ImportState(isProcessing = false)
 
-                dialogState = ImportDialogState(
+                _dialogState.value = ImportDialogState(
                     showAccountDialog = true,
                     pendingImport = PendingImport(
                         parseResult = parseResult,
@@ -316,13 +334,13 @@ class MainViewModel(private val context: Context) : ViewModel() {
     }
 
     fun handleImportChoice(choice: ImportChoice) {
-        val pending = dialogState.pendingImport ?: return
+        val pending = _dialogState.value.pendingImport ?: return
 
         coroutineScope.launch {
             when (choice) {
                 is ImportChoice.CreateNew -> {
-                    dialogState = dialogState.copy(showAccountDialog = false)
-                    importState = ImportState(isProcessing = true, progress = 80, progressMessage = context.getString(R.string.processing_saving))
+                    _dialogState.update { it.copy(showAccountDialog = false) }
+                    _importState.value = ImportState(isProcessing = true, progress = 80, progressMessage = context.getString(R.string.processing_saving))
 
                     val result = withContext(Dispatchers.IO) {
                         repository.saveImportWithNewAccount(
@@ -334,7 +352,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                         )
                     }
 
-                    importState = ImportState(
+                    _importState.value = ImportState(
                         isProcessing = false,
                         parseResult = pending.parseResult,
                         savedToDatabase = true,
@@ -342,7 +360,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                         progress = 100
                     )
 
-                    dialogState = ImportDialogState(
+                    _dialogState.value = ImportDialogState(
                         showSuccessDialog = true,
                         importResult = result
                     )
@@ -351,8 +369,8 @@ class MainViewModel(private val context: Context) : ViewModel() {
                 }
 
                 is ImportChoice.AddToExisting -> {
-                    dialogState = dialogState.copy(showAccountDialog = false)
-                    importState = ImportState(isProcessing = true, progress = 80, progressMessage = context.getString(R.string.processing_saving))
+                    _dialogState.update { it.copy(showAccountDialog = false) }
+                    _importState.value = ImportState(isProcessing = true, progress = 80, progressMessage = context.getString(R.string.processing_saving))
 
                     val result = withContext(Dispatchers.IO) {
                         repository.saveImportToAccount(
@@ -364,7 +382,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                         )
                     }
 
-                    importState = ImportState(
+                    _importState.value = ImportState(
                         isProcessing = false,
                         parseResult = pending.parseResult,
                         savedToDatabase = true,
@@ -372,7 +390,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                         progress = 100
                     )
 
-                    dialogState = ImportDialogState(
+                    _dialogState.value = ImportDialogState(
                         showSuccessDialog = true,
                         importResult = result
                     )
@@ -381,8 +399,8 @@ class MainViewModel(private val context: Context) : ViewModel() {
                 }
 
                 ImportChoice.Cancel -> {
-                    dialogState = ImportDialogState()
-                    importState = ImportState(
+                    _dialogState.value = ImportDialogState()
+                    _importState.value = ImportState(
                         isProcessing = false,
                         errorMessage = context.getString(R.string.import_cancelled)
                     )
@@ -392,30 +410,30 @@ class MainViewModel(private val context: Context) : ViewModel() {
     }
 
     fun handleBankSelection(bankName: String) {
-        val pendingData = dialogState.pendingPdfData ?: return
+        val pendingData = _dialogState.value.pendingPdfData ?: return
 
-        dialogState = dialogState.copy(
+        _dialogState.update { it.copy(
             showBankSelectionDialog = false,
             detectedBanks = emptyList(),
             pendingPdfData = null
-        )
-        importState = ImportState(isProcessing = true, progress = 50, progressMessage = context.getString(R.string.processing_parsing))
+        ) }
+        _importState.value = ImportState(isProcessing = true, progress = 50, progressMessage = context.getString(R.string.processing_parsing))
 
         coroutineScope.launch {
             val parseResult = withContext(Dispatchers.IO) {
                 fileImportProcessor.parsePdfWithParser(pendingData.text, pendingData.fileName, bankName)
             }
 
-            importState = importState.copy(progress = 70, progressMessage = context.getString(R.string.processing_categorizing))
+            _importState.update { it.copy(progress = 70, progressMessage = context.getString(R.string.processing_categorizing)) }
 
             if (parseResult.success && parseResult.transactions.isNotEmpty()) {
-                importState = importState.copy(progress = 80, progressMessage = context.getString(R.string.processing_saving))
+                _importState.update { it.copy(progress = 80, progressMessage = context.getString(R.string.processing_saving)) }
 
                 val filePath = fileImportProcessor.savePdfToStorage(pendingData.uri, pendingData.fileName)
-                importState = importState.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing))
+                _importState.update { it.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing)) }
                 handleSuccessfulParse(parseResult, pendingData.fileName, filePath, ImportFileType.PDF)
             } else {
-                importState = ImportState(
+                _importState.value = ImportState(
                     isProcessing = false,
                     parseResult = parseResult,
                     savedToDatabase = false,
@@ -426,19 +444,19 @@ class MainViewModel(private val context: Context) : ViewModel() {
     }
 
     fun cancelBankSelection() {
-        dialogState = dialogState.copy(
+        _dialogState.update { it.copy(
             showBankSelectionDialog = false,
             detectedBanks = emptyList(),
             pendingPdfData = null
-        )
-        importState = ImportState(
+        ) }
+        _importState.value = ImportState(
             isProcessing = false,
             errorMessage = context.getString(R.string.bank_selection_cancelled)
         )
     }
 
     fun dismissSuccessDialog() {
-        dialogState = dialogState.copy(showSuccessDialog = false, importResult = null)
+        _dialogState.update { it.copy(showSuccessDialog = false, importResult = null) }
     }
 
     // =====================================================================
@@ -456,7 +474,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
             val accountsCount = withContext(Dispatchers.IO) {
                 repository.getAccountCount().toInt()
             }
-            stats = DatabaseStats(
+            _stats.value = DatabaseStats(
                 totalStatements = statementsCount,
                 totalTransactions = transactionsCount,
                 totalAccounts = accountsCount
@@ -483,7 +501,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                     )
                 }
 
-                transactions = allTransactions.map { tx ->
+                val mappedTransactions = allTransactions.map { tx ->
                     val overrideResult = categoryOverrideManager.findOverrideWithCustom(tx.description, tx.counterparty_name)
 
                     val (category, customCategoryId, customCategoryName, customCategoryIcon, customCategoryColor) = when (overrideResult) {
@@ -530,7 +548,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                 }
 
                 // Calculate category spending with trends
-                val spendingByCategory = transactions
+                val spendingByCategory = mappedTransactions
                     .filter { it.amount < 0 }
                     .groupBy { it.category }
                     .mapValues { (_, txs) -> txs.sumOf { it.amount } }
@@ -542,11 +560,11 @@ class MainViewModel(private val context: Context) : ViewModel() {
                 }
                 val trends = com.banking.statement.ui.TrendCalculator.calculateTrends(monthlyCategoryData)
 
-                categorySpending = spendingByCategory.map { (cat, total) ->
+                val computedCategorySpending = spendingByCategory.map { (cat, total) ->
                     CategorySpending(
                         category = cat,
                         totalAmount = total,
-                        transactionCount = transactions.count { it.category == cat && it.amount < 0 },
+                        transactionCount = mappedTransactions.count { it.category == cat && it.amount < 0 },
                         percentage = if (totalExpensesAmount != 0.0) {
                             ((total / totalExpensesAmount) * 100).toFloat()
                         } else 0f,
@@ -554,8 +572,8 @@ class MainViewModel(private val context: Context) : ViewModel() {
                     )
                 }.sortedBy { it.totalAmount }
 
-                totalExpenses = allTransactions.filter { it.amount < 0 }.sumOf { it.amount }
-                totalIncome = allTransactions.filter { it.amount > 0 }.sumOf { it.amount }
+                val computedExpenses = allTransactions.filter { it.amount < 0 }.sumOf { it.amount }
+                val computedIncome = allTransactions.filter { it.amount > 0 }.sumOf { it.amount }
 
                 val monthlyData = allTransactions.groupBy { tx ->
                     val d = Instant.fromEpochSeconds(tx.booking_date)
@@ -564,7 +582,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                     "${d.year}-${d.monthNumber.toString().padStart(2, '0')}"
                 }
 
-                monthlySummary = monthlyData.map { (month, txs) ->
+                val computedMonthlySummary = monthlyData.map { (month, txs) ->
                     val income = txs.filter { it.amount > 0 }.sumOf { it.amount }
                     val expenses = txs.filter { it.amount < 0 }.sumOf { it.amount }
                     MonthlySummary(
@@ -573,6 +591,15 @@ class MainViewModel(private val context: Context) : ViewModel() {
                         expenses = expenses
                     )
                 }.sortedByDescending { it.month }
+
+                // Atomic update of all financial state
+                _financialState.value = FinancialUiState(
+                    transactions = mappedTransactions,
+                    categorySpending = computedCategorySpending,
+                    monthlySummary = computedMonthlySummary,
+                    totalIncome = computedIncome,
+                    totalExpenses = computedExpenses
+                )
             }
         }
     }
@@ -594,7 +621,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
                 val accountSummaries = repository.getAccountSummary()
-                accountsForManagement = accountSummaries.map { summary ->
+                _accountsForManagement.value = accountSummaries.map { summary ->
                     val statementCount = repository.getStatementCountByAccount(summary.id)
                     AccountManagementItem(
                         id = summary.id,
@@ -654,17 +681,18 @@ class MainViewModel(private val context: Context) : ViewModel() {
         val matchKey = getTransactionMatchKey(transaction)
 
         var updatedCount = 0
-        transactions = transactions.map { tx ->
-            val txMatchKey = getTransactionMatchKey(tx)
-            if (txMatchKey == matchKey) {
-                updatedCount++
-                tx.copy(category = newCategory)
-            } else {
-                tx
+        _financialState.update { state ->
+            val updatedTx = state.transactions.map { tx ->
+                val txMatchKey = getTransactionMatchKey(tx)
+                if (txMatchKey == matchKey) {
+                    updatedCount++
+                    tx.copy(category = newCategory)
+                } else {
+                    tx
+                }
             }
+            recomputeFinancialState(state.copy(transactions = updatedTx))
         }
-
-        updateCategorySpending()
 
         val counterpartyLower = transaction.counterparty?.lowercase() ?: ""
         val descriptionLower = transaction.description.lowercase()
@@ -692,28 +720,29 @@ class MainViewModel(private val context: Context) : ViewModel() {
     }
 
     fun handleCustomCategoryChange(transaction: TransactionDisplay, customCategoryId: Long) {
-        val customCategory = customCategories.find { it.id == customCategoryId } ?: return
+        val customCategory = _appSettings.value.customCategories.find { it.id == customCategoryId } ?: return
 
         val matchKey = getTransactionMatchKey(transaction)
 
         var updatedCount = 0
-        transactions = transactions.map { tx ->
-            val txMatchKey = getTransactionMatchKey(tx)
-            if (txMatchKey == matchKey) {
-                updatedCount++
-                tx.copy(
-                    category = TransactionCategory.OTHER,
-                    customCategoryId = customCategoryId,
-                    customCategoryName = customCategory.name,
-                    customCategoryIcon = customCategory.icon,
-                    customCategoryColor = customCategory.color
-                )
-            } else {
-                tx
+        _financialState.update { state ->
+            val updatedTx = state.transactions.map { tx ->
+                val txMatchKey = getTransactionMatchKey(tx)
+                if (txMatchKey == matchKey) {
+                    updatedCount++
+                    tx.copy(
+                        category = TransactionCategory.OTHER,
+                        customCategoryId = customCategoryId,
+                        customCategoryName = customCategory.name,
+                        customCategoryIcon = customCategory.icon,
+                        customCategoryColor = customCategory.color
+                    )
+                } else {
+                    tx
+                }
             }
+            recomputeFinancialState(state.copy(transactions = updatedTx))
         }
-
-        updateCategorySpending()
 
         val counterpartyLower = transaction.counterparty?.lowercase() ?: ""
         val descriptionLower = transaction.description.lowercase()
@@ -765,27 +794,34 @@ class MainViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    private fun updateCategorySpending() {
-        val spendingByCategory = transactions
+    /**
+     * Recomputes derived financial fields (spending, income, expenses) from transactions.
+     * Returns the updated state for use in atomic [MutableStateFlow.update] calls.
+     */
+    private fun recomputeFinancialState(state: FinancialUiState): FinancialUiState {
+        val spendingByCategory = state.transactions
             .filter { it.amount < 0 }
             .groupBy { it.category }
             .mapValues { (_, txs) -> txs.sumOf { it.amount } }
 
         val totalExpensesAmount = spendingByCategory.values.sum()
 
-        categorySpending = spendingByCategory.map { (cat, total) ->
+        val computedSpending = spendingByCategory.map { (cat, total) ->
             CategorySpending(
                 category = cat,
                 totalAmount = total,
-                transactionCount = transactions.count { it.category == cat && it.amount < 0 },
+                transactionCount = state.transactions.count { it.category == cat && it.amount < 0 },
                 percentage = if (totalExpensesAmount != 0.0) {
                     (total / totalExpensesAmount * 100).toFloat()
                 } else 0f
             )
         }.sortedBy { it.totalAmount }
 
-        totalExpenses = transactions.filter { it.amount < 0 }.sumOf { it.amount }
-        totalIncome = transactions.filter { it.amount > 0 }.sumOf { it.amount }
+        return state.copy(
+            categorySpending = computedSpending,
+            totalExpenses = state.transactions.filter { it.amount < 0 }.sumOf { it.amount },
+            totalIncome = state.transactions.filter { it.amount > 0 }.sumOf { it.amount }
+        )
     }
 
     // =====================================================================
@@ -796,7 +832,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
                 val categories = repository.getAllCategories()
-                customCategories = categories.map { category ->
+                val mapped = categories.map { category ->
                     CustomCategory(
                         id = category.id,
                         name = category.name,
@@ -805,6 +841,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
                         parentId = category.parent_id
                     )
                 }
+                _appSettings.update { it.copy(customCategories = mapped) }
             }
         }
     }
@@ -933,12 +970,12 @@ class MainViewModel(private val context: Context) : ViewModel() {
     // =====================================================================
 
     fun setThemeMode(mode: ThemeMode) {
-        currentThemeMode = mode
+        _appSettings.update { it.copy(themeMode = mode) }
         themePreferences.setThemeMode(mode)
     }
 
     fun dismissTutorial() {
-        showTutorial = false
+        _appSettings.update { it.copy(showTutorial = false) }
         appPreferences.setTutorialDismissed(true)
     }
 

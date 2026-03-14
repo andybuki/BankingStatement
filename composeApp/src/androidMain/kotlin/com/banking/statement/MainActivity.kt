@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModelProvider
 import com.banking.statement.ui.BankSelectionDialog
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -38,19 +40,26 @@ class MainActivity : ComponentActivity() {
         )[MainViewModel::class.java]
 
         setContent {
+            val importState by viewModel.importState.collectAsState()
+            val stats by viewModel.stats.collectAsState()
+            val financialState by viewModel.financialState.collectAsState()
+            val dialogState by viewModel.dialogState.collectAsState()
+            val accountsForManagement by viewModel.accountsForManagement.collectAsState()
+            val appSettings by viewModel.appSettings.collectAsState()
+
             App(
                 onPickFile = { filePickerLauncher.launch("*/*") },
-                importState = viewModel.importState,
-                stats = viewModel.stats,
-                transactions = viewModel.transactions,
-                categorySpending = viewModel.categorySpending,
-                monthlySummary = viewModel.monthlySummary,
-                totalIncome = viewModel.totalIncome,
-                totalExpenses = viewModel.totalExpenses,
-                dialogState = viewModel.dialogState,
+                importState = importState,
+                stats = stats,
+                transactions = financialState.transactions,
+                categorySpending = financialState.categorySpending,
+                monthlySummary = financialState.monthlySummary,
+                totalIncome = financialState.totalIncome,
+                totalExpenses = financialState.totalExpenses,
+                dialogState = dialogState,
                 onImportChoice = { choice -> viewModel.handleImportChoice(choice) },
                 onDismissSuccessDialog = { viewModel.dismissSuccessDialog() },
-                accountsForManagement = viewModel.accountsForManagement,
+                accountsForManagement = accountsForManagement,
                 onDeleteAccount = { accountId -> viewModel.deleteAccount(accountId) },
                 onEditAccount = { accountId, newName -> viewModel.editAccount(accountId, newName) },
                 onClearAllData = { viewModel.clearAllData() },
@@ -60,12 +69,12 @@ class MainActivity : ComponentActivity() {
                 onShareSpending = { format, data ->
                     viewModel.shareSpending(format, data)
                 },
-                themeMode = viewModel.currentThemeMode,
+                themeMode = appSettings.themeMode,
                 onThemeModeChange = { mode -> viewModel.setThemeMode(mode) },
                 onCategoryChange = { transaction, newCategory ->
                     viewModel.handleCategoryChange(transaction, newCategory)
                 },
-                customCategories = viewModel.customCategories,
+                customCategories = appSettings.customCategories,
                 onCustomCategoryChange = { transaction, categoryId ->
                     viewModel.handleCustomCategoryChange(transaction, categoryId)
                 },
@@ -78,15 +87,15 @@ class MainActivity : ComponentActivity() {
                 onDeleteCustomCategory = { id ->
                     viewModel.deleteCustomCategory(id)
                 },
-                showTutorial = viewModel.showTutorial,
+                showTutorial = appSettings.showTutorial,
                 onDismissTutorial = { viewModel.dismissTutorial() },
                 onEmailClick = { email -> viewModel.openEmailClient(email) }
             )
 
             // Bank selection dialog
-            if (viewModel.dialogState.showBankSelectionDialog) {
+            if (dialogState.showBankSelectionDialog) {
                 BankSelectionDialog(
-                    detectedBanks = viewModel.dialogState.detectedBanks,
+                    detectedBanks = dialogState.detectedBanks,
                     onBankSelected = { bankName -> viewModel.handleBankSelection(bankName) },
                     onDismiss = { viewModel.cancelBankSelection() }
                 )
