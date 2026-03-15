@@ -464,7 +464,7 @@ class TransactionRepository(
      * This is needed after the category persistence feature was added.
      */
     fun backfillAutoCategories(): Int {
-        if (transactionCategorizer == null) return 0
+        val categorizer = transactionCategorizer ?: return 0
 
         // Get all transactions without auto_category
         val transactions = queries.getAllTransactions().executeAsList()
@@ -494,7 +494,7 @@ class TransactionRepository(
                 rawText = tx.raw_text
             )
 
-            val category = transactionCategorizer.categorize(parsedTx)
+            val category = categorizer.categorize(parsedTx)
             queries.updateTransactionCategory(null, category.name, tx.id)
         }
 
@@ -513,7 +513,7 @@ class TransactionRepository(
      * 3. Updates the auto_category field
      */
     fun fixMiscategorizedSupermarkets(): Int {
-        if (transactionCategorizer == null) return 0
+        val categorizer = transactionCategorizer ?: return 0
 
         // Well-known supermarket keywords that should never be RESTAURANT
         val supermarketKeywords = listOf(
@@ -560,7 +560,7 @@ class TransactionRepository(
                     rawText = tx.raw_text
                 )
 
-                val newCategory = transactionCategorizer.categorize(parsedTx)
+                val newCategory = categorizer.categorize(parsedTx)
 
                 // Only update if category actually changed
                 if (newCategory.name != tx.auto_category) {
