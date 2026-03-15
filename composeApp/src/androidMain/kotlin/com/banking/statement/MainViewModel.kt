@@ -29,7 +29,7 @@ import com.banking.statement.ui.MonthlySummary
 import com.banking.statement.ui.TransactionDisplay
 import com.banking.statement.ui.theme.ThemeMode
 import com.banking.statement.ui.theme.ThemePreferences
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -98,7 +98,7 @@ class MainViewModel(
     private val _appSettings = MutableStateFlow(AppSettingsState())
     val appSettings: StateFlow<AppSettingsState> = _appSettings.asStateFlow()
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private val coroutineScope = viewModelScope
 
     init {
         // Wire the categorizer into the repository (breaks circular dependency)
