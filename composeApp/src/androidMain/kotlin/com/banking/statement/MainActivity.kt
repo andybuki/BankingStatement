@@ -7,9 +7,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.ViewModelProvider
 import com.banking.statement.ui.BankSelectionDialog
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * Thin Activity shell. All state and business logic lives in [MainViewModel].
@@ -18,7 +18,7 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
  */
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: MainViewModel
+    private val viewModel: MainViewModel by viewModel()
 
     private val filePickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -32,12 +32,6 @@ class MainActivity : ComponentActivity() {
 
         // Initialize PDFBox
         PDFBoxResourceLoader.init(applicationContext)
-
-        // Create ViewModel
-        viewModel = ViewModelProvider(
-            this,
-            MainViewModel.Factory(this)
-        )[MainViewModel::class.java]
 
         setContent {
             val importState by viewModel.importState.collectAsState()

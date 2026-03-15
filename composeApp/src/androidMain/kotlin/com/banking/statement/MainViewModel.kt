@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.banking.statement.categorization.CategoryOverrideManager
 import com.banking.statement.categorization.CategoryOverrideResult
 import com.banking.statement.categorization.CustomCategory
@@ -14,7 +13,6 @@ import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.categorization.TransactionCategorizer
 import com.banking.statement.db.AccountMatchResult
-import com.banking.statement.db.DatabaseDriverFactory
 import com.banking.statement.db.TransactionRepository
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.ExportManager
@@ -67,7 +65,19 @@ data class AppSettingsState(
  * Main ViewModel holding all app state and business logic.
  * Uses StateFlow for reactive, lifecycle-aware state management.
  */
-class MainViewModel(private val context: Context) : ViewModel() {
+class MainViewModel(
+    private val context: Context,
+    val repository: TransactionRepository,
+    private val keywordDatabase: KeywordDatabase,
+    private val merchantDatabase: MerchantDatabase,
+    private val categoryOverrideManager: CategoryOverrideManager,
+    private val transactionCategorizer: TransactionCategorizer,
+    val fileImportProcessor: FileImportProcessor,
+    private val fileExporter: FileExporter,
+    private val pdfGenerator: PdfGenerator,
+    private val themePreferences: ThemePreferences,
+    private val appPreferences: AppPreferences
+) : ViewModel() {
 
     // --- Observable State (StateFlow) ---
     private val _importState = MutableStateFlow(ImportState())
@@ -88,45 +98,14 @@ class MainViewModel(private val context: Context) : ViewModel() {
     private val _appSettings = MutableStateFlow(AppSettingsState())
     val appSettings: StateFlow<AppSettingsState> = _appSettings.asStateFlow()
 
-    // --- Dependencies ---
-    val repository: TransactionRepository
-    private val appPreferences: AppPreferences
-    private val fileExporter: FileExporter
-    private val pdfGenerator: PdfGenerator
-    private val themePreferences: ThemePreferences
-    private val merchantDatabase: MerchantDatabase
-    private val categoryOverrideManager: CategoryOverrideManager
-    private val transactionCategorizer: TransactionCategorizer
-    private val keywordDatabase: KeywordDatabase
-    val fileImportProcessor: FileImportProcessor
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     init {
-        // Initialize database
-        val driverFactory = DatabaseDriverFactory(context)
+        // Wire the categorizer into the repository (breaks circular dependency)
+        repository.transactionCategorizer = transactionCategorizer
 
-        // Initialize keyword database first
-        keywordDatabase = KeywordDatabase()
+        // Load keyword database from assets
         loadKeywordDatabase()
-
-        // Initialize temporary repository to get database instance
-        val tempRepository = TransactionRepository(driverFactory)
-
-        // Initialize merchant database for improved categorization
-        merchantDatabase = MerchantDatabase(tempRepository.database)
-
-        // Initialize category override manager for user corrections
-        categoryOverrideManager = CategoryOverrideManager(tempRepository.database)
-        categoryOverrideManager.loadCache()
-
-        // Initialize transaction categorizer with proper priority
-        transactionCategorizer = TransactionCategorizer(merchantDatabase, categoryOverrideManager)
-
-        // Initialize repository with categorizer for auto-categorization on import
-        repository = TransactionRepository(driverFactory, transactionCategorizer)
-
-        // Initialize file import processor
-        fileImportProcessor = FileImportProcessor(context)
 
         // Load merchant data from CSV if not already loaded
         loadMerchantDatabase()
@@ -140,15 +119,7 @@ class MainViewModel(private val context: Context) : ViewModel() {
             android.util.Log.d("Migration", "Fixed $fixedCount miscategorized transactions")
         }
 
-        // Initialize exporters
-        fileExporter = FileExporter(context)
-        pdfGenerator = PdfGenerator(context)
-
-        // Initialize theme preferences
-        themePreferences = ThemePreferences(context)
-
-        // Initialize app preferences and tutorial state
-        appPreferences = AppPreferences(context)
+        // Initialize app settings state
         _appSettings.update {
             it.copy(
                 themeMode = themePreferences.getThemeMode(),
@@ -1092,14 +1063,4 @@ class MainViewModel(private val context: Context) : ViewModel() {
         }
     }
 
-    // =====================================================================
-    // FACTORY
-    // =====================================================================
-
-    class Factory(private val context: Context) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return MainViewModel(context.applicationContext) as T
-        }
-    }
 }

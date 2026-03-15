@@ -39,10 +39,16 @@ data class ImportResult(
 
 class TransactionRepository(
     driverFactory: DatabaseDriverFactory,
-    private val transactionCategorizer: com.banking.statement.categorization.TransactionCategorizer? = null
+    transactionCategorizer: com.banking.statement.categorization.TransactionCategorizer? = null
 ) {
     val database = BankingDatabase(driverFactory.createDriver())
     private val queries = database.bankingDatabaseQueries
+
+    /**
+     * The categorizer can be set after construction to break the circular dependency:
+     * Repository creates Database -> Database needed for MerchantDB/OverrideManager -> those create Categorizer -> Categorizer needed by Repository
+     */
+    var transactionCategorizer: com.banking.statement.categorization.TransactionCategorizer? = transactionCategorizer
 
     // ==================== Account Operations ====================
 
