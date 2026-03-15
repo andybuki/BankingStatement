@@ -45,7 +45,6 @@ kotlin {
             implementation(libs.sqldelight.coroutines)
             implementation(libs.kotlinx.datetime)
             implementation(libs.koin.core)
-            implementation(libs.koin.compose)
 
         }
         iosMain.dependencies {
