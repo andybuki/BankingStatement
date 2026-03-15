@@ -6,6 +6,14 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 
 actual class DatabaseDriverFactory(private val context: Context) {
     actual fun createDriver(): SqlDriver {
-        return AndroidSqliteDriver(BankingDatabase.Schema, context, "banking.db")
+        return AndroidSqliteDriver(
+            schema = BankingDatabase.Schema,
+            context = context,
+            name = "banking.db",
+            callback = AndroidSqliteDriver.Callback(
+                schema = BankingDatabase.Schema,
+                *DatabaseMigration.getMigrationCallbacks()
+            )
+        )
     }
 }

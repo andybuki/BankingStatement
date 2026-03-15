@@ -1,0 +1,7 @@
+-- Migration from version 1 to version 2
+-- Adds notes column to transactions for user annotations
+-- Adds updated_at column to accounts for tracking modifications
+
+ALTER TABLE transactions ADD COLUMN notes TEXT;
+
+ALTER TABLE accounts ADD COLUMN updated_at INTEGER;

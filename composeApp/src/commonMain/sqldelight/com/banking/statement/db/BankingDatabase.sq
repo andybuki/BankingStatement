@@ -8,7 +8,8 @@ CREATE TABLE accounts (
     color TEXT,
     icon TEXT,
     is_active INTEGER NOT NULL DEFAULT 1,
-    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    updated_at INTEGER
 );
 
 -- Imported statement files metadata
@@ -55,7 +56,8 @@ CREATE TABLE transactions (
     auto_category TEXT,
     raw_text TEXT,
     is_duplicate INTEGER NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    notes TEXT
 );
 
 -- Indexes for faster queries
@@ -87,7 +89,7 @@ getLastInsertedAccountId:
 SELECT last_insert_rowid();
 
 updateAccount:
-UPDATE accounts SET name = ?, color = ?, icon = ? WHERE id = ?;
+UPDATE accounts SET name = ?, color = ?, icon = ?, updated_at = strftime('%s', 'now') WHERE id = ?;
 
 deactivateAccount:
 UPDATE accounts SET is_active = 0 WHERE id = ?;
@@ -163,6 +165,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransactionCategory:
 UPDATE transactions SET category_id = ?, auto_category = ? WHERE id = ?;
+
+updateTransactionNotes:
+UPDATE transactions SET notes = ? WHERE id = ?;
 
 markAsDuplicate:
 UPDATE transactions SET is_duplicate = 1 WHERE id = ?;
