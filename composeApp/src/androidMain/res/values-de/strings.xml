@@ -135,6 +135,26 @@
     <string name="error_parser_not_found">Parser nicht gefunden für %s</string>
     <string name="bank_selection_cancelled">Bankauswahl abgebrochen</string>
 
+    <!-- Import Error Dialog -->
+    <string name="import_error_title">Importfehler</string>
+    <string name="import_error_file_could_not_be_read">Die Datei konnte nicht gelesen werden. Sie ist möglicherweise beschädigt oder nicht zugänglich.</string>
+    <string name="import_error_unsupported_format_detail">Dieses Dateiformat wird nicht unterstützt. Bitte verwenden Sie PDF-, CSV- oder Excel-Dateien aus Ihrem Bankexport.</string>
+    <string name="import_error_not_bank_statement_detail">Die Datei enthält keine erkennbaren Kontoauszugsdaten. Bitte stellen Sie sicher, dass Sie eine Kontoauszugsdatei importieren.</string>
+    <string name="import_error_pdf_invalid">Diese Datei ist kein gültiges PDF-Dokument.</string>
+    <string name="import_error_pdf_no_text">Aus dieser PDF konnte kein Text extrahiert werden. Möglicherweise handelt es sich um ein gescanntes Bild. Versuchen Sie stattdessen einen CSV- oder Excel-Export.</string>
+    <string name="import_error_parser_not_found">Für diese Bank ist kein Parser verfügbar. Die Datei wurde als Kontoauszug erkannt, konnte aber nicht verarbeitet werden.</string>
+    <string name="import_error_generic">Beim Import ist ein unerwarteter Fehler aufgetreten.</string>
+    <string name="import_error_what_happened">Was ist passiert</string>
+    <string name="import_error_what_you_can_do">Was Sie tun können</string>
+    <string name="import_error_try_different_format">Versuchen Sie, aus Ihrer Bank in einem anderen Format zu exportieren (CSV oder Excel funktioniert oft am besten)</string>
+    <string name="import_error_check_file_valid">Stellen Sie sicher, dass die Datei ein gültiger, unveränderter Kontoauszug ist</string>
+    <string name="import_error_contact_support">Wenn das Problem weiterhin besteht, kontaktieren Sie den Support</string>
+    <string name="import_error_file_label">Datei</string>
+    <string name="import_error_format_label">Format</string>
+    <string name="import_error_details_label">Details</string>
+    <string name="retry_import">Erneut versuchen</string>
+    <string name="dismiss">Schließen</string>
+
     <!-- Export -->
     <string name="export">Exportieren</string>
     <string name="export_csv">Als CSV exportieren</string>

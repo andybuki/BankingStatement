@@ -5,6 +5,7 @@ import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.parser.banks.DetectionConfidence
 import com.banking.statement.ui.AccountOption
+import com.banking.statement.ui.ImportErrorDetails
 import com.banking.statement.db.ImportResult
 
 /**
@@ -36,11 +37,13 @@ data class ImportDialogState(
     val showAccountDialog: Boolean = false,
     val showSuccessDialog: Boolean = false,
     val showBankSelectionDialog: Boolean = false,
+    val showErrorDialog: Boolean = false,
     val pendingImport: PendingImport? = null,
     val existingAccounts: List<AccountOption> = emptyList(),
     val importResult: ImportResult? = null,
     val detectedBanks: List<DetectedBankOption> = emptyList(),
-    val pendingPdfData: PendingPdfData? = null
+    val pendingPdfData: PendingPdfData? = null,
+    val errorDetails: ImportErrorDetails? = null
 )
 
 /**

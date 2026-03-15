@@ -96,6 +96,8 @@ fun App(
     dialogState: Any? = null,
     onImportChoice: ((ImportChoice) -> Unit)? = null,
     onDismissSuccessDialog: (() -> Unit)? = null,
+    onRetryImport: (() -> Unit)? = null,
+    onDismissErrorDialog: (() -> Unit)? = null,
     // Account management
     accountsForManagement: List<AccountManagementItem> = emptyList(),
     onDeleteAccount: ((Long) -> Unit)? = null,
@@ -161,19 +163,10 @@ fun App(
     // Track which import we've shown the success card for (using a unique key)
     var lastShownImportKey by remember { mutableStateOf<String?>(null) }
 
-    // Track error card visibility at App level (auto-dismiss like success card)
-    var showErrorCard by remember { mutableStateOf(false) }
-    var lastShownErrorKey by remember { mutableStateOf<String?>(null) }
-
     // Generate a unique key for the current import
     val currentImportKey = if (importState.savedToDatabase && importState.parseResult != null) {
         "${importState.parseResult.bankName}_${importState.transactionCount}_${importState.parseResult.statementPeriod}"
     } else null
-
-    // Generate a unique key for errors
-    val currentErrorKey = importState.errorMessage ?:
-        (if (importState.parseResult != null && !importState.parseResult.success)
-            importState.parseResult.errorMessage else null)
 
     // Auto-dismiss success card after 5 seconds, only show once per import
     LaunchedEffect(currentImportKey) {
@@ -182,16 +175,6 @@ fun App(
             showSuccessCard = true
             delay(5000) // 5 seconds
             showSuccessCard = false
-        }
-    }
-
-    // Auto-dismiss error card after 5 seconds, only show once per error
-    LaunchedEffect(currentErrorKey) {
-        if (currentErrorKey != null && currentErrorKey != lastShownErrorKey) {
-            lastShownErrorKey = currentErrorKey
-            showErrorCard = true
-            delay(5000) // 5 seconds
-            showErrorCard = false
         }
     }
 
@@ -223,7 +206,6 @@ fun App(
                             totalIncome = totalIncome,
                             totalExpenses = totalExpenses,
                             showSuccessCard = showSuccessCard,
-                            showErrorCard = showErrorCard,
                             showTutorial = showTutorial,
                             onDismissTutorial = onDismissTutorial,
                             onEmailClick = onEmailClick
@@ -618,7 +600,9 @@ fun App(
                     HandleImportDialogs(
                         dialogState = dialogState,
                         onImportChoice = onImportChoice,
-                        onDismissSuccessDialog = onDismissSuccessDialog
+                        onDismissSuccessDialog = onDismissSuccessDialog,
+                        onRetryImport = onRetryImport,
+                        onDismissErrorDialog = onDismissErrorDialog
                     )
 
                     // Category management screen overlay
@@ -647,7 +631,9 @@ fun App(
 expect fun HandleImportDialogs(
     dialogState: Any?,
     onImportChoice: ((ImportChoice) -> Unit)?,
-    onDismissSuccessDialog: (() -> Unit)?
+    onDismissSuccessDialog: (() -> Unit)?,
+    onRetryImport: (() -> Unit)? = null,
+    onDismissErrorDialog: (() -> Unit)? = null
 )
 
 @Composable
@@ -659,7 +645,6 @@ fun HomeScreen(
     totalIncome: Double = 0.0,
     totalExpenses: Double = 0.0,
     showSuccessCard: Boolean = false,  // Controlled by App level state
-    showErrorCard: Boolean = false,    // Controlled by App level state for errors
     showTutorial: Boolean = false,     // Show welcome tutorial on first launch
     onDismissTutorial: () -> Unit = {},
     onEmailClick: (String) -> Unit = {}
@@ -748,15 +733,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Error Message - auto-dismisses after 5 seconds
-            AnimatedVisibility(
-                visible = showErrorCard && importState.errorMessage != null,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                ErrorCard(message = importState.errorMessage ?: "")
-            }
-
             // Success Result - auto-dismisses after 5 seconds
             AnimatedVisibility(
                 visible = showSuccessCard && importState.savedToDatabase && importState.parseResult != null,
@@ -768,21 +744,6 @@ fun HomeScreen(
                         result = result,
                         transactionCount = importState.transactionCount
                     )
-                }
-            }
-
-            // Parse Failed Result - auto-dismisses after 5 seconds
-            AnimatedVisibility(
-                visible = showErrorCard &&
-                          importState.parseResult != null &&
-                          !importState.parseResult!!.success &&
-                          importState.errorMessage == null &&
-                          !importState.isProcessing,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                importState.parseResult?.let { result ->
-                    ValidationFailedCard(result = result)
                 }
             }
 
@@ -1029,34 +990,6 @@ fun StatItem(label: String, value: String) {
 }
 
 @Composable
-fun ErrorCard(message: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "!",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-        }
-    }
-}
-
-@Composable
 fun SuccessCard(result: ParseResult, transactionCount: Int) {
     val strings = LocalStrings.current
 
@@ -1104,54 +1037,6 @@ fun SuccessCard(result: ParseResult, transactionCount: Int) {
             result.accountIban?.let {
                 DetailRow(strings.accountLabel, it.take(12) + "...")
             }
-        }
-    }
-}
-
-@Composable
-fun ValidationFailedCard(result: ParseResult) {
-    val strings = LocalStrings.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "X",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = strings.importFailed,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                    Text(
-                        text = result.errorMessage ?: strings.errorReadingFile,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = strings.importTip,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
-            )
         }
     }
 }

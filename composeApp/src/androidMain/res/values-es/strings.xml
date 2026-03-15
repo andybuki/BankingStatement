@@ -135,6 +135,26 @@
     <string name="error_parser_not_found">Analizador no encontrado para %s</string>
     <string name="bank_selection_cancelled">Selección de banco cancelada</string>
 
+    <!-- Import Error Dialog -->
+    <string name="import_error_title">Error de importación</string>
+    <string name="import_error_file_could_not_be_read">No se pudo leer el archivo. Puede estar dañado o ser inaccesible.</string>
+    <string name="import_error_unsupported_format_detail">Este formato de archivo no es compatible. Utilice archivos PDF, CSV o Excel exportados desde su banco.</string>
+    <string name="import_error_not_bank_statement_detail">El archivo no contiene datos reconocibles de extracto bancario. Asegúrese de estar importando un archivo de extracto bancario.</string>
+    <string name="import_error_pdf_invalid">Este archivo no es un documento PDF válido.</string>
+    <string name="import_error_pdf_no_text">No se pudo extraer texto de este PDF. Puede ser una imagen escaneada. Intente usar una exportación CSV o Excel.</string>
+    <string name="import_error_parser_not_found">No hay un analizador disponible para este banco. El archivo fue reconocido como un extracto bancario pero no pudo ser procesado.</string>
+    <string name="import_error_generic">Ocurrió un error inesperado durante la importación.</string>
+    <string name="import_error_what_happened">Qué sucedió</string>
+    <string name="import_error_what_you_can_do">Qué puede hacer</string>
+    <string name="import_error_try_different_format">Intente exportar desde su banco en un formato diferente (CSV o Excel suelen funcionar mejor)</string>
+    <string name="import_error_check_file_valid">Asegúrese de que el archivo sea un extracto bancario válido y sin modificar</string>
+    <string name="import_error_contact_support">Si el problema persiste, contacte con soporte</string>
+    <string name="import_error_file_label">Archivo</string>
+    <string name="import_error_format_label">Formato</string>
+    <string name="import_error_details_label">Detalles</string>
+    <string name="retry_import">Reintentar</string>
+    <string name="dismiss">Cerrar</string>
+
     <!-- Export -->
     <string name="export">Exportar</string>
     <string name="export_csv">Exportar como CSV</string>
