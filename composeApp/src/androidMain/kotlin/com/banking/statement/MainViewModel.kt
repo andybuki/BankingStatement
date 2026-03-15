@@ -59,7 +59,9 @@ data class FinancialUiState(
 data class AppSettingsState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val showTutorial: Boolean = false,
-    val customCategories: List<CustomCategory> = emptyList()
+    val customCategories: List<CustomCategory> = emptyList(),
+    val biometricLockEnabled: Boolean = false,
+    val biometricAvailable: Boolean = false
 )
 
 /**
@@ -77,7 +79,8 @@ class MainViewModel(
     private val fileExporter: FileExporter,
     private val pdfGenerator: PdfGenerator,
     private val themePreferences: ThemePreferences,
-    private val appPreferences: AppPreferences
+    private val appPreferences: AppPreferences,
+    private val biometricLockManager: BiometricLockManager
 ) : ViewModel() {
 
     // --- Observable State (StateFlow) ---
@@ -127,7 +130,9 @@ class MainViewModel(
         _appSettings.update {
             it.copy(
                 themeMode = themePreferences.getThemeMode(),
-                showTutorial = !appPreferences.isTutorialDismissed()
+                showTutorial = !appPreferences.isTutorialDismissed(),
+                biometricLockEnabled = appPreferences.isBiometricLockEnabled(),
+                biometricAvailable = biometricLockManager.canAuthenticate()
             )
         }
 
@@ -992,6 +997,17 @@ class MainViewModel(
         _appSettings.update { it.copy(showTutorial = false) }
         appPreferences.setTutorialDismissed(true)
     }
+
+    fun setBiometricLockEnabled(enabled: Boolean) {
+        _appSettings.update { it.copy(biometricLockEnabled = enabled) }
+        appPreferences.setBiometricLockEnabled(enabled)
+    }
+
+    fun isBiometricLockEnabled(): Boolean {
+        return appPreferences.isBiometricLockEnabled()
+    }
+
+    fun getBiometricLockManager(): BiometricLockManager = biometricLockManager
 
     fun openEmailClient(email: String) {
         try {

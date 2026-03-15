@@ -1,6 +1,7 @@
 package com.banking.statement.di
 
 import com.banking.statement.AppPreferences
+import com.banking.statement.BiometricLockManager
 import com.banking.statement.FileImportProcessor
 import com.banking.statement.MainViewModel
 import com.banking.statement.db.DatabaseDriverFactory
@@ -26,6 +27,9 @@ val androidModule = module {
     single { ThemePreferences(androidContext()) }
     single { AppPreferences(androidContext()) }
 
+    // Security (Android-specific, needs Context)
+    single { BiometricLockManager(androidContext()) }
+
     // ViewModel with all dependencies injected
     viewModel {
         MainViewModel(
@@ -39,7 +43,8 @@ val androidModule = module {
             fileExporter = get(),
             pdfGenerator = get(),
             themePreferences = get(),
-            appPreferences = get()
+            appPreferences = get(),
+            biometricLockManager = get()
         )
     }
 }

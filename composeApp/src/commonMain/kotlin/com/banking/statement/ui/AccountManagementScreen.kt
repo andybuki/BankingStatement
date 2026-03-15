@@ -51,7 +51,10 @@ fun AccountManagementScreen(
     onEditAccount: (Long, String) -> Unit,
     onClearAllData: () -> Unit,
     currentThemeMode: ThemeMode = ThemeMode.SYSTEM,
-    onThemeModeChange: (ThemeMode) -> Unit = {}
+    onThemeModeChange: (ThemeMode) -> Unit = {},
+    biometricLockEnabled: Boolean = false,
+    biometricAvailable: Boolean = false,
+    onBiometricLockChange: (Boolean) -> Unit = {}
 ) {
     val strings = LocalStrings.current
     var showDeleteDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
@@ -113,6 +116,15 @@ fun AccountManagementScreen(
             currentThemeMode = currentThemeMode,
             onThemeModeChange = onThemeModeChange
         )
+
+        if (biometricAvailable) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SecuritySettingsCard(
+                biometricLockEnabled = biometricLockEnabled,
+                onBiometricLockChange = onBiometricLockChange
+            )
+        }
 
         // Danger Zone Section (only show if there's data)
         if (accounts.isNotEmpty()) {
@@ -556,6 +568,62 @@ private fun ThemeOption(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Composable
+private fun SecuritySettingsCard(
+    biometricLockEnabled: Boolean,
+    onBiometricLockChange: (Boolean) -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.security,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = strings.biometricLock,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = strings.biometricLockDescription,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = biometricLockEnabled,
+                    onCheckedChange = onBiometricLockChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            }
+        }
     }
 }
 

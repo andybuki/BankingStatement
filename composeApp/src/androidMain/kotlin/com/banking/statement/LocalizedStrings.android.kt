@@ -208,5 +208,10 @@ actual fun provideStrings(): AppStrings = AppStrings(
     welcomeBullet3 = stringResource(R.string.welcome_bullet_3),
     welcomeButton = stringResource(R.string.welcome_button),
     contactEmail = stringResource(R.string.contact_email),
-    contactHint = stringResource(R.string.contact_hint)
+    contactHint = stringResource(R.string.contact_hint),
+
+    // Security
+    security = stringResource(R.string.security),
+    biometricLock = stringResource(R.string.biometric_lock),
+    biometricLockDescription = stringResource(R.string.biometric_lock_description)
 )
