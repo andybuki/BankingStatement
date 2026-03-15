@@ -1,0 +1,85 @@
+-- Version 1: Initial database schema
+-- All tables and indexes for the banking statement application
+
+CREATE TABLE accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    bank_name TEXT NOT NULL,
+    iban TEXT,
+    currency TEXT NOT NULL DEFAULT 'EUR',
+    color TEXT,
+    icon TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE TABLE statements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+    file_name TEXT NOT NULL,
+    file_path TEXT,
+    source_type TEXT NOT NULL,
+    bank_name TEXT NOT NULL,
+    account_iban TEXT,
+    import_date INTEGER NOT NULL,
+    statement_period TEXT,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE TABLE categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    icon TEXT,
+    color TEXT,
+    parent_id INTEGER REFERENCES categories(id)
+);
+
+CREATE TABLE transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    statement_id INTEGER NOT NULL REFERENCES statements(id) ON DELETE CASCADE,
+    account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+    transaction_id TEXT,
+    booking_date INTEGER NOT NULL,
+    value_date INTEGER,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'EUR',
+    balance REAL,
+    description TEXT NOT NULL,
+    counterparty_name TEXT,
+    counterparty_iban TEXT,
+    remittance_info TEXT,
+    transaction_type TEXT,
+    bank_transaction_code TEXT,
+    category_id INTEGER REFERENCES categories(id),
+    auto_category TEXT,
+    raw_text TEXT,
+    is_duplicate INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX idx_transactions_statement ON transactions(statement_id);
+CREATE INDEX idx_transactions_account ON transactions(account_id);
+CREATE INDEX idx_transactions_date ON transactions(booking_date);
+CREATE INDEX idx_transactions_category ON transactions(category_id);
+CREATE INDEX idx_transactions_amount ON transactions(amount);
+CREATE INDEX idx_accounts_iban ON accounts(iban);
+
+CREATE TABLE IF NOT EXISTS merchants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_code TEXT NOT NULL,
+    country_code TEXT NOT NULL,
+    name TEXT NOT NULL,
+    name_normalized TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_merchants_name_normalized ON merchants(name_normalized);
+CREATE INDEX IF NOT EXISTS idx_merchants_category ON merchants(category_code);
+
+CREATE TABLE IF NOT EXISTS category_overrides (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pattern TEXT NOT NULL UNIQUE,
+    category_name TEXT NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_overrides_pattern ON category_overrides(pattern);

@@ -5,6 +5,7 @@ import app.cash.sqldelight.driver.native.NativeSqliteDriver
 
 actual class DatabaseDriverFactory {
     actual fun createDriver(): SqlDriver {
-        return NativeSqliteDriver(BankingDatabase.Schema, "banking.db")
+        val callbacks = DatabaseMigration.getMigrationCallbacks()
+        return NativeSqliteDriver(BankingDatabase.Schema, "banking.db", 1, *callbacks)
     }
 }

@@ -1,0 +1,7 @@
+-- Version 2: Add notes and updated_at columns
+-- Adds notes column to transactions for user annotations
+-- Adds updated_at column to accounts for tracking modifications
+
+ALTER TABLE transactions ADD COLUMN notes TEXT;
+
+ALTER TABLE accounts ADD COLUMN updated_at INTEGER;
