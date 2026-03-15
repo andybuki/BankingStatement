@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import com.banking.statement.ui.ImportErrorDetails
 import androidx.lifecycle.ViewModel
 import com.banking.statement.categorization.CategoryOverrideManager
 import com.banking.statement.categorization.CategoryOverrideResult
@@ -92,6 +93,9 @@ class MainViewModel(
     private val _dialogState = MutableStateFlow(ImportDialogState())
     val dialogState: StateFlow<ImportDialogState> = _dialogState.asStateFlow()
 
+    // Track last import URI for retry support
+    private var lastImportUri: Uri? = null
+
     private val _accountsForManagement = MutableStateFlow<List<AccountManagementItem>>(emptyList())
     val accountsForManagement: StateFlow<List<AccountManagementItem>> = _accountsForManagement.asStateFlow()
 
@@ -142,6 +146,8 @@ class MainViewModel(
     // =====================================================================
 
     fun processFile(uri: Uri) {
+        lastImportUri = uri
+
         coroutineScope.launch {
             _importState.value = ImportState(
                 isProcessing = true,
@@ -153,12 +159,27 @@ class MainViewModel(
                 val fileName = fileImportProcessor.getFileName(uri) ?: "document"
                 _importState.update { it.copy(progress = 10, progressMessage = context.getString(R.string.processing_reading)) }
 
-                val bytes = fileImportProcessor.readFileBytes(uri) ?: throw Exception("Could not read file")
+                val bytes = fileImportProcessor.readFileBytes(uri)
+                if (bytes == null) {
+                    _importState.value = ImportState(isProcessing = false)
+                    showImportErrorDialog(
+                        errorMessage = context.getString(R.string.import_error_file_could_not_be_read),
+                        fileName = fileName
+                    )
+                    return@launch
+                }
                 _importState.update { it.copy(progress = 20, progressMessage = context.getString(R.string.processing_detecting)) }
 
                 val fileType = ImportFileType.fromFileName(fileName)
                     ?: fileImportProcessor.detectFileType(bytes)
-                    ?: throw Exception("Unsupported file format")
+                if (fileType == null) {
+                    _importState.value = ImportState(isProcessing = false)
+                    showImportErrorDialog(
+                        errorMessage = context.getString(R.string.import_error_unsupported_format_detail),
+                        fileName = fileName
+                    )
+                    return@launch
+                }
                 _importState.update { it.copy(progress = 30, progressMessage = context.getString(R.string.processing_parsing)) }
 
                 val parseResult = withContext(Dispatchers.IO) {
@@ -215,18 +236,19 @@ class MainViewModel(
                     _importState.update { it.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing)) }
                     handleSuccessfulParse(parseResult, fileName, filePath, fileType)
                 } else {
-                    _importState.value = ImportState(
-                        isProcessing = false,
-                        parseResult = parseResult,
-                        savedToDatabase = false,
-                        errorMessage = parseResult.errorMessage
+                    _importState.value = ImportState(isProcessing = false)
+                    showImportErrorDialog(
+                        errorMessage = parseResult.errorMessage ?: context.getString(R.string.import_error_not_bank_statement_detail),
+                        fileName = fileName,
+                        fileFormat = fileType.name,
+                        technicalDetails = parseResult.bankName.takeIf { it != "Unknown" }
                     )
                 }
 
             } catch (e: Exception) {
-                _importState.value = ImportState(
-                    isProcessing = false,
-                    errorMessage = "Error: ${e.message}"
+                _importState.value = ImportState(isProcessing = false)
+                showImportErrorDialog(
+                    errorMessage = e.message ?: context.getString(R.string.import_error_generic)
                 )
             }
         }
@@ -371,10 +393,7 @@ class MainViewModel(
 
                 ImportChoice.Cancel -> {
                     _dialogState.value = ImportDialogState()
-                    _importState.value = ImportState(
-                        isProcessing = false,
-                        errorMessage = context.getString(R.string.import_cancelled)
-                    )
+                    _importState.value = ImportState(isProcessing = false)
                 }
             }
         }
@@ -404,11 +423,12 @@ class MainViewModel(
                 _importState.update { it.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing)) }
                 handleSuccessfulParse(parseResult, pendingData.fileName, filePath, ImportFileType.PDF)
             } else {
-                _importState.value = ImportState(
-                    isProcessing = false,
-                    parseResult = parseResult,
-                    savedToDatabase = false,
-                    errorMessage = parseResult.errorMessage
+                _importState.value = ImportState(isProcessing = false)
+                showImportErrorDialog(
+                    errorMessage = parseResult.errorMessage ?: context.getString(R.string.import_error_not_bank_statement_detail),
+                    fileName = pendingData.fileName,
+                    fileFormat = "PDF",
+                    technicalDetails = parseResult.bankName.takeIf { it != "Unknown" }
                 )
             }
         }
@@ -420,14 +440,37 @@ class MainViewModel(
             detectedBanks = emptyList(),
             pendingPdfData = null
         ) }
-        _importState.value = ImportState(
-            isProcessing = false,
-            errorMessage = context.getString(R.string.bank_selection_cancelled)
-        )
+        _importState.value = ImportState(isProcessing = false)
     }
 
     fun dismissSuccessDialog() {
         _dialogState.update { it.copy(showSuccessDialog = false, importResult = null) }
+    }
+
+    private fun showImportErrorDialog(
+        errorMessage: String,
+        fileName: String? = null,
+        fileFormat: String? = null,
+        technicalDetails: String? = null
+    ) {
+        _dialogState.update { it.copy(
+            showErrorDialog = true,
+            errorDetails = ImportErrorDetails(
+                errorMessage = errorMessage,
+                fileName = fileName,
+                fileFormat = fileFormat,
+                technicalDetails = technicalDetails
+            )
+        ) }
+    }
+
+    fun dismissErrorDialog() {
+        _dialogState.update { it.copy(showErrorDialog = false, errorDetails = null) }
+    }
+
+    fun retryImport() {
+        _dialogState.update { it.copy(showErrorDialog = false, errorDetails = null) }
+        lastImportUri?.let { processFile(it) }
     }
 
     // =====================================================================

@@ -53,6 +53,8 @@ class MainActivity : ComponentActivity() {
                 dialogState = dialogState,
                 onImportChoice = { choice -> viewModel.handleImportChoice(choice) },
                 onDismissSuccessDialog = { viewModel.dismissSuccessDialog() },
+                onRetryImport = { viewModel.retryImport() },
+                onDismissErrorDialog = { viewModel.dismissErrorDialog() },
                 accountsForManagement = accountsForManagement,
                 onDeleteAccount = { accountId -> viewModel.deleteAccount(accountId) },
                 onEditAccount = { accountId, newName -> viewModel.editAccount(accountId, newName) },

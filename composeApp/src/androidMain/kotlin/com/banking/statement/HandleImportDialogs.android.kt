@@ -3,13 +3,16 @@ package com.banking.statement
 import androidx.compose.runtime.Composable
 import com.banking.statement.ui.ImportAccountDialog
 import com.banking.statement.ui.ImportChoice
+import com.banking.statement.ui.ImportErrorDialog
 import com.banking.statement.ui.ImportSuccessDialog
 
 @Composable
 actual fun HandleImportDialogs(
     dialogState: Any?,
     onImportChoice: ((ImportChoice) -> Unit)?,
-    onDismissSuccessDialog: (() -> Unit)?
+    onDismissSuccessDialog: (() -> Unit)?,
+    onRetryImport: (() -> Unit)?,
+    onDismissErrorDialog: (() -> Unit)?
 ) {
     // Cast to the Android-specific ImportDialogState
     val state = dialogState as? ImportDialogState ?: return
@@ -33,7 +36,6 @@ actual fun HandleImportDialogs(
     // Show success dialog
     if (state.showSuccessDialog && state.importResult != null) {
         val result = state.importResult
-        // Get account name - for new accounts it's the bank name, for existing it would need to be looked up
         val accountName = if (result.isNewAccount) {
             state.pendingImport?.parseResult?.bankName ?: "Account"
         } else {
@@ -48,6 +50,19 @@ actual fun HandleImportDialogs(
             isDuplicateStatement = result.isDuplicateStatement,
             onDismiss = {
                 onDismissSuccessDialog?.invoke()
+            }
+        )
+    }
+
+    // Show error dialog
+    if (state.showErrorDialog && state.errorDetails != null) {
+        ImportErrorDialog(
+            errorDetails = state.errorDetails,
+            onRetry = {
+                onRetryImport?.invoke()
+            },
+            onDismiss = {
+                onDismissErrorDialog?.invoke()
             }
         )
     }
