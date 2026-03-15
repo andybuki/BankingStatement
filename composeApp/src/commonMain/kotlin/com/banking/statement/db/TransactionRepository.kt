@@ -341,6 +341,10 @@ class TransactionRepository(
         return queries.getAllTransactions().executeAsList()
     }
 
+    fun getTransactionsPaged(limit: Long, offset: Long): List<Transactions> {
+        return queries.getTransactionsPaged(limit, offset).executeAsList()
+    }
+
     fun getTransactionsByAccount(accountId: Long): List<Transactions> {
         return queries.getTransactionsByAccount(accountId).executeAsList()
     }

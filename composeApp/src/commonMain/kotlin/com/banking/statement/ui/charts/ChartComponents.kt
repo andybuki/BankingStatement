@@ -40,7 +40,27 @@ fun CategorySpendingDonutChart(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
-    val totalExpenses = categorySpending.sumOf { it.totalAmount.absoluteValue }
+
+    // Cache computed values to avoid recalculation on every recomposition
+    val totalExpenses = remember(categorySpending) {
+        categorySpending.sumOf { it.totalAmount.absoluteValue }
+    }
+    val sortedSpending = remember(categorySpending) {
+        categorySpending.sortedByDescending { abs(it.totalAmount) }
+    }
+    val legendItems = remember(sortedSpending) {
+        sortedSpending.take(8)
+    }
+    // Pre-parse colors for the donut chart arcs
+    val arcData = remember(sortedSpending) {
+        sortedSpending.map { spending ->
+            Triple(
+                parseColor(spending.category.color),
+                (spending.percentage / 100f) * 360f,
+                spending
+            )
+        }
+    }
 
     Card(
         modifier = modifier,
@@ -73,17 +93,11 @@ fun CategorySpendingDonutChart(
                     val strokeWidth = 40.dp.toPx()
                     var startAngle = -90f
 
-                    // Sort by amount for better visual
-                    val sortedSpending = categorySpending.sortedByDescending { abs(it.totalAmount) }
-
-                    sortedSpending.forEach { spending ->
-                        val sweepAngle = (spending.percentage / 100f) * 360f
-                        val color = parseColor(spending.category.color)
-
+                    arcData.forEach { (color, sweepAngle, _) ->
                         drawArc(
                             color = color,
                             startAngle = startAngle,
-                            sweepAngle = sweepAngle.coerceAtLeast(1f), // Minimum 1 degree for visibility
+                            sweepAngle = sweepAngle.coerceAtLeast(1f),
                             useCenter = false,
                             style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
                             topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
@@ -119,7 +133,7 @@ fun CategorySpendingDonutChart(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                categorySpending.sortedByDescending { abs(it.totalAmount) }.take(8).forEach { spending ->
+                legendItems.forEach { spending ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -169,10 +183,11 @@ fun CategoryBarsChart(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
+    val topSpending = remember(categorySpending) {
+        categorySpending.sortedByDescending { abs(it.totalAmount) }.take(8)
+    }
     Column(modifier = modifier) {
-        val sortedSpending = categorySpending.sortedByDescending { abs(it.totalAmount) }
-
-        sortedSpending.take(8).forEach { spending ->
+        topSpending.forEach { spending ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -518,8 +533,11 @@ fun IncomeVsExpensesBarChart(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    reversed.forEach { month ->
-                        val netAmount = month.income + month.expenses
+                    // Pre-compute net amounts to avoid recalculation during recomposition
+                    val monthDetails = remember(reversed) {
+                        reversed.map { it to (it.income + it.expenses) }
+                    }
+                    monthDetails.forEach { (month, netAmount) ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -585,10 +603,11 @@ fun CategoryLegend(
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
+    val legendRows = remember(categorySpending) {
+        categorySpending.sortedByDescending { abs(it.totalAmount) }.take(8).chunked(2)
+    }
     Column(modifier = modifier) {
-        val sortedSpending = categorySpending.sortedByDescending { abs(it.totalAmount) }
-
-        sortedSpending.take(8).chunked(2).forEach { row ->
+        legendRows.forEach { row ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

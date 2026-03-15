@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
+import kotlinx.coroutines.flow.distinctUntilChanged
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import bankingstatement.composeapp.generated.resources.share
@@ -245,36 +247,48 @@ fun TransactionListScreen(
     onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
     onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null,
     onCustomCategoryChange: ((TransactionDisplay, Long) -> Unit)? = null,
-    onManageCategories: (() -> Unit)? = null
+    onManageCategories: (() -> Unit)? = null,
+    hasMoreTransactions: Boolean = false,
+    isLoadingMore: Boolean = false,
+    onLoadMore: (() -> Unit)? = null
 ) {
     val strings = LocalStrings.current
     var shareMenuExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showCategoryPicker by remember { mutableStateOf<TransactionDisplay?>(null) }
 
-    // Filter transactions based on selected account and search query
-    val filteredTransactions = remember(transactions, selectedAccountId, searchQuery) {
-        var result = if (selectedAccountId == null) {
-            transactions
-        } else {
-            transactions.filter { it.accountId == selectedAccountId }
-        }
-
-        // Apply search filter
-        if (searchQuery.isNotBlank()) {
-            val query = searchQuery.lowercase().trim()
-            result = result.filter { tx ->
-                tx.description.lowercase().contains(query) ||
-                tx.counterparty?.lowercase()?.contains(query) == true ||
-                tx.category.displayName.lowercase().contains(query) ||
-                tx.category.displayNameDe.lowercase().contains(query) ||
-                tx.customCategoryName?.lowercase()?.contains(query) == true ||
-                tx.date.contains(query) ||
-                formatAmount(tx.amount, tx.currency).contains(query)
+    // Use derivedStateOf for filtered transactions to avoid recomputation on unrelated recompositions
+    val filteredTransactions by remember(transactions, selectedAccountId, searchQuery) {
+        derivedStateOf {
+            var result = if (selectedAccountId == null) {
+                transactions
+            } else {
+                transactions.filter { it.accountId == selectedAccountId }
             }
-        }
 
-        result
+            if (searchQuery.isNotBlank()) {
+                val query = searchQuery.lowercase().trim()
+                result = result.filter { tx ->
+                    tx.description.lowercase().contains(query) ||
+                    tx.counterparty?.lowercase()?.contains(query) == true ||
+                    tx.category.displayName.lowercase().contains(query) ||
+                    tx.category.displayNameDe.lowercase().contains(query) ||
+                    tx.customCategoryName?.lowercase()?.contains(query) == true ||
+                    tx.date.contains(query) ||
+                    formatAmount(tx.amount, tx.currency).contains(query)
+                }
+            }
+
+            result
+        }
+    }
+
+    // Derive count separately to avoid recomposing the count text when list reference changes but size doesn't
+    val transactionCountText by remember(filteredTransactions.size, searchQuery) {
+        derivedStateOf {
+            "${filteredTransactions.size} ${strings.transactions.lowercase()}" +
+                if (searchQuery.isNotBlank()) " (${strings.filtered})" else ""
+        }
     }
 
     Column(
@@ -309,8 +323,7 @@ fun TransactionListScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "${filteredTransactions.size} ${strings.transactions.lowercase()}" +
-                if (searchQuery.isNotBlank()) " (${strings.filtered})" else "",
+            text = transactionCountText,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -329,16 +342,56 @@ fun TransactionListScreen(
                 )
             }
         } else {
+            val listState = rememberLazyListState()
+
+            // Detect when user scrolls near the bottom to trigger loading more
+            if (hasMoreTransactions && onLoadMore != null) {
+                LaunchedEffect(listState) {
+                    snapshotFlow {
+                        val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                        val totalItems = listState.layoutInfo.totalItemsCount
+                        lastVisibleIndex to totalItems
+                    }
+                    .distinctUntilChanged()
+                    .collect { (lastVisible, total) ->
+                        if (total > 0 && lastVisible >= total - 10) {
+                            onLoadMore()
+                        }
+                    }
+                }
+            }
+
             LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(filteredTransactions) { transaction ->
+                items(
+                    items = filteredTransactions,
+                    key = { it.id }
+                ) { transaction ->
                     TransactionItem(
                         transaction = transaction,
                         onClick = if (onCategoryChange != null) {
                             { showCategoryPicker = transaction }
                         } else null
                     )
+                }
+
+                // Loading indicator at the bottom when loading more
+                if (isLoadingMore) {
+                    item(key = "loading_indicator") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
                 }
             }
         }
