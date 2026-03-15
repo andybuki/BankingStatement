@@ -30,6 +30,7 @@ kotlin {
             implementation(libs.sqldelight.android)
             implementation(libs.poi)
             implementation(libs.poi.ooxml)
+            implementation(libs.koin.android)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -43,6 +44,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.sqldelight.coroutines)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.koin.core)
 
         }
         iosMain.dependencies {

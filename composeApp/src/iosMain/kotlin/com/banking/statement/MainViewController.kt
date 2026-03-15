@@ -9,10 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.window.ComposeUIViewController
 import com.banking.statement.categorization.CategoryOverrideManager
-import com.banking.statement.categorization.KeywordDatabase
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
-import com.banking.statement.db.DatabaseDriverFactory
 import com.banking.statement.db.TransactionRepository
 import com.banking.statement.ui.AccountManagementItem
 import com.banking.statement.ui.CategorySpending
@@ -29,6 +27,16 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+
+private object IosKoinHelper : KoinComponent {
+    val repository: TransactionRepository by inject()
+    val merchantDatabase: MerchantDatabase by inject()
+    val categoryOverrideManager: CategoryOverrideManager by inject()
+    val themePreferences: ThemePreferences by inject()
+    val appPreferences: AppPreferences by inject()
+}
 
 fun MainViewController() = ComposeUIViewController {
     // Initialize state
@@ -41,42 +49,16 @@ fun MainViewController() = ComposeUIViewController {
     var totalExpenses by remember { mutableStateOf(0.0) }
     var accountsForManagement by remember { mutableStateOf<List<AccountManagementItem>>(emptyList()) }
 
-    // Theme management
-    val themePreferences = remember { ThemePreferences() }
+    // Get dependencies from Koin
+    val themePreferences = remember { IosKoinHelper.themePreferences }
     var currentThemeMode by remember { mutableStateOf(themePreferences.getThemeMode()) }
 
-    // Tutorial/onboarding state
-    val appPreferences = remember { AppPreferences() }
+    val appPreferences = remember { IosKoinHelper.appPreferences }
     var showTutorial by remember { mutableStateOf(!appPreferences.isTutorialDismissed()) }
 
-    // Initialize database driver
-    val driverFactory = remember { DatabaseDriverFactory() }
-
-    // Initialize keyword database for category matching
-    val keywordDatabase = remember { KeywordDatabase() }
-
-    // Initialize temporary repository to access database
-    val tempRepository = remember { TransactionRepository(driverFactory) }
-
-    // Initialize merchant database for improved categorization
-    val merchantDatabase = remember { MerchantDatabase(tempRepository.database) }
-
-    // Initialize category override manager for user corrections
-    val categoryOverrideManager = remember {
-        CategoryOverrideManager(tempRepository.database).apply {
-            loadCache()
-        }
-    }
-
-    // Initialize transaction categorizer
-    val transactionCategorizer = remember {
-        com.banking.statement.categorization.TransactionCategorizer(merchantDatabase, categoryOverrideManager)
-    }
-
-    // Initialize repository with categorizer for auto-categorization on import
-    val repository = remember {
-        TransactionRepository(driverFactory, transactionCategorizer)
-    }
+    val repository = remember { IosKoinHelper.repository }
+    val merchantDatabase = remember { IosKoinHelper.merchantDatabase }
+    val categoryOverrideManager = remember { IosKoinHelper.categoryOverrideManager }
 
     val coroutineScope = rememberCoroutineScope()
 
