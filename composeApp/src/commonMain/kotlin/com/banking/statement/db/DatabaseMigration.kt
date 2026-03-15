@@ -1,7 +1,6 @@
 package com.banking.statement.db
 
 import app.cash.sqldelight.db.AfterVersion
-import app.cash.sqldelight.db.SqlDriver
 
 /**
  * Centralized database migration callbacks for data migrations that accompany
@@ -11,22 +10,20 @@ import app.cash.sqldelight.db.SqlDriver
  * .sqm files automatically. This object provides AfterVersion callbacks for any
  * data migrations that need to run after a schema version upgrade.
  *
- * Migration versioning:
- *   Version 1 -> 2: Added transactions.notes, accounts.updated_at columns (1.sqm)
+ * Migration versioning (each .sqm file increments the version by 1):
+ *   1.sqm (v0 -> v1): Initial schema — all tables and indexes
+ *   2.sqm (v1 -> v2): Added transactions.notes, accounts.updated_at columns
  */
 object DatabaseMigration {
-
-    /** Current database schema version. Update this when adding new migrations. */
-    const val CURRENT_VERSION = 2
 
     /**
      * Returns migration callbacks to pass to the SQL driver.
      * Each callback runs after the corresponding .sqm migration completes.
      */
     fun getMigrationCallbacks(): Array<AfterVersion> = arrayOf(
-        AfterVersion(1) { driver ->
-            // Data migration after schema v1 -> v2
-            // The schema changes (ALTER TABLE) are handled by 1.sqm.
+        AfterVersion(2) { driver ->
+            // Data migration after schema v1 -> v2 (2.sqm)
+            // The schema changes (ALTER TABLE) are handled by 2.sqm.
             // Initialize updated_at for existing accounts.
             driver.execute(
                 identifier = null,

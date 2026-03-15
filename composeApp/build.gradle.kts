@@ -100,7 +100,7 @@ sqldelight {
     databases {
         create("BankingDatabase") {
             packageName.set("com.banking.statement.db")
-            verifyMigrations.set(true)
+            deriveSchemaFromMigrations.set(true)
         }
     }
 }
