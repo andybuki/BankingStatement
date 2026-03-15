@@ -120,7 +120,11 @@ fun App(
     // Tutorial & Contact
     showTutorial: Boolean = false,
     onDismissTutorial: () -> Unit = {},
-    onEmailClick: (String) -> Unit = {}
+    onEmailClick: (String) -> Unit = {},
+    // Security / Biometric
+    biometricLockEnabled: Boolean = false,
+    biometricAvailable: Boolean = false,
+    onBiometricLockChange: (Boolean) -> Unit = {}
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     var showCategoryManagement by remember { mutableStateOf(false) }
@@ -590,7 +594,10 @@ fun App(
                                 onEditAccount = { id, name -> onEditAccount?.invoke(id, name) },
                                 onClearAllData = { onClearAllData?.invoke() },
                                 currentThemeMode = themeMode,
-                                onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) }
+                                onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) },
+                                biometricLockEnabled = biometricLockEnabled,
+                                biometricAvailable = biometricAvailable,
+                                onBiometricLockChange = onBiometricLockChange
                             )
                         }
                     }

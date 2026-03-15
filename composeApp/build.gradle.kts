@@ -31,6 +31,9 @@ kotlin {
             implementation(libs.poi)
             implementation(libs.poi.ooxml)
             implementation(libs.koin.android)
+            implementation(libs.androidx.biometric)
+            implementation(libs.androidx.security.crypto)
+            implementation(libs.sqlcipher.android)
         }
         commonMain.dependencies {
             implementation(compose.runtime)

@@ -239,4 +239,9 @@
     <string name="welcome_button">Entendido, empecemos</string>
     <string name="contact_email">bankwise.info@gmail.com</string>
     <string name="contact_hint">¿Preguntas o comentarios? ¡Nos encantaría saber de ti!</string>
+
+    <!-- Security -->
+    <string name="security">Seguridad</string>
+    <string name="biometric_lock">Bloqueo de app</string>
+    <string name="biometric_lock_description">Requiere huella digital o PIN para abrir la app</string>
 </resources>

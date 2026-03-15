@@ -225,7 +225,12 @@ data class AppStrings(
     val welcomeBullet3: String,
     val welcomeButton: String,
     val contactEmail: String,
-    val contactHint: String
+    val contactHint: String,
+
+    // Security
+    val security: String,
+    val biometricLock: String,
+    val biometricLockDescription: String
 )
 
 /**
@@ -441,5 +446,10 @@ fun defaultEnglishStrings() = AppStrings(
     welcomeBullet3 = "Analyze trends over time",
     welcomeButton = "Got it, let's start",
     contactEmail = "bankwise.info@gmail.com",
-    contactHint = "Questions or feedback? We'd love to hear from you!"
+    contactHint = "Questions or feedback? We'd love to hear from you!",
+
+    // Security
+    security = "Security",
+    biometricLock = "App Lock",
+    biometricLockDescription = "Require fingerprint or PIN to open the app"
 )
