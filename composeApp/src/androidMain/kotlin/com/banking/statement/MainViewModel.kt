@@ -50,7 +50,9 @@ data class FinancialUiState(
     val categorySpending: List<CategorySpending> = emptyList(),
     val monthlySummary: List<MonthlySummary> = emptyList(),
     val totalIncome: Double = 0.0,
-    val totalExpenses: Double = 0.0
+    val totalExpenses: Double = 0.0,
+    val hasMoreTransactions: Boolean = false,
+    val isLoadingMore: Boolean = false
 )
 
 /**
@@ -98,6 +100,12 @@ class MainViewModel(
 
     // Track last import URI for retry support
     private var lastImportUri: Uri? = null
+
+    // Pagination state for transaction loading
+    private val PAGE_SIZE = 100
+    private var currentTransactionPage = 0
+    private var allTransactionsLoaded = false
+    private var isLoadingMore = false
 
     private val _accountsForManagement = MutableStateFlow<List<AccountManagementItem>>(emptyList())
     val accountsForManagement: StateFlow<List<AccountManagementItem>> = _accountsForManagement.asStateFlow()
@@ -153,7 +161,9 @@ class MainViewModel(
     fun processFile(uri: Uri) {
         lastImportUri = uri
 
-        coroutineScope.launch {
+        // Launch on Default dispatcher to avoid blocking the main thread.
+        // StateFlow updates are thread-safe and don't require Main dispatcher.
+        coroutineScope.launch(Dispatchers.Default) {
             _importState.value = ImportState(
                 isProcessing = true,
                 progress = 0,
@@ -161,10 +171,14 @@ class MainViewModel(
             )
 
             try {
-                val fileName = fileImportProcessor.getFileName(uri) ?: "document"
+                val fileName = withContext(Dispatchers.IO) {
+                    fileImportProcessor.getFileName(uri) ?: "document"
+                }
                 _importState.update { it.copy(progress = 10, progressMessage = context.getString(R.string.processing_reading)) }
 
-                val bytes = fileImportProcessor.readFileBytes(uri)
+                val bytes = withContext(Dispatchers.IO) {
+                    fileImportProcessor.readFileBytes(uri)
+                }
                 if (bytes == null) {
                     _importState.value = ImportState(isProcessing = false)
                     showImportErrorDialog(
@@ -190,33 +204,25 @@ class MainViewModel(
                 val parseResult = withContext(Dispatchers.IO) {
                     when (fileType) {
                         ImportFileType.CSV -> {
-                            withContext(Dispatchers.Main) {
-                                _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_csv)) }
-                            }
+                            _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_csv)) }
                             fileImportProcessor.parseCsv(bytes, fileName)
                         }
                         ImportFileType.EXCEL -> {
-                            withContext(Dispatchers.Main) {
-                                _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_excel)) }
-                            }
+                            _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_excel)) }
                             fileImportProcessor.parseExcel(bytes, fileName)
                         }
                         ImportFileType.PDF -> {
-                            withContext(Dispatchers.Main) {
-                                _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_pdf)) }
-                            }
+                            _importState.update { it.copy(progress = 40, progressMessage = context.getString(R.string.processing_pdf)) }
 
                             val preProcessResult = fileImportProcessor.preProcessPdf(bytes)
 
                             if (preProcessResult.needsUserSelection && preProcessResult.detectedBanks.isNotEmpty()) {
-                                withContext(Dispatchers.Main) {
-                                    _dialogState.update { it.copy(
-                                        showBankSelectionDialog = true,
-                                        detectedBanks = preProcessResult.detectedBanks,
-                                        pendingPdfData = PendingPdfData(bytes, preProcessResult.text ?: "", fileName, uri)
-                                    ) }
-                                    _importState.value = ImportState(isProcessing = false)
-                                }
+                                _dialogState.update { it.copy(
+                                    showBankSelectionDialog = true,
+                                    detectedBanks = preProcessResult.detectedBanks,
+                                    pendingPdfData = PendingPdfData(bytes, preProcessResult.text ?: "", fileName, uri)
+                                ) }
+                                _importState.value = ImportState(isProcessing = false)
                                 null
                             } else {
                                 fileImportProcessor.parsePdf(bytes, fileName, preProcessResult)
@@ -234,9 +240,11 @@ class MainViewModel(
                 if (parseResult.success && parseResult.transactions.isNotEmpty()) {
                     _importState.update { it.copy(progress = 80, progressMessage = context.getString(R.string.processing_saving)) }
 
-                    val filePath = if (fileType == ImportFileType.PDF) {
-                        fileImportProcessor.savePdfToStorage(uri, fileName)
-                    } else null
+                    val filePath = withContext(Dispatchers.IO) {
+                        if (fileType == ImportFileType.PDF) {
+                            fileImportProcessor.savePdfToStorage(uri, fileName)
+                        } else null
+                    }
 
                     _importState.update { it.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing)) }
                     handleSuccessfulParse(parseResult, fileName, filePath, fileType)
@@ -504,10 +512,12 @@ class MainViewModel(
     }
 
     private fun loadTransactionData() {
+        // Reset pagination state
+        currentTransactionPage = 0
+        allTransactionsLoaded = false
+
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
-                val allTransactions = repository.getAllTransactions()
-
                 val accountNames = repository.getAccountSummary().associate { it.id to it.name }
 
                 val customCategoriesMap = repository.getAllCategories().associate { category ->
@@ -520,70 +530,40 @@ class MainViewModel(
                     )
                 }
 
-                val mappedTransactions = allTransactions.map { tx ->
-                    val overrideResult = categoryOverrideManager.findOverrideWithCustom(tx.description, tx.counterparty_name)
+                // Load first page of transactions for the list
+                val firstPage = repository.getTransactionsPaged(
+                    PAGE_SIZE.toLong(), 0L
+                )
+                val totalCount = repository.getTransactionCount()
+                allTransactionsLoaded = firstPage.size < PAGE_SIZE
+                currentTransactionPage = 1
 
-                    val (category, customCategoryId, customCategoryName, customCategoryIcon, customCategoryColor) = when (overrideResult) {
-                        is CategoryOverrideResult.Custom -> {
-                            val customCat = customCategoriesMap[overrideResult.categoryId]
-                            if (customCat != null) {
-                                Tuple5(TransactionCategory.OTHER, customCat.id, customCat.name, customCat.icon, customCat.color)
-                            } else {
-                                Tuple5(determineAutoCategory(tx), null, null, null, null)
-                            }
-                        }
-                        is CategoryOverrideResult.Predefined -> {
-                            Tuple5(overrideResult.category, null, null, null, null)
-                        }
-                        null -> {
-                            Tuple5(determineAutoCategory(tx), null, null, null, null)
-                        }
-                    }
+                val mappedFirstPage = mapTransactions(firstPage, accountNames, customCategoriesMap)
 
-                    val date = Instant.fromEpochSeconds(tx.booking_date)
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                        .date
-
-                    TransactionDisplay(
-                        id = tx.id,
-                        date = "${date.dayOfMonth.toString().padStart(2, '0')}.${date.monthNumber.toString().padStart(2, '0')}.${date.year}",
-                        description = tx.description,
-                        amount = tx.amount,
-                        currency = tx.currency,
-                        category = category,
-                        counterparty = tx.counterparty_name,
-                        detailText = TransactionDisplay.extractDetailText(
-                            description = tx.description,
-                            remittanceInfo = tx.remittance_info,
-                            counterparty = tx.counterparty_name
-                        ),
-                        accountId = tx.account_id ?: 0L,
-                        accountName = tx.account_id?.let { accountNames[it] } ?: "",
-                        customCategoryId = customCategoryId,
-                        customCategoryName = customCategoryName,
-                        customCategoryIcon = customCategoryIcon,
-                        customCategoryColor = customCategoryColor
-                    )
+                // Load aggregates from DB directly (not from in-memory list)
+                // This avoids loading all transactions into memory for summaries
+                val monthlyCategoryData = repository.getCategorySpendingByMonth().map { row ->
+                    Triple(row.month ?: "", row.auto_category ?: "", row.total ?: 0.0)
                 }
+                val trends = com.banking.statement.ui.TrendCalculator.calculateTrends(monthlyCategoryData)
 
-                // Calculate category spending with trends
-                val spendingByCategory = mappedTransactions
+                // Category spending: use ALL transactions for accurate stats
+                // but compute via DB aggregates where possible
+                val allTransactions = repository.getAllTransactions()
+                val allMapped = mapTransactions(allTransactions, accountNames, customCategoriesMap)
+
+                val spendingByCategory = allMapped
                     .filter { it.amount < 0 }
                     .groupBy { it.category }
                     .mapValues { (_, txs) -> txs.sumOf { it.amount } }
 
                 val totalExpensesAmount = spendingByCategory.values.sum()
 
-                val monthlyCategoryData = repository.getCategorySpendingByMonth().map { row ->
-                    Triple(row.month ?: "", row.auto_category ?: "", row.total ?: 0.0)
-                }
-                val trends = com.banking.statement.ui.TrendCalculator.calculateTrends(monthlyCategoryData)
-
                 val computedCategorySpending = spendingByCategory.map { (cat, total) ->
                     CategorySpending(
                         category = cat,
                         totalAmount = total,
-                        transactionCount = mappedTransactions.count { it.category == cat && it.amount < 0 },
+                        transactionCount = allMapped.count { it.category == cat && it.amount < 0 },
                         percentage = if (totalExpensesAmount != 0.0) {
                             ((total / totalExpensesAmount) * 100).toFloat()
                         } else 0f,
@@ -613,13 +593,112 @@ class MainViewModel(
 
                 // Atomic update of all financial state
                 _financialState.value = FinancialUiState(
-                    transactions = mappedTransactions,
+                    transactions = mappedFirstPage,
                     categorySpending = computedCategorySpending,
                     monthlySummary = computedMonthlySummary,
                     totalIncome = computedIncome,
-                    totalExpenses = computedExpenses
+                    totalExpenses = computedExpenses,
+                    hasMoreTransactions = !allTransactionsLoaded
                 )
             }
+        }
+    }
+
+    /**
+     * Load the next page of transactions for the list. Called when the user
+     * scrolls near the bottom of the transaction list.
+     */
+    fun loadMoreTransactions() {
+        if (allTransactionsLoaded || isLoadingMore) return
+        isLoadingMore = true
+        _financialState.update { it.copy(isLoadingMore = true) }
+
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                val accountNames = repository.getAccountSummary().associate { it.id to it.name }
+                val customCategoriesMap = repository.getAllCategories().associate { category ->
+                    category.id to CustomCategory(
+                        id = category.id,
+                        name = category.name,
+                        icon = category.icon ?: "\uD83C\uDFF7\uFE0F",
+                        color = category.color ?: "#808080",
+                        parentId = category.parent_id
+                    )
+                }
+
+                val offset = currentTransactionPage * PAGE_SIZE
+                val nextPage = repository.getTransactionsPaged(
+                    PAGE_SIZE.toLong(), offset.toLong()
+                )
+
+                if (nextPage.size < PAGE_SIZE) {
+                    allTransactionsLoaded = true
+                }
+                currentTransactionPage++
+
+                val mappedPage = mapTransactions(nextPage, accountNames, customCategoriesMap)
+
+                _financialState.update { state ->
+                    state.copy(
+                        transactions = state.transactions + mappedPage,
+                        hasMoreTransactions = !allTransactionsLoaded,
+                        isLoadingMore = false
+                    )
+                }
+                isLoadingMore = false
+            }
+        }
+    }
+
+    private fun mapTransactions(
+        transactions: List<com.banking.statement.db.Transactions>,
+        accountNames: Map<Long, String>,
+        customCategoriesMap: Map<Long, CustomCategory>
+    ): List<TransactionDisplay> {
+        return transactions.map { tx ->
+            val overrideResult = categoryOverrideManager.findOverrideWithCustom(tx.description, tx.counterparty_name)
+
+            val (category, customCategoryId, customCategoryName, customCategoryIcon, customCategoryColor) = when (overrideResult) {
+                is CategoryOverrideResult.Custom -> {
+                    val customCat = customCategoriesMap[overrideResult.categoryId]
+                    if (customCat != null) {
+                        Tuple5(TransactionCategory.OTHER, customCat.id, customCat.name, customCat.icon, customCat.color)
+                    } else {
+                        Tuple5(determineAutoCategory(tx), null, null, null, null)
+                    }
+                }
+                is CategoryOverrideResult.Predefined -> {
+                    Tuple5(overrideResult.category, null, null, null, null)
+                }
+                null -> {
+                    Tuple5(determineAutoCategory(tx), null, null, null, null)
+                }
+            }
+
+            val date = Instant.fromEpochSeconds(tx.booking_date)
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+                .date
+
+            TransactionDisplay(
+                id = tx.id,
+                date = "${date.dayOfMonth.toString().padStart(2, '0')}.${date.monthNumber.toString().padStart(2, '0')}.${date.year}",
+                description = tx.description,
+                amount = tx.amount,
+                currency = tx.currency,
+                category = category,
+                counterparty = tx.counterparty_name,
+                detailText = TransactionDisplay.extractDetailText(
+                    description = tx.description,
+                    remittanceInfo = tx.remittance_info,
+                    counterparty = tx.counterparty_name
+                ),
+                accountId = tx.account_id ?: 0L,
+                accountName = tx.account_id?.let { accountNames[it] } ?: "",
+                customCategoryId = customCategoryId,
+                customCategoryName = customCategoryName,
+                customCategoryIcon = customCategoryIcon,
+                customCategoryColor = customCategoryColor
+            )
         }
     }
 

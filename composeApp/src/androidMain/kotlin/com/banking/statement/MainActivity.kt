@@ -154,7 +154,10 @@ class MainActivity : FragmentActivity() {
                         biometricAvailable = appSettings.biometricAvailable,
                         onBiometricLockChange = { enabled ->
                             viewModel.setBiometricLockEnabled(enabled)
-                        }
+                        },
+                        hasMoreTransactions = financialState.hasMoreTransactions,
+                        isLoadingMoreTransactions = financialState.isLoadingMore,
+                        onLoadMoreTransactions = { viewModel.loadMoreTransactions() }
                     )
                 }
             }

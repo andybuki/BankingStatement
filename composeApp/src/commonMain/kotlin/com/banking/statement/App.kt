@@ -124,7 +124,11 @@ fun App(
     // Security / Biometric
     biometricLockEnabled: Boolean = false,
     biometricAvailable: Boolean = false,
-    onBiometricLockChange: (Boolean) -> Unit = {}
+    onBiometricLockChange: (Boolean) -> Unit = {},
+    // Transaction pagination
+    hasMoreTransactions: Boolean = false,
+    isLoadingMoreTransactions: Boolean = false,
+    onLoadMoreTransactions: (() -> Unit)? = null
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     var showCategoryManagement by remember { mutableStateOf(false) }
@@ -307,7 +311,10 @@ fun App(
                                 onShare = null,  // Share moved to header
                                 onCategoryChange = onCategoryChange,
                                 onCustomCategoryChange = onCustomCategoryChange,
-                                onManageCategories = { showCategoryManagement = true }
+                                onManageCategories = { showCategoryManagement = true },
+                                hasMoreTransactions = hasMoreTransactions,
+                                isLoadingMore = isLoadingMoreTransactions,
+                                onLoadMore = onLoadMoreTransactions
                             )
                         }
                         NavigationTab.SPENDING -> Column(modifier = Modifier.fillMaxSize()) {

@@ -70,6 +70,10 @@ DELETE FROM statements WHERE account_id = ?;
 getAllTransactions:
 SELECT * FROM transactions WHERE is_duplicate = 0 ORDER BY booking_date DESC;
 
+-- Paginated transaction query for large datasets
+getTransactionsPaged:
+SELECT * FROM transactions WHERE is_duplicate = 0 ORDER BY booking_date DESC LIMIT ? OFFSET ?;
+
 getTransactionsByStatement:
 SELECT * FROM transactions WHERE statement_id = ? ORDER BY booking_date DESC;
 
