@@ -244,4 +244,15 @@
     <string name="security">Security</string>
     <string name="biometric_lock">App Lock</string>
     <string name="biometric_lock_description">Require fingerprint or PIN to open the app</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_import_title">Import your bank statement</string>
+    <string name="onboarding_import_subtitle">Supports 20+ banks. Just drop in a PDF or CSV file and we\'ll handle the rest.</string>
+    <string name="onboarding_spending_title">See where your money goes</string>
+    <string name="onboarding_spending_subtitle">Automatic categorization shows your spending at a glance. No manual entry needed.</string>
+    <string name="onboarding_trends_title">Track trends over time</string>
+    <string name="onboarding_trends_subtitle">Watch your income and expenses evolve month by month. Spot patterns and save more.</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_get_started">Get Started</string>
 </resources>

@@ -147,6 +147,8 @@ class MainActivity : FragmentActivity() {
                         onDeleteCustomCategory = { id ->
                             viewModel.deleteCustomCategory(id)
                         },
+                        showOnboarding = appSettings.showOnboarding,
+                        onCompleteOnboarding = { viewModel.completeOnboarding() },
                         showTutorial = appSettings.showTutorial,
                         onDismissTutorial = { viewModel.dismissTutorial() },
                         onEmailClick = { email -> viewModel.openEmailClient(email) },

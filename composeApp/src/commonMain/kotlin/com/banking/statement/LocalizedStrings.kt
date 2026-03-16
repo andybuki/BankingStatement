@@ -230,7 +230,18 @@ data class AppStrings(
     // Security
     val security: String,
     val biometricLock: String,
-    val biometricLockDescription: String
+    val biometricLockDescription: String,
+
+    // Onboarding
+    val onboardingImportTitle: String,
+    val onboardingImportSubtitle: String,
+    val onboardingSpendingTitle: String,
+    val onboardingSpendingSubtitle: String,
+    val onboardingTrendsTitle: String,
+    val onboardingTrendsSubtitle: String,
+    val onboardingNext: String,
+    val onboardingSkip: String,
+    val onboardingGetStarted: String
 )
 
 /**
@@ -451,5 +462,16 @@ fun defaultEnglishStrings() = AppStrings(
     // Security
     security = "Security",
     biometricLock = "App Lock",
-    biometricLockDescription = "Require fingerprint or PIN to open the app"
+    biometricLockDescription = "Require fingerprint or PIN to open the app",
+
+    // Onboarding
+    onboardingImportTitle = "Import your bank statement",
+    onboardingImportSubtitle = "Supports 20+ banks. Just drop in a PDF or CSV file and we'll handle the rest.",
+    onboardingSpendingTitle = "See where your money goes",
+    onboardingSpendingSubtitle = "Automatic categorization shows your spending at a glance. No manual entry needed.",
+    onboardingTrendsTitle = "Track trends over time",
+    onboardingTrendsSubtitle = "Watch your income and expenses evolve month by month. Spot patterns and save more.",
+    onboardingNext = "Next",
+    onboardingSkip = "Skip",
+    onboardingGetStarted = "Get Started"
 )

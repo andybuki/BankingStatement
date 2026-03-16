@@ -7,4 +7,6 @@ package com.banking.statement
 expect class AppPreferences {
     fun isTutorialDismissed(): Boolean
     fun setTutorialDismissed(dismissed: Boolean)
+    fun isOnboardingCompleted(): Boolean
+    fun setOnboardingCompleted(completed: Boolean)
 }
