@@ -244,4 +244,15 @@
     <string name="security">Sicherheit</string>
     <string name="biometric_lock">App-Sperre</string>
     <string name="biometric_lock_description">Fingerabdruck oder PIN zum Öffnen der App erforderlich</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_import_title">Kontoauszug importieren</string>
+    <string name="onboarding_import_subtitle">Unterstützt über 20 Banken. Einfach eine PDF- oder CSV-Datei laden – wir erledigen den Rest.</string>
+    <string name="onboarding_spending_title">Sieh, wohin dein Geld geht</string>
+    <string name="onboarding_spending_subtitle">Automatische Kategorisierung zeigt deine Ausgaben auf einen Blick. Keine manuelle Eingabe nötig.</string>
+    <string name="onboarding_trends_title">Verfolge Trends über die Zeit</string>
+    <string name="onboarding_trends_subtitle">Beobachte, wie sich Einnahmen und Ausgaben Monat für Monat entwickeln. Erkenne Muster und spare mehr.</string>
+    <string name="onboarding_next">Weiter</string>
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_get_started">Los geht\'s</string>
 </resources>

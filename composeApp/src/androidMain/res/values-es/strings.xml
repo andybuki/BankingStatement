@@ -244,4 +244,15 @@
     <string name="security">Seguridad</string>
     <string name="biometric_lock">Bloqueo de app</string>
     <string name="biometric_lock_description">Requiere huella digital o PIN para abrir la app</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_import_title">Importa tu extracto bancario</string>
+    <string name="onboarding_import_subtitle">Compatible con más de 20 bancos. Solo sube un archivo PDF o CSV y nosotros nos encargamos del resto.</string>
+    <string name="onboarding_spending_title">Mira a dónde va tu dinero</string>
+    <string name="onboarding_spending_subtitle">La categorización automática muestra tus gastos de un vistazo. Sin necesidad de entrada manual.</string>
+    <string name="onboarding_trends_title">Sigue las tendencias a lo largo del tiempo</string>
+    <string name="onboarding_trends_subtitle">Observa cómo evolucionan tus ingresos y gastos mes a mes. Detecta patrones y ahorra más.</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_skip">Omitir</string>
+    <string name="onboarding_get_started">Empezar</string>
 </resources>

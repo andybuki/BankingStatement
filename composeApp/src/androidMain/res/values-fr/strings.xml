@@ -244,4 +244,15 @@
     <string name="security">Sécurité</string>
     <string name="biometric_lock">Verrouillage de l\'app</string>
     <string name="biometric_lock_description">Empreinte digitale ou code PIN requis pour ouvrir l\'app</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_import_title">Importez votre relevé bancaire</string>
+    <string name="onboarding_import_subtitle">Compatible avec plus de 20 banques. Déposez simplement un fichier PDF ou CSV et nous ferons le reste.</string>
+    <string name="onboarding_spending_title">Voyez où va votre argent</string>
+    <string name="onboarding_spending_subtitle">La catégorisation automatique affiche vos dépenses en un coup d\'œil. Aucune saisie manuelle nécessaire.</string>
+    <string name="onboarding_trends_title">Suivez les tendances dans le temps</string>
+    <string name="onboarding_trends_subtitle">Observez l\'évolution de vos revenus et dépenses mois par mois. Repérez les tendances et économisez plus.</string>
+    <string name="onboarding_next">Suivant</string>
+    <string name="onboarding_skip">Passer</string>
+    <string name="onboarding_get_started">Commencer</string>
 </resources>

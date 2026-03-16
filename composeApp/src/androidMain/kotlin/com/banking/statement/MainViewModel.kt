@@ -61,6 +61,7 @@ data class FinancialUiState(
 data class AppSettingsState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val showTutorial: Boolean = false,
+    val showOnboarding: Boolean = false,
     val customCategories: List<CustomCategory> = emptyList(),
     val biometricLockEnabled: Boolean = false,
     val biometricAvailable: Boolean = false
@@ -139,6 +140,7 @@ class MainViewModel(
             it.copy(
                 themeMode = themePreferences.getThemeMode(),
                 showTutorial = !appPreferences.isTutorialDismissed(),
+                showOnboarding = !appPreferences.isOnboardingCompleted(),
                 biometricLockEnabled = appPreferences.isBiometricLockEnabled(),
                 biometricAvailable = biometricLockManager.canAuthenticate()
             )
@@ -1075,6 +1077,14 @@ class MainViewModel(
     fun dismissTutorial() {
         _appSettings.update { it.copy(showTutorial = false) }
         appPreferences.setTutorialDismissed(true)
+    }
+
+    fun completeOnboarding() {
+        _appSettings.update { it.copy(showOnboarding = false) }
+        appPreferences.setOnboardingCompleted(true)
+        // Also dismiss the old tutorial card since onboarding replaces it
+        appPreferences.setTutorialDismissed(true)
+        _appSettings.update { it.copy(showTutorial = false) }
     }
 
     fun setBiometricLockEnabled(enabled: Boolean) {

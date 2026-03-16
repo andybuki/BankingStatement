@@ -16,7 +16,16 @@ actual class AppPreferences {
         defaults.setBool(dismissed, KEY_TUTORIAL_DISMISSED)
     }
 
+    actual fun isOnboardingCompleted(): Boolean {
+        return defaults.boolForKey(KEY_ONBOARDING_COMPLETED)
+    }
+
+    actual fun setOnboardingCompleted(completed: Boolean) {
+        defaults.setBool(completed, KEY_ONBOARDING_COMPLETED)
+    }
+
     companion object {
         private const val KEY_TUTORIAL_DISMISSED = "tutorial_dismissed"
+        private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
     }
 }

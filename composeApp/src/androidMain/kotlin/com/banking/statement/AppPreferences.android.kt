@@ -32,6 +32,14 @@ actual class AppPreferences(private val context: Context) {
         prefs.edit().putBoolean(KEY_TUTORIAL_DISMISSED, dismissed).apply()
     }
 
+    actual fun isOnboardingCompleted(): Boolean {
+        return prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+    }
+
+    actual fun setOnboardingCompleted(completed: Boolean) {
+        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
+    }
+
     fun isBiometricLockEnabled(): Boolean {
         return prefs.getBoolean(KEY_BIOMETRIC_LOCK, false)
     }
@@ -43,6 +51,7 @@ actual class AppPreferences(private val context: Context) {
     companion object {
         private const val PREFS_NAME = "bankwise_secure_prefs"
         private const val KEY_TUTORIAL_DISMISSED = "tutorial_dismissed"
+        private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_BIOMETRIC_LOCK = "biometric_lock_enabled"
     }
 }

@@ -117,6 +117,9 @@ fun App(
     onAddCustomCategory: ((name: String, icon: String, color: String) -> Unit)? = null,
     onEditCustomCategory: ((id: Long, name: String, icon: String, color: String) -> Unit)? = null,
     onDeleteCustomCategory: ((Long) -> Unit)? = null,
+    // Onboarding
+    showOnboarding: Boolean = false,
+    onCompleteOnboarding: () -> Unit = {},
     // Tutorial & Contact
     showTutorial: Boolean = false,
     onDismissTutorial: () -> Unit = {},
@@ -188,6 +191,10 @@ fun App(
 
     CompositionLocalProvider(LocalStrings provides strings) {
         BankingStatementTheme(themeMode = themeMode) {
+            if (showOnboarding) {
+                OnboardingScreen(onComplete = onCompleteOnboarding)
+                return@BankingStatementTheme
+            }
             Scaffold(
                 bottomBar = {
                     AppBottomNavigation(

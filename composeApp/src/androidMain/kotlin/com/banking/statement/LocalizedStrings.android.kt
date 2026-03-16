@@ -213,5 +213,16 @@ actual fun provideStrings(): AppStrings = AppStrings(
     // Security
     security = stringResource(R.string.security),
     biometricLock = stringResource(R.string.biometric_lock),
-    biometricLockDescription = stringResource(R.string.biometric_lock_description)
+    biometricLockDescription = stringResource(R.string.biometric_lock_description),
+
+    // Onboarding
+    onboardingImportTitle = stringResource(R.string.onboarding_import_title),
+    onboardingImportSubtitle = stringResource(R.string.onboarding_import_subtitle),
+    onboardingSpendingTitle = stringResource(R.string.onboarding_spending_title),
+    onboardingSpendingSubtitle = stringResource(R.string.onboarding_spending_subtitle),
+    onboardingTrendsTitle = stringResource(R.string.onboarding_trends_title),
+    onboardingTrendsSubtitle = stringResource(R.string.onboarding_trends_subtitle),
+    onboardingNext = stringResource(R.string.onboarding_next),
+    onboardingSkip = stringResource(R.string.onboarding_skip),
+    onboardingGetStarted = stringResource(R.string.onboarding_get_started)
 )
