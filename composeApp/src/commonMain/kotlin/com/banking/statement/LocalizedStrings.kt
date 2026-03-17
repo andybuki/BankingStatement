@@ -241,7 +241,53 @@ data class AppStrings(
     val onboardingTrendsSubtitle: String,
     val onboardingNext: String,
     val onboardingSkip: String,
-    val onboardingGetStarted: String
+    val onboardingGetStarted: String,
+
+    // Insights / Engagement
+    val tabInsights: String,
+    val insightsTitle: String,
+    val smartInsights: String,
+    val noInsightsYet: String,
+    val noInsightsHint: String,
+    val weeklyDigest: String,
+    val weeklyDigestSpent: String,
+    val weeklyDigestIncome: String,
+    val weeklyDigestTopCategory: String,
+    val weeklyDigestTransactions: String,
+    val weeklyDigestCompared: String,
+    val financialHealthScore: String,
+    val healthScoreSavings: String,
+    val healthScoreStability: String,
+    val healthScoreDiversity: String,
+    val yearInReview: String,
+    val yearInReviewTotalIncome: String,
+    val yearInReviewTotalExpenses: String,
+    val yearInReviewTotalSaved: String,
+    val yearInReviewTopCategories: String,
+    val yearInReviewBiggestMonth: String,
+    val yearInReviewLeanestMonth: String,
+    val yearInReviewTransactions: String,
+    val yearInReviewAvgMonthly: String,
+    val yearInReviewSavingsRate: String,
+
+    // Insight messages
+    val insightSpendingSpike: String,
+    val insightSpendingDrop: String,
+    val insightIncomeUp: String,
+    val insightIncomeDown: String,
+    val insightSavingsOpportunity: String,
+    val insightUnusualTransaction: String,
+
+    // Notification preferences
+    val notifications: String,
+    val notificationWeeklyDigest: String,
+    val notificationWeeklyDigestDesc: String,
+    val notificationSmartInsights: String,
+    val notificationSmartInsightsDesc: String,
+    val notificationMonthlyHealth: String,
+    val notificationMonthlyHealthDesc: String,
+    val notificationYearReview: String,
+    val notificationYearReviewDesc: String
 )
 
 /**
@@ -473,5 +519,51 @@ fun defaultEnglishStrings() = AppStrings(
     onboardingTrendsSubtitle = "Watch your income and expenses evolve month by month. Spot patterns and save more.",
     onboardingNext = "Next",
     onboardingSkip = "Skip",
-    onboardingGetStarted = "Get Started"
+    onboardingGetStarted = "Get Started",
+
+    // Insights / Engagement
+    tabInsights = "Insights",
+    insightsTitle = "Insights",
+    smartInsights = "Smart Insights",
+    noInsightsYet = "No insights yet",
+    noInsightsHint = "Import more transactions to unlock smart insights",
+    weeklyDigest = "Weekly Digest",
+    weeklyDigestSpent = "Spent",
+    weeklyDigestIncome = "Earned",
+    weeklyDigestTopCategory = "Top Category",
+    weeklyDigestTransactions = "Transactions",
+    weeklyDigestCompared = "vs. last week",
+    financialHealthScore = "Financial Health",
+    healthScoreSavings = "Savings",
+    healthScoreStability = "Stability",
+    healthScoreDiversity = "Diversity",
+    yearInReview = "Year in Review",
+    yearInReviewTotalIncome = "Total Income",
+    yearInReviewTotalExpenses = "Total Expenses",
+    yearInReviewTotalSaved = "Total Saved",
+    yearInReviewTopCategories = "Top Categories",
+    yearInReviewBiggestMonth = "Biggest Month",
+    yearInReviewLeanestMonth = "Leanest Month",
+    yearInReviewTransactions = "Transactions",
+    yearInReviewAvgMonthly = "Avg. Monthly",
+    yearInReviewSavingsRate = "Savings Rate",
+
+    // Insight messages
+    insightSpendingSpike = "Spending spike detected",
+    insightSpendingDrop = "Spending dropped",
+    insightIncomeUp = "Income increased",
+    insightIncomeDown = "Income decreased",
+    insightSavingsOpportunity = "Savings opportunity",
+    insightUnusualTransaction = "Unusual transaction",
+
+    // Notification preferences
+    notifications = "Notifications",
+    notificationWeeklyDigest = "Weekly Spending Digest",
+    notificationWeeklyDigestDesc = "Get a summary of your weekly spending every Monday",
+    notificationSmartInsights = "Smart Insights",
+    notificationSmartInsightsDesc = "AI-detected anomalies in your spending patterns",
+    notificationMonthlyHealth = "Monthly Health Score",
+    notificationMonthlyHealthDesc = "Receive your financial health score each month",
+    notificationYearReview = "Year in Review",
+    notificationYearReviewDesc = "Annual spending summary available in December"
 )

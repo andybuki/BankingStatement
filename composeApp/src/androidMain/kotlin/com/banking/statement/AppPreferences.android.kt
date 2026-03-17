@@ -48,10 +48,46 @@ actual class AppPreferences(private val context: Context) {
         prefs.edit().putBoolean(KEY_BIOMETRIC_LOCK, enabled).apply()
     }
 
+    actual fun isWeeklyDigestEnabled(): Boolean {
+        return prefs.getBoolean(KEY_WEEKLY_DIGEST, true)
+    }
+
+    actual fun setWeeklyDigestEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_WEEKLY_DIGEST, enabled).apply()
+    }
+
+    actual fun isSmartInsightsEnabled(): Boolean {
+        return prefs.getBoolean(KEY_SMART_INSIGHTS, true)
+    }
+
+    actual fun setSmartInsightsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SMART_INSIGHTS, enabled).apply()
+    }
+
+    actual fun isMonthlyHealthEnabled(): Boolean {
+        return prefs.getBoolean(KEY_MONTHLY_HEALTH, true)
+    }
+
+    actual fun setMonthlyHealthEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_MONTHLY_HEALTH, enabled).apply()
+    }
+
+    actual fun isYearReviewEnabled(): Boolean {
+        return prefs.getBoolean(KEY_YEAR_REVIEW, true)
+    }
+
+    actual fun setYearReviewEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_YEAR_REVIEW, enabled).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "bankwise_secure_prefs"
         private const val KEY_TUTORIAL_DISMISSED = "tutorial_dismissed"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_BIOMETRIC_LOCK = "biometric_lock_enabled"
+        private const val KEY_WEEKLY_DIGEST = "notification_weekly_digest"
+        private const val KEY_SMART_INSIGHTS = "notification_smart_insights"
+        private const val KEY_MONTHLY_HEALTH = "notification_monthly_health"
+        private const val KEY_YEAR_REVIEW = "notification_year_review"
     }
 }

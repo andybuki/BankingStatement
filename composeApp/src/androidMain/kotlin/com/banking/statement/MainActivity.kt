@@ -159,7 +159,15 @@ class MainActivity : FragmentActivity() {
                         },
                         hasMoreTransactions = financialState.hasMoreTransactions,
                         isLoadingMoreTransactions = financialState.isLoadingMore,
-                        onLoadMoreTransactions = { viewModel.loadMoreTransactions() }
+                        onLoadMoreTransactions = { viewModel.loadMoreTransactions() },
+                        weeklyDigestEnabled = appSettings.weeklyDigestEnabled,
+                        onWeeklyDigestChange = { viewModel.setWeeklyDigestEnabled(it) },
+                        smartInsightsEnabled = appSettings.smartInsightsEnabled,
+                        onSmartInsightsChange = { viewModel.setSmartInsightsEnabled(it) },
+                        monthlyHealthEnabled = appSettings.monthlyHealthEnabled,
+                        onMonthlyHealthChange = { viewModel.setMonthlyHealthEnabled(it) },
+                        yearReviewEnabled = appSettings.yearReviewEnabled,
+                        onYearReviewChange = { viewModel.setYearReviewEnabled(it) }
                     )
                 }
             }

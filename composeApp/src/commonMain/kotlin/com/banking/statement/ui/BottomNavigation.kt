@@ -10,11 +10,13 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.Store
+import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -47,6 +49,10 @@ enum class NavigationTab(
     MERCHANTS(
         selectedIcon = Icons.Filled.Store,
         unselectedIcon = Icons.Outlined.Store
+    ),
+    INSIGHTS(
+        selectedIcon = Icons.Filled.Lightbulb,
+        unselectedIcon = Icons.Outlined.Lightbulb
     ),
     SETTINGS(
         selectedIcon = Icons.Filled.Settings,
@@ -81,6 +87,7 @@ fun AppBottomNavigation(
                 NavigationTab.TRANSACTIONS -> strings.tabTransactions
                 NavigationTab.SPENDING -> strings.tabSpending
                 NavigationTab.MERCHANTS -> strings.tabMerchants
+                NavigationTab.INSIGHTS -> strings.tabInsights
                 NavigationTab.SETTINGS -> strings.tabSettings
             }
 
@@ -91,7 +98,7 @@ fun AppBottomNavigation(
                     Icon(
                         imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
                         contentDescription = label,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 },
                 label = {

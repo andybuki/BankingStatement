@@ -39,6 +39,8 @@ import com.banking.statement.ui.*
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.BankingStatementTheme
 import com.banking.statement.ui.theme.ThemeMode
+import com.banking.statement.engagement.EngagementEngine
+import com.banking.statement.engagement.InsightStrings
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -131,7 +133,16 @@ fun App(
     // Transaction pagination
     hasMoreTransactions: Boolean = false,
     isLoadingMoreTransactions: Boolean = false,
-    onLoadMoreTransactions: (() -> Unit)? = null
+    onLoadMoreTransactions: (() -> Unit)? = null,
+    // Engagement / Notification preferences
+    weeklyDigestEnabled: Boolean = true,
+    onWeeklyDigestChange: (Boolean) -> Unit = {},
+    smartInsightsEnabled: Boolean = true,
+    onSmartInsightsChange: (Boolean) -> Unit = {},
+    monthlyHealthEnabled: Boolean = true,
+    onMonthlyHealthChange: (Boolean) -> Unit = {},
+    yearReviewEnabled: Boolean = true,
+    onYearReviewChange: (Boolean) -> Unit = {}
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     var showCategoryManagement by remember { mutableStateOf(false) }
@@ -596,6 +607,79 @@ fun App(
                                 selectedAccountId = selectedAccountId
                             )
                         }
+                        NavigationTab.INSIGHTS -> {
+                            val insightStrings = remember(strings) {
+                                InsightStrings(
+                                    spendingSpikeTitle = { cat -> "${strings.insightSpendingSpike}: $cat" },
+                                    spendingSpikeDesc = { cat, pct -> "Your $cat spending is up ${pct}% compared to last month" },
+                                    spendingDropTitle = { cat -> "${strings.insightSpendingDrop}: $cat" },
+                                    spendingDropDesc = { cat, pct -> "Your $cat spending dropped ${pct}% — nice!" },
+                                    incomeUpTitle = strings.insightIncomeUp,
+                                    incomeUpDesc = { pct -> "Your income increased by ${pct}% this month" },
+                                    incomeDownTitle = strings.insightIncomeDown,
+                                    incomeDownDesc = { pct -> "Your income decreased by ${pct}% this month" },
+                                    savingsOpportunityTitle = strings.insightSavingsOpportunity,
+                                    savingsOpportunityDesc = { pct -> "You're spending ${pct}% of your income — consider reviewing expenses" },
+                                    unusualTransactionTitle = strings.insightUnusualTransaction,
+                                    unusualTransactionDesc = { name, amount ->
+                                        val formatted = kotlin.math.round(amount * 100) / 100
+                                        "Large transaction of ${formatted.toString().replace(".", ",")} € at $name"
+                                    }
+                                )
+                            }
+
+                            val insights = remember(categorySpending, monthlySummary, transactions, insightStrings) {
+                                EngagementEngine.generateInsights(
+                                    categorySpending = categorySpending,
+                                    monthlySummary = monthlySummary,
+                                    transactions = transactions,
+                                    strings = insightStrings
+                                )
+                            }
+
+                            val healthScore = remember(monthlySummary, categorySpending) {
+                                EngagementEngine.calculateHealthScore(
+                                    monthlySummary = monthlySummary,
+                                    categorySpending = categorySpending
+                                )
+                            }
+
+                            val weeklyDigest = remember(transactions, categorySpending) {
+                                EngagementEngine.generateWeeklyDigest(
+                                    transactions = transactions,
+                                    categorySpending = categorySpending,
+                                    previousWeekExpenses = 0.0
+                                )
+                            }
+
+                            val yearInReview = remember(monthlySummary, categorySpending, transactions) {
+                                val currentYear = monthlySummary
+                                    .mapNotNull { it.month.take(4).toIntOrNull() }
+                                    .maxOrNull()
+                                if (currentYear != null) {
+                                    EngagementEngine.generateYearInReview(
+                                        year = currentYear,
+                                        monthlySummary = monthlySummary,
+                                        categorySpending = categorySpending,
+                                        transactions = transactions
+                                    )
+                                } else null
+                            }
+
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                AppHeader(
+                                    title = strings.insightsTitle,
+                                    showSummary = false
+                                )
+                                InsightsScreen(
+                                    insights = insights,
+                                    healthScore = healthScore,
+                                    weeklyDigest = weeklyDigest,
+                                    yearInReview = yearInReview,
+                                    showYearInReview = yearReviewEnabled
+                                )
+                            }
+                        }
                         NavigationTab.SETTINGS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.manageAccounts,
@@ -611,7 +695,15 @@ fun App(
                                 onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) },
                                 biometricLockEnabled = biometricLockEnabled,
                                 biometricAvailable = biometricAvailable,
-                                onBiometricLockChange = onBiometricLockChange
+                                onBiometricLockChange = onBiometricLockChange,
+                                weeklyDigestEnabled = weeklyDigestEnabled,
+                                onWeeklyDigestChange = onWeeklyDigestChange,
+                                smartInsightsEnabled = smartInsightsEnabled,
+                                onSmartInsightsChange = onSmartInsightsChange,
+                                monthlyHealthEnabled = monthlyHealthEnabled,
+                                onMonthlyHealthChange = onMonthlyHealthChange,
+                                yearReviewEnabled = yearReviewEnabled,
+                                onYearReviewChange = onYearReviewChange
                             )
                         }
                     }

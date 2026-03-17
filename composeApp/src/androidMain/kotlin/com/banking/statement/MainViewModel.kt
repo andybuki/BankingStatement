@@ -64,7 +64,11 @@ data class AppSettingsState(
     val showOnboarding: Boolean = false,
     val customCategories: List<CustomCategory> = emptyList(),
     val biometricLockEnabled: Boolean = false,
-    val biometricAvailable: Boolean = false
+    val biometricAvailable: Boolean = false,
+    val weeklyDigestEnabled: Boolean = true,
+    val smartInsightsEnabled: Boolean = true,
+    val monthlyHealthEnabled: Boolean = true,
+    val yearReviewEnabled: Boolean = true
 )
 
 /**
@@ -142,7 +146,11 @@ class MainViewModel(
                 showTutorial = !appPreferences.isTutorialDismissed(),
                 showOnboarding = !appPreferences.isOnboardingCompleted(),
                 biometricLockEnabled = appPreferences.isBiometricLockEnabled(),
-                biometricAvailable = biometricLockManager.canAuthenticate()
+                biometricAvailable = biometricLockManager.canAuthenticate(),
+                weeklyDigestEnabled = appPreferences.isWeeklyDigestEnabled(),
+                smartInsightsEnabled = appPreferences.isSmartInsightsEnabled(),
+                monthlyHealthEnabled = appPreferences.isMonthlyHealthEnabled(),
+                yearReviewEnabled = appPreferences.isYearReviewEnabled()
             )
         }
 
@@ -1094,6 +1102,26 @@ class MainViewModel(
 
     fun isBiometricLockEnabled(): Boolean {
         return appPreferences.isBiometricLockEnabled()
+    }
+
+    fun setWeeklyDigestEnabled(enabled: Boolean) {
+        _appSettings.update { it.copy(weeklyDigestEnabled = enabled) }
+        appPreferences.setWeeklyDigestEnabled(enabled)
+    }
+
+    fun setSmartInsightsEnabled(enabled: Boolean) {
+        _appSettings.update { it.copy(smartInsightsEnabled = enabled) }
+        appPreferences.setSmartInsightsEnabled(enabled)
+    }
+
+    fun setMonthlyHealthEnabled(enabled: Boolean) {
+        _appSettings.update { it.copy(monthlyHealthEnabled = enabled) }
+        appPreferences.setMonthlyHealthEnabled(enabled)
+    }
+
+    fun setYearReviewEnabled(enabled: Boolean) {
+        _appSettings.update { it.copy(yearReviewEnabled = enabled) }
+        appPreferences.setYearReviewEnabled(enabled)
     }
 
     fun getBiometricLockManager(): BiometricLockManager = biometricLockManager

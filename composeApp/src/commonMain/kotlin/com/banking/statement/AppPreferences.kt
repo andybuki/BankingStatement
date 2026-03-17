@@ -9,4 +9,14 @@ expect class AppPreferences {
     fun setTutorialDismissed(dismissed: Boolean)
     fun isOnboardingCompleted(): Boolean
     fun setOnboardingCompleted(completed: Boolean)
+
+    // Notification preferences
+    fun isWeeklyDigestEnabled(): Boolean
+    fun setWeeklyDigestEnabled(enabled: Boolean)
+    fun isSmartInsightsEnabled(): Boolean
+    fun setSmartInsightsEnabled(enabled: Boolean)
+    fun isMonthlyHealthEnabled(): Boolean
+    fun setMonthlyHealthEnabled(enabled: Boolean)
+    fun isYearReviewEnabled(): Boolean
+    fun setYearReviewEnabled(enabled: Boolean)
 }

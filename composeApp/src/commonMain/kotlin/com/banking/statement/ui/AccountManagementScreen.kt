@@ -54,7 +54,16 @@ fun AccountManagementScreen(
     onThemeModeChange: (ThemeMode) -> Unit = {},
     biometricLockEnabled: Boolean = false,
     biometricAvailable: Boolean = false,
-    onBiometricLockChange: (Boolean) -> Unit = {}
+    onBiometricLockChange: (Boolean) -> Unit = {},
+    // Notification preferences
+    weeklyDigestEnabled: Boolean = true,
+    onWeeklyDigestChange: (Boolean) -> Unit = {},
+    smartInsightsEnabled: Boolean = true,
+    onSmartInsightsChange: (Boolean) -> Unit = {},
+    monthlyHealthEnabled: Boolean = true,
+    onMonthlyHealthChange: (Boolean) -> Unit = {},
+    yearReviewEnabled: Boolean = true,
+    onYearReviewChange: (Boolean) -> Unit = {}
 ) {
     val strings = LocalStrings.current
     var showDeleteDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
@@ -125,6 +134,19 @@ fun AccountManagementScreen(
                 onBiometricLockChange = onBiometricLockChange
             )
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        NotificationSettingsCard(
+            weeklyDigestEnabled = weeklyDigestEnabled,
+            onWeeklyDigestChange = onWeeklyDigestChange,
+            smartInsightsEnabled = smartInsightsEnabled,
+            onSmartInsightsChange = onSmartInsightsChange,
+            monthlyHealthEnabled = monthlyHealthEnabled,
+            onMonthlyHealthChange = onMonthlyHealthChange,
+            yearReviewEnabled = yearReviewEnabled,
+            onYearReviewChange = onYearReviewChange
+        )
 
         // Danger Zone Section (only show if there's data)
         if (accounts.isNotEmpty()) {
@@ -624,6 +646,106 @@ private fun SecuritySettingsCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun NotificationSettingsCard(
+    weeklyDigestEnabled: Boolean,
+    onWeeklyDigestChange: (Boolean) -> Unit,
+    smartInsightsEnabled: Boolean,
+    onSmartInsightsChange: (Boolean) -> Unit,
+    monthlyHealthEnabled: Boolean,
+    onMonthlyHealthChange: (Boolean) -> Unit,
+    yearReviewEnabled: Boolean,
+    onYearReviewChange: (Boolean) -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.notifications,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            NotificationToggleRow(
+                title = strings.notificationWeeklyDigest,
+                description = strings.notificationWeeklyDigestDesc,
+                checked = weeklyDigestEnabled,
+                onCheckedChange = onWeeklyDigestChange
+            )
+
+            NotificationToggleRow(
+                title = strings.notificationSmartInsights,
+                description = strings.notificationSmartInsightsDesc,
+                checked = smartInsightsEnabled,
+                onCheckedChange = onSmartInsightsChange
+            )
+
+            NotificationToggleRow(
+                title = strings.notificationMonthlyHealth,
+                description = strings.notificationMonthlyHealthDesc,
+                checked = monthlyHealthEnabled,
+                onCheckedChange = onMonthlyHealthChange
+            )
+
+            NotificationToggleRow(
+                title = strings.notificationYearReview,
+                description = strings.notificationYearReviewDesc,
+                checked = yearReviewEnabled,
+                onCheckedChange = onYearReviewChange
+            )
+        }
+    }
+}
+
+@Composable
+private fun NotificationToggleRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        )
     }
 }
 
