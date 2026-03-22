@@ -1,0 +1,294 @@
+-- Queries for accounts
+getAllAccounts:
+SELECT * FROM accounts WHERE is_active = 1 ORDER BY name;
+
+getAccountById:
+SELECT * FROM accounts WHERE id = ?;
+
+getAccountByIban:
+SELECT * FROM accounts WHERE iban = ? LIMIT 1;
+
+getAccountByBankName:
+SELECT * FROM accounts WHERE bank_name = ? LIMIT 1;
+
+insertAccount:
+INSERT INTO accounts(name, bank_name, iban, currency, color, icon)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getLastInsertedAccountId:
+SELECT last_insert_rowid();
+
+updateAccount:
+UPDATE accounts SET name = ?, color = ?, icon = ?, updated_at = strftime('%s', 'now') WHERE id = ?;
+
+deactivateAccount:
+UPDATE accounts SET is_active = 0 WHERE id = ?;
+
+deleteAccount:
+DELETE FROM accounts WHERE id = ?;
+
+getAccountCount:
+SELECT COUNT(*) FROM accounts WHERE is_active = 1;
+
+-- Queries for statements
+getAllStatements:
+SELECT * FROM statements ORDER BY import_date DESC;
+
+getStatementById:
+SELECT * FROM statements WHERE id = ?;
+
+getStatementsByAccount:
+SELECT * FROM statements WHERE account_id = ? ORDER BY import_date DESC;
+
+insertStatement:
+INSERT INTO statements(account_id, file_name, file_path, source_type, bank_name, account_iban, import_date, statement_period)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getLastInsertedStatementId:
+SELECT last_insert_rowid();
+
+deleteStatement:
+DELETE FROM statements WHERE id = ?;
+
+getStatementCount:
+SELECT COUNT(*) FROM statements;
+
+getStatementCountByAccount:
+SELECT COUNT(*) FROM statements WHERE account_id = ?;
+
+-- Check for duplicate statement by file_name and account_id
+findDuplicateStatement:
+SELECT id FROM statements
+WHERE account_id = ?
+  AND file_name = ?
+LIMIT 1;
+
+deleteStatementsByAccount:
+DELETE FROM statements WHERE account_id = ?;
+
+-- Queries for transactions
+getAllTransactions:
+SELECT * FROM transactions WHERE is_duplicate = 0 ORDER BY booking_date DESC;
+
+-- Paginated transaction query for large datasets
+getTransactionsPaged:
+SELECT * FROM transactions WHERE is_duplicate = 0 ORDER BY booking_date DESC LIMIT ? OFFSET ?;
+
+getTransactionsByStatement:
+SELECT * FROM transactions WHERE statement_id = ? ORDER BY booking_date DESC;
+
+getTransactionsByAccount:
+SELECT * FROM transactions WHERE account_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC;
+
+getTransactionsByDateRange:
+SELECT * FROM transactions WHERE booking_date BETWEEN ? AND ? AND is_duplicate = 0 ORDER BY booking_date DESC;
+
+getTransactionsByCategory:
+SELECT * FROM transactions WHERE category_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC;
+
+getUncategorizedTransactions:
+SELECT * FROM transactions WHERE category_id IS NULL AND is_duplicate = 0 ORDER BY booking_date DESC;
+
+insertTransaction:
+INSERT INTO transactions(
+    statement_id, account_id, transaction_id, booking_date, value_date, amount, currency,
+    balance, description, counterparty_name, counterparty_iban, remittance_info,
+    transaction_type, bank_transaction_code, category_id, auto_category, raw_text, is_duplicate
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateTransactionCategory:
+UPDATE transactions SET category_id = ?, auto_category = ? WHERE id = ?;
+
+updateTransactionNotes:
+UPDATE transactions SET notes = ? WHERE id = ?;
+
+markAsDuplicate:
+UPDATE transactions SET is_duplicate = 1 WHERE id = ?;
+
+deleteTransactionsByStatement:
+DELETE FROM transactions WHERE statement_id = ?;
+
+getTransactionCount:
+SELECT COUNT(*) FROM transactions WHERE is_duplicate = 0;
+
+-- Check for duplicate transactions
+findDuplicateTransaction:
+SELECT id FROM transactions
+WHERE account_id = ?
+  AND booking_date = ?
+  AND amount = ?
+  AND description = ?
+  AND is_duplicate = 0
+LIMIT 1;
+
+-- Queries for categories
+getAllCategories:
+SELECT * FROM categories ORDER BY name;
+
+getCategoryById:
+SELECT * FROM categories WHERE id = ?;
+
+insertCategory:
+INSERT INTO categories(name, icon, color, parent_id) VALUES (?, ?, ?, ?);
+
+updateCategory:
+UPDATE categories SET name = ?, icon = ?, color = ? WHERE id = ?;
+
+resetTransactionsCategoryToOther:
+UPDATE transactions SET category_id = NULL, auto_category = 'OTHER' WHERE category_id = ?;
+
+deleteCategory:
+DELETE FROM categories WHERE id = ?;
+
+getLastInsertedCategoryId:
+SELECT last_insert_rowid();
+
+getCategoryByName:
+SELECT * FROM categories WHERE name = ? LIMIT 1;
+
+-- Summary queries
+getTransactionSummaryByCategory:
+SELECT c.name, c.color, COUNT(t.id) AS count, SUM(t.amount) AS total
+FROM transactions t
+LEFT JOIN categories c ON t.category_id = c.id
+WHERE t.is_duplicate = 0
+GROUP BY t.category_id
+ORDER BY total;
+
+-- Monthly category spending for trend analysis
+getCategorySpendingByMonth:
+SELECT
+    strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+    auto_category,
+    SUM(amount) AS total
+FROM transactions
+WHERE is_duplicate = 0 AND amount < 0 AND auto_category IS NOT NULL
+GROUP BY month, auto_category
+ORDER BY month DESC, total;
+
+getCategorySpendingByMonthAndAccount:
+SELECT
+    strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+    auto_category,
+    SUM(amount) AS total
+FROM transactions
+WHERE account_id = ? AND is_duplicate = 0 AND amount < 0 AND auto_category IS NOT NULL
+GROUP BY month, auto_category
+ORDER BY month DESC, total;
+
+-- Merchant spending trends (e.g., Lidl, Edeka, REWE per month)
+getMerchantSpendingByMonth:
+SELECT
+    strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+    counterparty_name,
+    auto_category,
+    SUM(amount) AS total,
+    COUNT(*) AS transaction_count
+FROM transactions
+WHERE is_duplicate = 0
+  AND amount < 0
+  AND counterparty_name IS NOT NULL
+  AND auto_category IS NOT NULL
+GROUP BY month, counterparty_name, auto_category
+ORDER BY month DESC, total;
+
+-- Top merchants overall for prioritizing trend display
+getTopMerchants:
+SELECT
+    counterparty_name,
+    auto_category,
+    SUM(amount) AS total_spent,
+    COUNT(*) AS transaction_count
+FROM transactions
+WHERE is_duplicate = 0
+  AND amount < 0
+  AND counterparty_name IS NOT NULL
+GROUP BY counterparty_name
+ORDER BY total_spent
+LIMIT 20;
+
+getMonthlySpending:
+SELECT strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+       SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS expenses,
+       SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS income
+FROM transactions
+WHERE is_duplicate = 0
+GROUP BY month
+ORDER BY month DESC;
+
+getMonthlySpendingByAccount:
+SELECT strftime('%Y-%m', datetime(booking_date, 'unixepoch')) AS month,
+       SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS expenses,
+       SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS income
+FROM transactions
+WHERE account_id = ? AND is_duplicate = 0
+GROUP BY month
+ORDER BY month DESC;
+
+getTotalBalance:
+SELECT SUM(amount) AS total FROM transactions WHERE is_duplicate = 0;
+
+getTotalBalanceByAccount:
+SELECT SUM(amount) AS total FROM transactions WHERE account_id = ? AND is_duplicate = 0;
+
+-- Account summary
+getAccountSummary:
+SELECT a.id, a.name, a.bank_name, a.iban, a.currency, a.color,
+       COUNT(t.id) AS transaction_count,
+       SUM(t.amount) AS balance
+FROM accounts a
+LEFT JOIN transactions t ON a.id = t.account_id AND t.is_duplicate = 0
+WHERE a.is_active = 1
+GROUP BY a.id
+ORDER BY a.name;
+
+-- Clear all data
+deleteAllTransactions:
+DELETE FROM transactions;
+
+deleteAllStatements:
+DELETE FROM statements;
+
+deleteAllAccounts:
+DELETE FROM accounts;
+
+-- Delete transactions by account
+deleteTransactionsByAccount:
+DELETE FROM transactions WHERE account_id = ?;
+
+-- Merchant queries
+insertMerchant:
+INSERT INTO merchants(category_code, country_code, name, name_normalized)
+VALUES (?, ?, ?, ?);
+
+findMerchantByName:
+SELECT category_code, country_code, name FROM merchants
+WHERE name_normalized = ?
+LIMIT 1;
+
+getMerchantCount:
+SELECT COUNT(*) FROM merchants;
+
+getAllMerchantsForCache:
+SELECT name_normalized, category_code FROM merchants;
+
+clearMerchants:
+DELETE FROM merchants;
+
+-- Category override queries
+insertCategoryOverride:
+INSERT OR REPLACE INTO category_overrides(pattern, category_name, created_at)
+VALUES (?, ?, strftime('%s', 'now'));
+
+getCategoryOverrideByPattern:
+SELECT category_name FROM category_overrides WHERE pattern = ? LIMIT 1;
+
+getAllCategoryOverrides:
+SELECT pattern, category_name FROM category_overrides;
+
+deleteCategoryOverride:
+DELETE FROM category_overrides WHERE pattern = ?;
+
+clearCategoryOverrides:
+DELETE FROM category_overrides;

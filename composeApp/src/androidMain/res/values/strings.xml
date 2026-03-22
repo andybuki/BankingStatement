@@ -124,6 +124,26 @@
     <string name="error_parser_not_found">Parser not found for %s</string>
     <string name="bank_selection_cancelled">Bank selection cancelled</string>
 
+    <!-- Import Error Dialog -->
+    <string name="import_error_title">Import Error</string>
+    <string name="import_error_file_could_not_be_read">The file could not be read. It may be corrupted or inaccessible.</string>
+    <string name="import_error_unsupported_format_detail">This file format is not supported. Please use PDF, CSV, or Excel files exported from your bank.</string>
+    <string name="import_error_not_bank_statement_detail">The file does not contain recognizable bank statement data. Please ensure you are importing a bank statement file.</string>
+    <string name="import_error_pdf_invalid">This file is not a valid PDF document.</string>
+    <string name="import_error_pdf_no_text">No text could be extracted from this PDF. It may be a scanned image. Try using a CSV or Excel export instead.</string>
+    <string name="import_error_parser_not_found">No parser is available for this bank. The file was recognized as a bank statement but could not be processed.</string>
+    <string name="import_error_generic">An unexpected error occurred during import.</string>
+    <string name="import_error_what_happened">What happened</string>
+    <string name="import_error_what_you_can_do">What you can do</string>
+    <string name="import_error_try_different_format">Try exporting from your bank in a different format (CSV or Excel often works best)</string>
+    <string name="import_error_check_file_valid">Make sure the file is a valid, unmodified bank statement</string>
+    <string name="import_error_contact_support">If the problem persists, contact support</string>
+    <string name="import_error_file_label">File</string>
+    <string name="import_error_format_label">Format</string>
+    <string name="import_error_details_label">Details</string>
+    <string name="retry_import">Try Again</string>
+    <string name="dismiss">Dismiss</string>
+
     <!-- Export -->
     <string name="export">Export</string>
     <string name="export_csv">Export as CSV</string>
@@ -219,4 +239,20 @@
     <string name="welcome_button">Got it, let\'s start</string>
     <string name="contact_email">bankwise.info@gmail.com</string>
     <string name="contact_hint">Questions or feedback? We\'d love to hear from you!</string>
+
+    <!-- Security -->
+    <string name="security">Security</string>
+    <string name="biometric_lock">App Lock</string>
+    <string name="biometric_lock_description">Require fingerprint or PIN to open the app</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_import_title">Import your bank statement</string>
+    <string name="onboarding_import_subtitle">Supports 20+ banks. Just drop in a PDF or CSV file and we\'ll handle the rest.</string>
+    <string name="onboarding_spending_title">See where your money goes</string>
+    <string name="onboarding_spending_subtitle">Automatic categorization shows your spending at a glance. No manual entry needed.</string>
+    <string name="onboarding_trends_title">Track trends over time</string>
+    <string name="onboarding_trends_subtitle">Watch your income and expenses evolve month by month. Spot patterns and save more.</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_get_started">Get Started</string>
 </resources>

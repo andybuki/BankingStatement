@@ -30,6 +30,10 @@ kotlin {
             implementation(libs.sqldelight.android)
             implementation(libs.poi)
             implementation(libs.poi.ooxml)
+            implementation(libs.koin.android)
+            implementation(libs.androidx.biometric)
+            implementation(libs.androidx.security.crypto)
+            implementation(libs.sqlcipher.android)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -43,6 +47,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.sqldelight.coroutines)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.koin.core)
 
         }
         iosMain.dependencies {
@@ -55,11 +60,11 @@ kotlin {
 }
 
 android {
-    namespace = "com.bankwise.app"
+    namespace = "com.banking.statement"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.bankwise.app"
+        applicationId = "com.banking.statement"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 4
@@ -97,7 +102,8 @@ dependencies {
 sqldelight {
     databases {
         create("BankingDatabase") {
-            packageName.set("com.bankwise.app.db")
+            packageName.set("com.banking.statement.db")
+            deriveSchemaFromMigrations.set(true)
         }
     }
 }
