@@ -58,7 +58,7 @@ class BiometricLockManager(private val context: Context) {
         val biometricPrompt = BiometricPrompt(activity, executor, callback)
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Unlock Bankwise")
+            .setTitle("Unlock MoneyLupe")
             .setSubtitle("Verify your identity to access your financial data")
             .setAllowedAuthenticators(
                 BiometricManager.Authenticators.BIOMETRIC_STRONG or
