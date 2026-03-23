@@ -74,7 +74,7 @@ class KeywordDatabase : KeywordLookup {
      * 2. Prioritize longer/more specific keywords
      * 3. Return the category with the longest matching keyword (not highest count)
      */
-    override fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
+    override fun findCategory(description: String, counterparty: String?): TransactionCategory? {
         if (keywordMap.isEmpty()) return null
 
         val searchText = "${description.lowercase()} ${counterparty?.lowercase() ?: ""}"

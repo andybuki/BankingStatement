@@ -94,7 +94,7 @@ class KeywordDatabaseOptimized : KeywordLookup {
      * - Early termination on first long match
      * - Simple cache for repeated descriptions
      */
-    override fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
+    override fun findCategory(description: String, counterparty: String?): TransactionCategory? {
         if (normalizedKeywordMap.isEmpty()) return null
 
         // Check cache first
