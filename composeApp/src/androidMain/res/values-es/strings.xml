@@ -237,7 +237,8 @@
     <string name="welcome_bullet_2">Sigue tus gastos por categoría</string>
     <string name="welcome_bullet_3">Analiza tendencias a lo largo del tiempo</string>
     <string name="welcome_button">Entendido, empecemos</string>
-    <string name="contact_email">bankwise.info@gmail.com</string>
+    <string name="contact_title">Contacto y Comentarios</string>
+    <string name="contact_email">moneylupe.info@gmail.com</string>
     <string name="contact_hint">¿Preguntas o comentarios? ¡Nos encantaría saber de ti!</string>
 
     <!-- Security -->

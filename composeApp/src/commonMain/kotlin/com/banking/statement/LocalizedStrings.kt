@@ -224,6 +224,7 @@ data class AppStrings(
     val welcomeBullet2: String,
     val welcomeBullet3: String,
     val welcomeButton: String,
+    val contactTitle: String,
     val contactEmail: String,
     val contactHint: String,
 
@@ -456,7 +457,8 @@ fun defaultEnglishStrings() = AppStrings(
     welcomeBullet2 = "Track spending by category",
     welcomeBullet3 = "Analyze trends over time",
     welcomeButton = "Got it, let's start",
-    contactEmail = "bankwise.info@gmail.com",
+    contactTitle = "Contact & Feedback",
+    contactEmail = "moneylupe.info@gmail.com",
     contactHint = "Questions or feedback? We'd love to hear from you!",
 
     // Security

@@ -54,7 +54,8 @@ fun AccountManagementScreen(
     onThemeModeChange: (ThemeMode) -> Unit = {},
     biometricLockEnabled: Boolean = false,
     biometricAvailable: Boolean = false,
-    onBiometricLockChange: (Boolean) -> Unit = {}
+    onBiometricLockChange: (Boolean) -> Unit = {},
+    onEmailClick: (String) -> Unit = {}
 ) {
     val strings = LocalStrings.current
     var showDeleteDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
@@ -162,6 +163,12 @@ fun AccountManagementScreen(
                     }
                 }
             }
+        }
+
+        // Contact / Feedback Section
+        item {
+            Spacer(modifier = Modifier.height(4.dp))
+            ContactSettingsCard(onEmailClick = onEmailClick)
         }
 
         item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -622,6 +629,60 @@ private fun SecuritySettingsCard(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                     )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContactSettingsCard(
+    onEmailClick: (String) -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.contactTitle,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = strings.contactHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable { onEmailClick(strings.contactEmail) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = strings.contactEmail,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
