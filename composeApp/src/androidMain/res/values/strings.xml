@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Bankwise</string>
+    <string name="app_name">MoneyLupe</string>
 
     <!-- Home Screen -->
-    <string name="home_title">Bankwise</string>
+    <string name="home_title">MoneyLupe</string>
     <string name="home_subtitle">Import your bank statements to analyze</string>
     <string name="import_button">Import Statement</string>
     <string name="processing">Processing…</string>
@@ -232,7 +232,7 @@
     <string name="confidence_medium">Medium</string>
 
     <!-- Welcome Tutorial & Contact -->
-    <string name="welcome_title">Welcome to Bankwise!</string>
+    <string name="welcome_title">Welcome to MoneyLupe!</string>
     <string name="welcome_bullet_1">Import PDF/CSV bank statements</string>
     <string name="welcome_bullet_2">Track spending by category</string>
     <string name="welcome_bullet_3">Analyze trends over time</string>

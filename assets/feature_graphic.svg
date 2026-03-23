@@ -117,7 +117,7 @@
   <!-- Right Side: Text Content -->
   <g transform="translate(420, 0)">
     <!-- App Name -->
-    <text x="0" y="160" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#ffffff">Bankwise</text>
+    <text x="0" y="160" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#ffffff">MoneyLupe</text>
 
     <!-- Tagline -->
     <text x="0" y="220" font-family="Arial, sans-serif" font-size="28" fill="#90cdf4">Analyze. Organize. Simplify.</text>

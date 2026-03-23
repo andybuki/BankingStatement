@@ -226,7 +226,7 @@ fun MainViewController() = ComposeUIViewController {
  * Open email client on iOS using mailto: URL scheme
  */
 private fun openEmailOnIOS(email: String) {
-    platform.Foundation.NSURL.URLWithString("mailto:$email?subject=Bankwise%20Feedback")?.let { url ->
+    platform.Foundation.NSURL.URLWithString("mailto:$email?subject=MoneyLupe%20Feedback")?.let { url ->
         platform.UIKit.UIApplication.sharedApplication.openURL(url)
     }
 }

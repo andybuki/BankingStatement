@@ -451,7 +451,7 @@ fun defaultEnglishStrings() = AppStrings(
     confidenceMedium = "Medium",
 
     // Welcome Tutorial & Contact
-    welcomeTitle = "Welcome to Bankwise!",
+    welcomeTitle = "Welcome to MoneyLupe!",
     welcomeBullet1 = "Import PDF/CSV bank statements",
     welcomeBullet2 = "Track spending by category",
     welcomeBullet3 = "Analyze trends over time",

@@ -203,7 +203,7 @@ private fun BiometricLockScreen(
             )
 
             Text(
-                text = "Bankwise",
+                text = "MoneyLupe",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.HeaderText

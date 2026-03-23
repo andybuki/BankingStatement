@@ -1102,7 +1102,7 @@ class MainViewModel(
         try {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
                 data = Uri.parse("mailto:$email")
-                putExtra(Intent.EXTRA_SUBJECT, "Bankwise Feedback")
+                putExtra(Intent.EXTRA_SUBJECT, "MoneyLupe Feedback")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
