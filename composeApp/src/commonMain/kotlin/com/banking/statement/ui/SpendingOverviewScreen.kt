@@ -138,6 +138,10 @@ fun SpendingOverviewScreen(
     // Category drill-down state
     var selectedCategoryForDetails by remember { mutableStateOf<TransactionCategory?>(null) }
 
+    // Monthly summary pagination state
+    val monthlyPageSize = 6
+    var monthlyItemsShown by remember { mutableStateOf(monthlyPageSize) }
+
     // Auto-open date picker when custom is selected
     LaunchedEffect(selectedPeriod) {
         if (selectedPeriod == TimePeriod.CUSTOM && customDateRange.startDate == null) {
@@ -368,7 +372,7 @@ fun SpendingOverviewScreen(
                     }
                 }
 
-                // Monthly summary title
+                // Monthly summary title with pagination
                 if (displayMonthlySummary.isNotEmpty()) {
                     item {
                         Text(
@@ -379,8 +383,25 @@ fun SpendingOverviewScreen(
                         )
                     }
 
-                    items(displayMonthlySummary) { summary ->
+                    val visibleMonthly = displayMonthlySummary.take(monthlyItemsShown)
+                    items(visibleMonthly) { summary ->
                         MonthlyItem(summary)
+                    }
+
+                    // "Show more" button if there are more months
+                    if (monthlyItemsShown < displayMonthlySummary.size) {
+                        item {
+                            TextButton(
+                                onClick = { monthlyItemsShown += monthlyPageSize },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "${strings.showMore} (${displayMonthlySummary.size - monthlyItemsShown} ${strings.more})",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -178,12 +178,13 @@ enum class TransactionCategory(
 
     companion object {
         // Reference to external keyword database (set by MainActivity)
-        private var keywordDatabase: KeywordDatabase? = null
+        private var keywordDatabase: KeywordLookup? = null
 
         /**
-         * Set the keyword database for categorization
+         * Set the keyword database for categorization.
+         * Accepts any KeywordLookup implementation (KeywordDatabase or KeywordDatabaseOptimized).
          */
-        fun setKeywordDatabase(database: KeywordDatabase?) {
+        fun setKeywordDatabase(database: KeywordLookup?) {
             keywordDatabase = database
         }
 

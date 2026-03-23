@@ -5,6 +5,12 @@ import com.banking.statement.db.BankingDatabase
 /**
  * Database-backed merchant lookup for transaction categorization.
  * Uses a pre-loaded CSV of known merchants mapped to categories.
+ *
+ * Performance optimizations:
+ * - Single-word merchants indexed in HashMap for O(1) lookup
+ * - Multi-word merchants indexed by first word for O(n/k) lookup
+ * - Pre-compiled regex for normalization
+ * - Lazy-load cache only on first findCategory call
  */
 class MerchantDatabase(
     private val database: BankingDatabase
@@ -25,8 +31,19 @@ class MerchantDatabase(
         "tr" to TransactionCategory.TRAVEL         // travel
     )
 
-    // In-memory cache of merchants for fast contains matching
-    private var merchantCache: List<Pair<String, String>>? = null // (normalized_name, category_code)
+    // Pre-compiled regex for normalization (avoids re-compilation on every call)
+    private val specialCharsRegex = Regex("[^a-z0-9äöüß\\s]")
+    private val whitespaceRegex = Regex("\\s+")
+
+    // O(1) lookup for single-word merchants: word -> categoryCode
+    private var singleWordIndex: HashMap<String, String>? = null
+
+    // Multi-word merchants indexed by first word: firstWord -> list of (fullPhrase, categoryCode)
+    // Each list is sorted by phrase length descending (longer matches first)
+    private var multiWordIndex: HashMap<String, MutableList<Pair<String, String>>>? = null
+
+    // Track whether cache has been initialized
+    private var cacheInitialized = false
 
     /**
      * Check if merchant database is loaded
@@ -66,8 +83,9 @@ class MerchantDatabase(
 
         val startIndex = if (hasHeader) 1 else 0
 
-        // Build cache while loading
-        val cacheBuilder = mutableListOf<Pair<String, String>>()
+        // Build indexed caches while loading
+        val singleWords = HashMap<String, String>(totalLines)
+        val multiWords = HashMap<String, MutableList<Pair<String, String>>>()
 
         database.bankingDatabaseQueries.transaction {
             // Clear existing data
@@ -91,7 +109,9 @@ class MerchantDatabase(
                             name = name,
                             name_normalized = nameNormalized
                         )
-                        cacheBuilder.add(nameNormalized to categoryCode)
+
+                        // Index into appropriate structure
+                        indexMerchant(nameNormalized, categoryCode, singleWords, multiWords)
                         count++
 
                         // Report progress every 10000 entries
@@ -104,15 +124,44 @@ class MerchantDatabase(
             onProgress?.invoke(count, totalLines)
         }
 
-        // Sort cache by name length descending (longer matches first)
-        merchantCache = cacheBuilder.sortedByDescending { it.first.length }
+        // Sort multi-word lists by phrase length descending (longer matches first)
+        for ((_, list) in multiWords) {
+            list.sortByDescending { it.first.length }
+        }
+
+        singleWordIndex = singleWords
+        multiWordIndex = multiWords
+        cacheInitialized = true
     }
 
     /**
-     * Ensure cache is loaded - rebuild from database if needed
+     * Index a merchant into the appropriate lookup structure.
+     */
+    private fun indexMerchant(
+        nameNormalized: String,
+        categoryCode: String,
+        singleWords: HashMap<String, String>,
+        multiWords: HashMap<String, MutableList<Pair<String, String>>>
+    ) {
+        val words = nameNormalized.split(" ").filter { it.isNotBlank() }
+        if (words.size == 1) {
+            // Single word: direct HashMap lookup
+            // Keep the first category code if duplicate (longer name would have been multi-word)
+            singleWords.putIfAbsent(nameNormalized, categoryCode)
+        } else if (words.size > 1) {
+            // Multi-word: index by first word
+            val firstWord = words[0]
+            multiWords.getOrPut(firstWord) { mutableListOf() }
+                .add(nameNormalized to categoryCode)
+        }
+    }
+
+    /**
+     * Lazy-load cache from database on first access.
+     * Only called if cache wasn't built during loadFromCsv.
      */
     fun ensureCacheLoaded() {
-        if (merchantCache != null) return
+        if (cacheInitialized) return
         if (!isLoaded()) return
 
         try {
@@ -120,9 +169,21 @@ class MerchantDatabase(
                 .getAllMerchantsForCache()
                 .executeAsList()
 
-            merchantCache = merchants
-                .map { it.name_normalized to it.category_code }
-                .sortedByDescending { it.first.length }
+            val singleWords = HashMap<String, String>(merchants.size)
+            val multiWords = HashMap<String, MutableList<Pair<String, String>>>()
+
+            for (merchant in merchants) {
+                indexMerchant(merchant.name_normalized, merchant.category_code, singleWords, multiWords)
+            }
+
+            // Sort multi-word lists by phrase length descending
+            for ((_, list) in multiWords) {
+                list.sortByDescending { it.first.length }
+            }
+
+            singleWordIndex = singleWords
+            multiWordIndex = multiWords
+            cacheInitialized = true
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -131,55 +192,60 @@ class MerchantDatabase(
     /**
      * Find category for a transaction description/counterparty.
      * Returns null if no match found.
+     *
+     * Uses HashMap for O(1) single-word lookup and first-word index
+     * for efficient multi-word matching.
      */
     fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
         // Skip if no merchants loaded
         if (!isLoaded()) return null
 
-        // Ensure cache is populated
+        // Lazy-load cache on first call
         ensureCacheLoaded()
 
         val searchText = normalizeName("$description ${counterparty ?: ""}")
         if (searchText.isBlank()) return null
 
-        // Split search text into words for word-boundary matching
         val searchWords = searchText.split(" ").filter { it.isNotBlank() }
+        val searchWordsSet = searchWords.toSet()
 
-        // Use in-memory cache for matching
-        val cache = merchantCache
-        if (cache != null) {
-            // Find first merchant name that matches as complete word(s)
-            // Cache is sorted by length desc, so longer matches are found first
-            for ((merchantName, categoryCode) in cache) {
-                if (matchesAsWord(searchText, searchWords, merchantName)) {
-                    return categoryCodeMap[categoryCode]
+        // Track best match (longest phrase wins)
+        var bestCategoryCode: String? = null
+        var bestMatchLength = 0
+
+        // 1) Check multi-word merchants first (longer matches = higher priority)
+        val multiIdx = multiWordIndex
+        if (multiIdx != null) {
+            for (word in searchWordsSet) {
+                val candidates = multiIdx[word] ?: continue
+                // Candidates are sorted by length descending
+                for ((phrase, categoryCode) in candidates) {
+                    if (phrase.length <= bestMatchLength) break // early exit, rest are shorter
+                    val phraseWords = phrase.split(" ").filter { it.isNotBlank() }
+                    if (phraseWords.all { it in searchWordsSet } && searchText.contains(phrase)) {
+                        bestCategoryCode = categoryCode
+                        bestMatchLength = phrase.length
+                        break // this candidate list is sorted, first match is longest
+                    }
                 }
             }
         }
 
-        return null
-    }
-
-    /**
-     * Check if merchant name matches as complete word(s) in search text.
-     * "lidl" matches "lidl sagt danke" but "mie" does NOT match "miete"
-     */
-    private fun matchesAsWord(searchText: String, searchWords: List<String>, merchantName: String): Boolean {
-        val merchantWords = merchantName.split(" ").filter { it.isNotBlank() }
-
-        // Single word merchant - must match a complete word in search
-        if (merchantWords.size == 1) {
-            return searchWords.contains(merchantName)
+        // 2) Check single-word merchants via HashMap O(1) lookup
+        val singleIdx = singleWordIndex
+        if (singleIdx != null) {
+            for (word in searchWordsSet) {
+                if (word.length > bestMatchLength) {
+                    val categoryCode = singleIdx[word]
+                    if (categoryCode != null) {
+                        bestCategoryCode = categoryCode
+                        bestMatchLength = word.length
+                    }
+                }
+            }
         }
 
-        // Multi-word merchant - all words must be present as complete words
-        // and the phrase should appear in order
-        if (merchantWords.all { word -> searchWords.contains(word) }) {
-            // Also verify the words appear in sequence
-            return searchText.contains(merchantName)
-        }
-
-        return false
+        return bestCategoryCode?.let { categoryCodeMap[it] }
     }
 
     /**
@@ -191,8 +257,8 @@ class MerchantDatabase(
     private fun normalizeName(name: String): String {
         return name
             .lowercase()
-            .replace(Regex("[^a-z0-9äöüß\\s]"), " ")
-            .replace(Regex("\\s+"), " ")
+            .replace(specialCharsRegex, " ")
+            .replace(whitespaceRegex, " ")
             .trim()
     }
 

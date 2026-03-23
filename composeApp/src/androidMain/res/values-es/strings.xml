@@ -256,4 +256,8 @@
     <string name="onboarding_next">Siguiente</string>
     <string name="onboarding_skip">Omitir</string>
     <string name="onboarding_get_started">Empezar</string>
+
+    <!-- Pagination -->
+    <string name="show_more">Mostrar más</string>
+    <string name="more">más</string>
 </resources>

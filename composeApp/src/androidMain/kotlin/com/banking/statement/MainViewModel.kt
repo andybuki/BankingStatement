@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModel
 import com.banking.statement.categorization.CategoryOverrideManager
 import com.banking.statement.categorization.CategoryOverrideResult
 import com.banking.statement.categorization.CustomCategory
-import com.banking.statement.categorization.KeywordDatabase
+import com.banking.statement.categorization.KeywordDatabaseOptimized
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.categorization.TransactionCategorizer
@@ -74,7 +74,7 @@ data class AppSettingsState(
 class MainViewModel(
     private val context: Context,
     val repository: TransactionRepository,
-    private val keywordDatabase: KeywordDatabase,
+    private val keywordDatabase: KeywordDatabaseOptimized,
     private val merchantDatabase: MerchantDatabase,
     private val categoryOverrideManager: CategoryOverrideManager,
     private val transactionCategorizer: TransactionCategorizer,
@@ -549,47 +549,39 @@ class MainViewModel(
                 }
                 val trends = com.banking.statement.ui.TrendCalculator.calculateTrends(monthlyCategoryData)
 
-                // Category spending: use ALL transactions for accurate stats
-                // but compute via DB aggregates where possible
-                val allTransactions = repository.getAllTransactions()
-                val allMapped = mapTransactions(allTransactions, accountNames, customCategoriesMap)
+                // Use SQL aggregates instead of loading all transactions into memory
+                val categoryTotals = repository.getCategorySpendingTotals()
+                val totalExpensesAmount = categoryTotals.sumOf { it.total ?: 0.0 }
 
-                val spendingByCategory = allMapped
-                    .filter { it.amount < 0 }
-                    .groupBy { it.category }
-                    .mapValues { (_, txs) -> txs.sumOf { it.amount } }
-
-                val totalExpensesAmount = spendingByCategory.values.sum()
-
-                val computedCategorySpending = spendingByCategory.map { (cat, total) ->
+                val computedCategorySpending = categoryTotals.mapNotNull { row ->
+                    val categoryName = row.auto_category ?: return@mapNotNull null
+                    val category = try {
+                        TransactionCategory.valueOf(categoryName)
+                    } catch (e: Exception) { null } ?: return@mapNotNull null
+                    val total = row.total ?: 0.0
                     CategorySpending(
-                        category = cat,
+                        category = category,
                         totalAmount = total,
-                        transactionCount = allMapped.count { it.category == cat && it.amount < 0 },
+                        transactionCount = row.transaction_count.toInt(),
                         percentage = if (totalExpensesAmount != 0.0) {
                             ((total / totalExpensesAmount) * 100).toFloat()
                         } else 0f,
-                        trend = trends[cat]
+                        trend = trends[category]
                     )
                 }.sortedBy { it.totalAmount }
 
-                val computedExpenses = allTransactions.filter { it.amount < 0 }.sumOf { it.amount }
-                val computedIncome = allTransactions.filter { it.amount > 0 }.sumOf { it.amount }
+                // Use SQL aggregate for income/expenses totals
+                val totals = repository.getIncomeExpensesTotals()
+                val computedExpenses = totals?.total_expenses ?: 0.0
+                val computedIncome = totals?.total_income ?: 0.0
 
-                val monthlyData = allTransactions.groupBy { tx ->
-                    val d = Instant.fromEpochSeconds(tx.booking_date)
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                        .date
-                    "${d.year}-${d.monthNumber.toString().padStart(2, '0')}"
-                }
-
-                val computedMonthlySummary = monthlyData.map { (month, txs) ->
-                    val income = txs.filter { it.amount > 0 }.sumOf { it.amount }
-                    val expenses = txs.filter { it.amount < 0 }.sumOf { it.amount }
+                // Use SQL aggregate for monthly summary
+                val monthlySpending = repository.getMonthlySpending()
+                val computedMonthlySummary = monthlySpending.map { row ->
                     MonthlySummary(
-                        month = formatMonth(month),
-                        income = income,
-                        expenses = expenses
+                        month = formatMonth(row.month ?: ""),
+                        income = row.income ?: 0.0,
+                        expenses = row.expenses ?: 0.0
                     )
                 }.sortedByDescending { it.month }
 

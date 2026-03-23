@@ -232,6 +232,25 @@ SELECT SUM(amount) AS total FROM transactions WHERE is_duplicate = 0;
 getTotalBalanceByAccount:
 SELECT SUM(amount) AS total FROM transactions WHERE account_id = ? AND is_duplicate = 0;
 
+-- Category spending aggregates (avoids loading all transactions into memory)
+getCategorySpendingTotals:
+SELECT
+    auto_category,
+    SUM(amount) AS total,
+    COUNT(*) AS transaction_count
+FROM transactions
+WHERE is_duplicate = 0 AND amount < 0 AND auto_category IS NOT NULL
+GROUP BY auto_category
+ORDER BY total;
+
+-- Income/expenses totals
+getIncomeExpensesTotals:
+SELECT
+    SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS total_expenses,
+    SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS total_income
+FROM transactions
+WHERE is_duplicate = 0;
+
 -- Account summary
 getAccountSummary:
 SELECT a.id, a.name, a.bank_name, a.iban, a.currency, a.color,
