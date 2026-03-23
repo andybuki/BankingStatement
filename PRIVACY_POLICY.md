@@ -78,4 +78,4 @@ We may update this Privacy Policy from time to time. Any changes will be reflect
 
 If you have any questions about this Privacy Policy or the app's data practices, please contact us at:
 
-**Email**: bankwise.info@gmail.com
+**Email**: moneylupe.info@gmail.com

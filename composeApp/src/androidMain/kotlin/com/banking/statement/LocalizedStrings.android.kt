@@ -207,6 +207,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     welcomeBullet2 = stringResource(R.string.welcome_bullet_2),
     welcomeBullet3 = stringResource(R.string.welcome_bullet_3),
     welcomeButton = stringResource(R.string.welcome_button),
+    contactTitle = stringResource(R.string.contact_title),
     contactEmail = stringResource(R.string.contact_email),
     contactHint = stringResource(R.string.contact_hint),
 

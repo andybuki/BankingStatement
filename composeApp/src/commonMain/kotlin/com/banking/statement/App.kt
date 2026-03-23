@@ -653,7 +653,8 @@ fun App(
                                 onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) },
                                 biometricLockEnabled = biometricLockEnabled,
                                 biometricAvailable = biometricAvailable,
-                                onBiometricLockChange = onBiometricLockChange
+                                onBiometricLockChange = onBiometricLockChange,
+                                onEmailClick = onEmailClick
                             )
                         }
                     }
@@ -810,9 +811,6 @@ fun HomeScreen(
                 }
             }
 
-            // Contact Info Card - always visible at the bottom
-            Spacer(modifier = Modifier.height(24.dp))
-            ContactInfoCard(onEmailClick = onEmailClick)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
