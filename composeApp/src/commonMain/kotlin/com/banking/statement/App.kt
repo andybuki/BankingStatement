@@ -40,6 +40,9 @@ import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.BankingStatementTheme
 import com.banking.statement.ui.theme.ThemeMode
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 // Composition local for strings
@@ -155,7 +158,7 @@ fun App(
     LaunchedEffect(transactions.size, hasAutoSelectedTimePeriod) {
         if (!hasAutoSelectedTimePeriod && transactions.isNotEmpty()) {
             hasAutoSelectedTimePeriod = true
-            val now = kotlinx.datetime.Clock.System.todayIn(kotlinx.datetime.TimeZone.currentSystemDefault())
+            val now = Clock.System.todayIn(TimeZone.currentSystemDefault())
             val currentYear = now.year
             val currentMonth = now.monthNumber
             val currentDay = now.dayOfMonth
