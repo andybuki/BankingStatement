@@ -224,6 +224,7 @@ data class AppStrings(
     val welcomeBullet2: String,
     val welcomeBullet3: String,
     val welcomeButton: String,
+    val contactTitle: String,
     val contactEmail: String,
     val contactHint: String,
 
@@ -241,7 +242,11 @@ data class AppStrings(
     val onboardingTrendsSubtitle: String,
     val onboardingNext: String,
     val onboardingSkip: String,
-    val onboardingGetStarted: String
+    val onboardingGetStarted: String,
+
+    // Pagination
+    val showMore: String,
+    val more: String
 )
 
 /**
@@ -451,12 +456,13 @@ fun defaultEnglishStrings() = AppStrings(
     confidenceMedium = "Medium",
 
     // Welcome Tutorial & Contact
-    welcomeTitle = "Welcome to Bankwise!",
+    welcomeTitle = "Welcome to MoneyLupe!",
     welcomeBullet1 = "Import PDF/CSV bank statements",
     welcomeBullet2 = "Track spending by category",
     welcomeBullet3 = "Analyze trends over time",
     welcomeButton = "Got it, let's start",
-    contactEmail = "bankwise.info@gmail.com",
+    contactTitle = "Contact & Feedback",
+    contactEmail = "moneylupe.info@gmail.com",
     contactHint = "Questions or feedback? We'd love to hear from you!",
 
     // Security
@@ -473,5 +479,7 @@ fun defaultEnglishStrings() = AppStrings(
     onboardingTrendsSubtitle = "Watch your income and expenses evolve month by month. Spot patterns and save more.",
     onboardingNext = "Next",
     onboardingSkip = "Skip",
-    onboardingGetStarted = "Get Started"
+    onboardingGetStarted = "Get Started",
+    showMore = "Show more",
+    more = "more"
 )

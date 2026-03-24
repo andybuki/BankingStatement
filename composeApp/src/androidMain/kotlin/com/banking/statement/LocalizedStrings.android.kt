@@ -207,6 +207,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     welcomeBullet2 = stringResource(R.string.welcome_bullet_2),
     welcomeBullet3 = stringResource(R.string.welcome_bullet_3),
     welcomeButton = stringResource(R.string.welcome_button),
+    contactTitle = stringResource(R.string.contact_title),
     contactEmail = stringResource(R.string.contact_email),
     contactHint = stringResource(R.string.contact_hint),
 
@@ -224,5 +225,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     onboardingTrendsSubtitle = stringResource(R.string.onboarding_trends_subtitle),
     onboardingNext = stringResource(R.string.onboarding_next),
     onboardingSkip = stringResource(R.string.onboarding_skip),
-    onboardingGetStarted = stringResource(R.string.onboarding_get_started)
+    onboardingGetStarted = stringResource(R.string.onboarding_get_started),
+    showMore = stringResource(R.string.show_more),
+    more = stringResource(R.string.more)
 )

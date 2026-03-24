@@ -54,7 +54,8 @@ fun AccountManagementScreen(
     onThemeModeChange: (ThemeMode) -> Unit = {},
     biometricLockEnabled: Boolean = false,
     biometricAvailable: Boolean = false,
-    onBiometricLockChange: (Boolean) -> Unit = {}
+    onBiometricLockChange: (Boolean) -> Unit = {},
+    onEmailClick: (String) -> Unit = {}
 ) {
     val strings = LocalStrings.current
     var showDeleteDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
@@ -62,108 +63,115 @@ fun AccountManagementScreen(
     var showEditDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
 
     // Content - no Scaffold, title is now in AppHeader
-    Column(
+    // Use LazyColumn for full scrollability of all content
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Spacer(modifier = Modifier.height(8.dp))
+        item { Spacer(modifier = Modifier.height(0.dp)) }
 
         if (accounts.isEmpty()) {
             // Empty state
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = strings.noAccounts,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = strings.noAccountsHint,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = strings.noAccounts,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = strings.noAccountsHint,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
                 }
             }
         } else {
             // Account list
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(accounts) { account ->
-                    AccountManagementCard(
-                        account = account,
-                        onEdit = { showEditDialog = account },
-                        onDelete = { showDeleteDialog = account }
-                    )
-                }
+            items(accounts) { account ->
+                AccountManagementCard(
+                    account = account,
+                    onEdit = { showEditDialog = account },
+                    onDelete = { showDeleteDialog = account }
+                )
             }
         }
 
         // Settings Section
-        Spacer(modifier = Modifier.height(16.dp))
-
-        ThemeSettingsCard(
-            currentThemeMode = currentThemeMode,
-            onThemeModeChange = onThemeModeChange
-        )
+        item {
+            Spacer(modifier = Modifier.height(4.dp))
+            ThemeSettingsCard(
+                currentThemeMode = currentThemeMode,
+                onThemeModeChange = onThemeModeChange
+            )
+        }
 
         if (biometricAvailable) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SecuritySettingsCard(
-                biometricLockEnabled = biometricLockEnabled,
-                onBiometricLockChange = onBiometricLockChange
-            )
+            item {
+                SecuritySettingsCard(
+                    biometricLockEnabled = biometricLockEnabled,
+                    onBiometricLockChange = onBiometricLockChange
+                )
+            }
         }
 
         // Danger Zone Section (only show if there's data)
         if (accounts.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = strings.dangerZone,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
                     )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = { showClearAllDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError
-                        )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Text(strings.clearAllData)
+                        Text(
+                            text = strings.dangerZone,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = { showClearAllDialog = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            )
+                        ) {
+                            Text(strings.clearAllData)
+                        }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Contact / Feedback Section
+        item {
+            Spacer(modifier = Modifier.height(4.dp))
+            ContactSettingsCard(onEmailClick = onEmailClick)
+        }
+
+        item { Spacer(modifier = Modifier.height(16.dp)) }
     }
 
     // Delete account confirmation dialog
@@ -621,6 +629,60 @@ private fun SecuritySettingsCard(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                     )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContactSettingsCard(
+    onEmailClick: (String) -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.contactTitle,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = strings.contactHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable { onEmailClick(strings.contactEmail) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = strings.contactEmail,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

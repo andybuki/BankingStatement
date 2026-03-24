@@ -6,11 +6,15 @@ package com.banking.statement.categorization
  * 2. Sorted by keyword length (longest first) for early termination
  * 3. Simple cache for recently categorized transactions
  */
-class KeywordDatabaseOptimized {
+class KeywordDatabaseOptimized : KeywordLookup {
 
     // Normalized keyword data: category -> list of (normalized_keyword, original_keyword)
     private var normalizedKeywordMap: Map<TransactionCategory, List<NormalizedKeyword>> = emptyMap()
     private var loadedCountryCode: String? = null
+
+    // Pre-compiled regex for normalization (avoids re-compilation on every call)
+    private val specialCharsRegex = Regex("[^a-z0-9äöüß]")
+    private val whitespaceRegex = Regex("\\s+")
 
     // Simple LRU cache for recent categorizations (description hash -> category)
     private val categorizationCache = mutableMapOf<Int, TransactionCategory?>()
@@ -23,7 +27,7 @@ class KeywordDatabaseOptimized {
         val length: Int
     )
 
-    fun isLoaded(): Boolean = normalizedKeywordMap.isNotEmpty()
+    override fun isLoaded(): Boolean = normalizedKeywordMap.isNotEmpty()
     fun getLoadedCountryCode(): String? = loadedCountryCode
 
     /**
@@ -90,7 +94,7 @@ class KeywordDatabaseOptimized {
      * - Early termination on first long match
      * - Simple cache for repeated descriptions
      */
-    fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
+    override fun findCategory(description: String, counterparty: String?): TransactionCategory? {
         if (normalizedKeywordMap.isEmpty()) return null
 
         // Check cache first
@@ -111,6 +115,10 @@ class KeywordDatabaseOptimized {
             for (keyword in keywords) {
                 // Early exit if this keyword is shorter than current best
                 if (keyword.length <= bestKeywordLength) break
+
+                // Skip single-word keywords that are too short (< 3 chars) to avoid
+                // false positives from generic abbreviations like "ag", "kg", etc.
+                if (keyword.wordCount == 1 && keyword.length < 3) continue
 
                 // Check if all words of the keyword are present
                 val allWordsMatch = keyword.normalizedWords.all { kw -> wordsSet.contains(kw) }
@@ -147,8 +155,8 @@ class KeywordDatabaseOptimized {
     private fun normalizeText(text: String): String {
         return text
             .lowercase()
-            .replace(Regex("[^a-z0-9äöüß]"), " ")
-            .replace(Regex("\\s+"), " ")
+            .replace(specialCharsRegex, " ")
+            .replace(whitespaceRegex, " ")
             .trim()
     }
 

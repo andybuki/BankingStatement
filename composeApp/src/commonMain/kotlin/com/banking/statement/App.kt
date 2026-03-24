@@ -40,6 +40,9 @@ import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.BankingStatementTheme
 import com.banking.statement.ui.theme.ThemeMode
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 // Composition local for strings
@@ -147,8 +150,47 @@ fun App(
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     var accountDropdownExpanded by remember { mutableStateOf(false) }
 
-    // Time period selector for Spending tab
+    // Time period selector for Spending tab - smart default based on data availability
     var selectedTimePeriod by remember { mutableStateOf("month") }
+    var hasAutoSelectedTimePeriod by remember { mutableStateOf(false) }
+
+    // Auto-select the best time period when transactions change
+    LaunchedEffect(transactions.size, hasAutoSelectedTimePeriod) {
+        if (!hasAutoSelectedTimePeriod && transactions.isNotEmpty()) {
+            hasAutoSelectedTimePeriod = true
+            val now = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            val currentYear = now.year
+            val currentMonth = now.monthNumber
+            val currentDay = now.dayOfMonth
+
+            // Check if there's data for current month
+            val hasMonthData = transactions.any { tx ->
+                try {
+                    val parts = tx.date.split(".")
+                    if (parts.size == 3) {
+                        val month = parts[1].toIntOrNull() ?: return@any false
+                        val year = parts[2].toIntOrNull() ?: return@any false
+                        year == currentYear && month == currentMonth
+                    } else false
+                } catch (_: Exception) { false }
+            }
+
+            if (!hasMonthData) {
+                // Check if there's data for current year
+                val hasYearData = transactions.any { tx ->
+                    try {
+                        val parts = tx.date.split(".")
+                        if (parts.size == 3) {
+                            val year = parts[2].toIntOrNull() ?: return@any false
+                            year == currentYear
+                        } else false
+                    } catch (_: Exception) { false }
+                }
+
+                selectedTimePeriod = if (hasYearData) "year" else "all"
+            }
+        }
+    }
 
     // Calculate filtered income/expenses based on selected account
     val filteredIncome = remember(transactions, selectedAccountId) {
@@ -611,7 +653,8 @@ fun App(
                                 onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) },
                                 biometricLockEnabled = biometricLockEnabled,
                                 biometricAvailable = biometricAvailable,
-                                onBiometricLockChange = onBiometricLockChange
+                                onBiometricLockChange = onBiometricLockChange,
+                                onEmailClick = onEmailClick
                             )
                         }
                     }
@@ -768,9 +811,6 @@ fun HomeScreen(
                 }
             }
 
-            // Contact Info Card - always visible at the bottom
-            Spacer(modifier = Modifier.height(24.dp))
-            ContactInfoCard(onEmailClick = onEmailClick)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }

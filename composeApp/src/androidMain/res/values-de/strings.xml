@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Bankwise</string>
+    <string name="app_name">MoneyLupe</string>
 
     <!-- Home Screen -->
-    <string name="home_title">Bankwise</string>
+    <string name="home_title">MoneyLupe</string>
     <string name="home_subtitle">Importieren Sie Ihre Kontoauszüge zur Analyse</string>
     <string name="import_button">Auszug importieren</string>
     <string name="processing">Verarbeitung…</string>
@@ -232,12 +232,13 @@
     <string name="confidence_medium">Mittel</string>
 
     <!-- Welcome Tutorial & Contact -->
-    <string name="welcome_title">Willkommen bei Bankwise!</string>
+    <string name="welcome_title">Willkommen bei MoneyLupe!</string>
     <string name="welcome_bullet_1">PDF/CSV Kontoauszüge importieren</string>
     <string name="welcome_bullet_2">Ausgaben nach Kategorie verfolgen</string>
     <string name="welcome_bullet_3">Trends im Zeitverlauf analysieren</string>
     <string name="welcome_button">Verstanden, los geht\'s</string>
-    <string name="contact_email">bankwise.info@gmail.com</string>
+    <string name="contact_title">Kontakt &amp; Feedback</string>
+    <string name="contact_email">moneylupe.info@gmail.com</string>
     <string name="contact_hint">Fragen oder Feedback? Wir freuen uns von Ihnen zu hören!</string>
 
     <!-- Security -->
@@ -255,4 +256,8 @@
     <string name="onboarding_next">Weiter</string>
     <string name="onboarding_skip">Überspringen</string>
     <string name="onboarding_get_started">Los geht\'s</string>
+
+    <!-- Pagination -->
+    <string name="show_more">Mehr anzeigen</string>
+    <string name="more">weitere</string>
 </resources>
