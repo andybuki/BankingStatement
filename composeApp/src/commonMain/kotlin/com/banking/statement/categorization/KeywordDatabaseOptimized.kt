@@ -116,6 +116,10 @@ class KeywordDatabaseOptimized : KeywordLookup {
                 // Early exit if this keyword is shorter than current best
                 if (keyword.length <= bestKeywordLength) break
 
+                // Skip single-word keywords that are too short (< 3 chars) to avoid
+                // false positives from generic abbreviations like "ag", "kg", etc.
+                if (keyword.wordCount == 1 && keyword.length < 3) continue
+
                 // Check if all words of the keyword are present
                 val allWordsMatch = keyword.normalizedWords.all { kw -> wordsSet.contains(kw) }
 

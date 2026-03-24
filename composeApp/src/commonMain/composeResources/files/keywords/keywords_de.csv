@@ -220,12 +220,10 @@ RESTAURANT,bistro
 RESTAURANT,cafe
 RESTAURANT,coffee
 RESTAURANT,kaffee
-RESTAURANT,station
 RESTAURANT,stube
 RESTAURANT,treff
 RESTAURANT,casa
 RESTAURANT,kantine
-RESTAURANT,lokal
 RESTAURANT,starbucks
 RESTAURANT,mcdonald
 RESTAURANT,burger king
@@ -239,26 +237,14 @@ RESTAURANT,sushi
 RESTAURANT,lounge
 RESTAURANT,döner
 RESTAURANT,lieferando
-RESTAURANT,club
 RESTAURANT,food
 RESTAURANT,beef
-RESTAURANT,haus
 RESTAURANT,lieferheld
 RESTAURANT,uber eats
 RESTAURANT,wolt
 RESTAURANT,küche
-RESTAURANT,eck
-RESTAURANT,zum
-RESTAURANT,zur
-RESTAURANT,die
-RESTAURANT,der
-RESTAURANT,das
-RESTAURANT,bei
 RESTAURANT,villa
 RESTAURANT,muelle
-RESTAURANT,kleine
-RESTAURANT,alte
-RESTAURANT,alt
 RESTAURANT,house
 RESTAURANT,gelato
 RESTAURANT,kitchen
@@ -267,15 +253,14 @@ RESTAURANT,thai
 RESTAURANT,weinstube
 RESTAURANT,weingut
 RESTAURANT,taverne
-RESTAURANT,tea
-RESTAURANT,berlin
 RESTAURANT,chicken
 RESTAURANT,kiosk
-RESTAURANT,back
+RESTAURANT,bäckerei
+RESTAURANT,backhaus
+RESTAURANT,backstube
 RESTAURANT,stuben
 RESTAURANT,wok
 RESTAURANT,curry
-RESTAURANT,city
 RESTAURANT,konditorei
 RESTAURANT,brot
 RESTAURANT,snack
@@ -292,7 +277,6 @@ RESTAURANT,pho
 RESTAURANT,italia
 RESTAURANT,ramen
 RESTAURANT,stüble
-RESTAURANT,eat
 RESTAURANT,biergarten
 RESTAURANT,india
 RESTAURANT,garten
@@ -311,12 +295,9 @@ RESTAURANT,cantina
 RESTAURANT,saal
 RESTAURANT,manufaktur
 RESTAURANT,raststätte
-RESTAURANT,salon
-RESTAURANT,herr
 RESTAURANT,gastwirtschaft
 RESTAURANT,vietnam
 RESTAURANT,bbq
-RESTAURANT,heim
 RESTAURANT,diner
 RESTAURANT,mühle
 RESTAURANT,bella
@@ -328,7 +309,6 @@ RESTAURANT,palace
 RESTAURANT,stüberl
 RESTAURANT,schänke
 RESTAURANT,cafè
-RESTAURANT,express
 RESTAURANT,mama
 SHOPPING,amazon
 SHOPPING,ebay
@@ -546,10 +526,6 @@ SHOPPING,download
 SHOPPING,streaming
 SHOPPING,abo
 SHOPPING,subscription
-SHOPPING,gmbh
-SHOPPING,ag
-SHOPPING,kg
-SHOPPING,ohg
 SHOPPING,moda
 SHOPPING,tienda
 SHOPPING,boutique online
@@ -1044,6 +1020,25 @@ REFUND,storno
 TRANSFER,überweisung
 TRANSFER,transfer
 TRANSFER,umbuchung
+TRANSFER,commerzbank
+TRANSFER,deutsche bank
+TRANSFER,sparkasse
+TRANSFER,volksbank
+TRANSFER,raiffeisenbank
+TRANSFER,postbank
+TRANSFER,ing-diba
+TRANSFER,dkb
+TRANSFER,n26
+TRANSFER,comdirect
+TRANSFER,norisbank
+TRANSFER,targobank
+TRANSFER,hypovereinsbank
+TRANSFER,unicredit
+TRANSFER,santander
+TRANSFER,sparda-bank
+TRANSFER,psd bank
+TRANSFER,apobank
+TRANSFER,consorsbank
 TRANSFER,paypal
 TRANSFER,klarna
 TRANSFER,sofort

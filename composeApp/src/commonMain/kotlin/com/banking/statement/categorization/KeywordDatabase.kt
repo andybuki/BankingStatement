@@ -102,6 +102,10 @@ class KeywordDatabase : KeywordLookup {
 
                 val keywordWords = normalizedKeyword.split(" ").filter { it.isNotBlank() }
 
+                // Skip single-word keywords that are too short (< 3 chars) to avoid
+                // false positives from generic abbreviations like "ag", "kg", etc.
+                if (keywordWords.size == 1 && normalizedKeyword.length < 3) continue
+
                 // Check if all words of the keyword are present in the search text
                 val allWordsMatch = keywordWords.all { kw -> wordsSet.contains(kw) }
 
