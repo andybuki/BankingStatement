@@ -379,4 +379,52 @@ class KeywordDatabaseTest {
 
         assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("Einkauf   bei   Lidl"))
     }
+
+    // ===== Short keyword protection =====
+
+    @Test
+    fun testShortKeyword_SingleWordUnder3Chars_Ignored() {
+        val db = createDatabase("category,keyword\nSHOPPING,ag\nTRANSFER,commerzbank")
+
+        // "ag" (2 chars) should NOT match - too short and generic
+        // "commerzbank" should match as TRANSFER
+        assertEquals(TransactionCategory.TRANSFER, db.findCategory("Commerzbank AG"))
+    }
+
+    @Test
+    fun testShortKeyword_TwoCharMultiWord_StillWorks() {
+        val db = createDatabase("category,keyword\nSUPERMARKET,dm markt")
+
+        // Multi-word keyword containing short words should still work
+        assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("DM Markt Berlin"))
+    }
+
+    @Test
+    fun testGenericSuffix_DoesNotCategorize() {
+        val db = createDatabase("""
+            category,keyword
+            SHOPPING,ag
+            SHOPPING,gmbh
+            SHOPPING,kg
+        """.trimIndent())
+
+        // Company suffixes should NOT match
+        assertNull(db.findCategory("Commerzbank AG"))
+        assertNull(db.findCategory("Allianz SE & Co. KG"))
+    }
+
+    @Test
+    fun testBankName_CategorizesAsTransfer() {
+        val db = createDatabase("""
+            category,keyword
+            TRANSFER,commerzbank
+            TRANSFER,deutsche bank
+            TRANSFER,sparkasse
+            SHOPPING,ag
+        """.trimIndent())
+
+        assertEquals(TransactionCategory.TRANSFER, db.findCategory("Commerzbank AG"))
+        assertEquals(TransactionCategory.TRANSFER, db.findCategory("Deutsche Bank AG"))
+        assertEquals(TransactionCategory.TRANSFER, db.findCategory("Sparkasse Berlin"))
+    }
 }
