@@ -225,5 +225,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     onboardingTrendsSubtitle = stringResource(R.string.onboarding_trends_subtitle),
     onboardingNext = stringResource(R.string.onboarding_next),
     onboardingSkip = stringResource(R.string.onboarding_skip),
-    onboardingGetStarted = stringResource(R.string.onboarding_get_started)
+    onboardingGetStarted = stringResource(R.string.onboarding_get_started),
+    showMore = stringResource(R.string.show_more),
+    more = stringResource(R.string.more)
 )

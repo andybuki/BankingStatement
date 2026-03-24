@@ -242,7 +242,11 @@ data class AppStrings(
     val onboardingTrendsSubtitle: String,
     val onboardingNext: String,
     val onboardingSkip: String,
-    val onboardingGetStarted: String
+    val onboardingGetStarted: String,
+
+    // Pagination
+    val showMore: String,
+    val more: String
 )
 
 /**
@@ -475,5 +479,7 @@ fun defaultEnglishStrings() = AppStrings(
     onboardingTrendsSubtitle = "Watch your income and expenses evolve month by month. Spot patterns and save more.",
     onboardingNext = "Next",
     onboardingSkip = "Skip",
-    onboardingGetStarted = "Get Started"
+    onboardingGetStarted = "Get Started",
+    showMore = "Show more",
+    more = "more"
 )

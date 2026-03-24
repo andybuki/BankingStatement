@@ -436,6 +436,20 @@ class TransactionRepository(
     }
 
     /**
+     * Get category spending totals via SQL aggregation (avoids loading all transactions)
+     */
+    fun getCategorySpendingTotals(): List<GetCategorySpendingTotals> {
+        return queries.getCategorySpendingTotals().executeAsList()
+    }
+
+    /**
+     * Get income/expenses totals via SQL aggregation
+     */
+    fun getIncomeExpensesTotals(): GetIncomeExpensesTotals? {
+        return queries.getIncomeExpensesTotals().executeAsOneOrNull()
+    }
+
+    /**
      * Get category spending grouped by month for trend analysis
      */
     fun getCategorySpendingByMonth(): List<GetCategorySpendingByMonth> {

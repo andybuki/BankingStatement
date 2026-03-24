@@ -4,7 +4,7 @@ package com.banking.statement.categorization
  * Database for loading category keywords from external CSV files.
  * Supports multiple languages/countries based on IBAN country code.
  */
-class KeywordDatabase {
+class KeywordDatabase : KeywordLookup {
 
     // Map of category name to list of keywords
     private var keywordMap: Map<TransactionCategory, List<String>> = emptyMap()
@@ -13,7 +13,7 @@ class KeywordDatabase {
     /**
      * Check if keywords are loaded
      */
-    fun isLoaded(): Boolean = keywordMap.isNotEmpty()
+    override fun isLoaded(): Boolean = keywordMap.isNotEmpty()
 
     /**
      * Get the currently loaded country code
@@ -74,7 +74,7 @@ class KeywordDatabase {
      * 2. Prioritize longer/more specific keywords
      * 3. Return the category with the longest matching keyword (not highest count)
      */
-    fun findCategory(description: String, counterparty: String? = null): TransactionCategory? {
+    override fun findCategory(description: String, counterparty: String?): TransactionCategory? {
         if (keywordMap.isEmpty()) return null
 
         val searchText = "${description.lowercase()} ${counterparty?.lowercase() ?: ""}"
