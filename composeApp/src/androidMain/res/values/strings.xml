@@ -260,4 +260,12 @@
     <!-- Pagination -->
     <string name="show_more">Show more</string>
     <string name="more">more</string>
+
+    <!-- Notification Reminders -->
+    <string name="reminders">Reminders</string>
+    <string name="reminders_description">Get notified when you haven\'t imported a statement in a while or when your monthly report is ready</string>
+    <string name="reminders_enabled">Enable Reminders</string>
+    <string name="reminder_no_import">You haven\'t imported a statement in 30 days. Stay on top of your finances!</string>
+    <string name="reminder_monthly_report">Your monthly spending report is ready. See where your money went!</string>
+    <string name="reminder_miss_you">It\'s been a while! Check in to keep track of your spending.</string>
 </resources>

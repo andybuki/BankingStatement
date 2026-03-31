@@ -18,5 +18,8 @@ class BankingStatementApp : Application() {
             androidContext(this@BankingStatementApp)
             modules(commonModule, androidModule)
         }
+
+        // Create notification channel for reminders
+        NotificationReminderManager.createNotificationChannel(this)
     }
 }

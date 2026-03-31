@@ -55,7 +55,9 @@ fun AccountManagementScreen(
     biometricLockEnabled: Boolean = false,
     biometricAvailable: Boolean = false,
     onBiometricLockChange: (Boolean) -> Unit = {},
-    onEmailClick: (String) -> Unit = {}
+    onEmailClick: (String) -> Unit = {},
+    remindersEnabled: Boolean = true,
+    onRemindersEnabledChange: (Boolean) -> Unit = {}
 ) {
     val strings = LocalStrings.current
     var showDeleteDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
@@ -125,6 +127,13 @@ fun AccountManagementScreen(
                     onBiometricLockChange = onBiometricLockChange
                 )
             }
+        }
+
+        item {
+            ReminderSettingsCard(
+                remindersEnabled = remindersEnabled,
+                onRemindersEnabledChange = onRemindersEnabledChange
+            )
         }
 
         // Danger Zone Section (only show if there's data)
@@ -683,6 +692,64 @@ private fun ContactSettingsCard(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReminderSettingsCard(
+    remindersEnabled: Boolean,
+    onRemindersEnabledChange: (Boolean) -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.reminders,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = strings.remindersDescription,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = strings.remindersEnabled,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = remindersEnabled,
+                    onCheckedChange = onRemindersEnabledChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
                 )
             }
         }

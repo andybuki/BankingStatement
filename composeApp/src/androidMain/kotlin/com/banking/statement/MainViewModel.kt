@@ -64,7 +64,8 @@ data class AppSettingsState(
     val showOnboarding: Boolean = false,
     val customCategories: List<CustomCategory> = emptyList(),
     val biometricLockEnabled: Boolean = false,
-    val biometricAvailable: Boolean = false
+    val biometricAvailable: Boolean = false,
+    val remindersEnabled: Boolean = true
 )
 
 /**
@@ -142,8 +143,17 @@ class MainViewModel(
                 showTutorial = !appPreferences.isTutorialDismissed(),
                 showOnboarding = !appPreferences.isOnboardingCompleted(),
                 biometricLockEnabled = appPreferences.isBiometricLockEnabled(),
-                biometricAvailable = biometricLockManager.canAuthenticate()
+                biometricAvailable = biometricLockManager.canAuthenticate(),
+                remindersEnabled = appPreferences.areRemindersEnabled()
             )
+        }
+
+        // Record app open time for reminder tracking
+        appPreferences.setLastAppOpenTime(System.currentTimeMillis())
+
+        // Schedule notification reminders if enabled
+        if (appPreferences.areRemindersEnabled()) {
+            NotificationReminderManager.schedule(context)
         }
 
         // Clean up old export files
@@ -1086,6 +1096,16 @@ class MainViewModel(
 
     fun isBiometricLockEnabled(): Boolean {
         return appPreferences.isBiometricLockEnabled()
+    }
+
+    fun setRemindersEnabled(enabled: Boolean) {
+        _appSettings.update { it.copy(remindersEnabled = enabled) }
+        appPreferences.setRemindersEnabled(enabled)
+        if (enabled) {
+            NotificationReminderManager.schedule(context)
+        } else {
+            NotificationReminderManager.cancel(context)
+        }
     }
 
     fun getBiometricLockManager(): BiometricLockManager = biometricLockManager

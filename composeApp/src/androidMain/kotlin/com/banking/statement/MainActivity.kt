@@ -157,6 +157,10 @@ class MainActivity : FragmentActivity() {
                         onBiometricLockChange = { enabled ->
                             viewModel.setBiometricLockEnabled(enabled)
                         },
+                        remindersEnabled = appSettings.remindersEnabled,
+                        onRemindersEnabledChange = { enabled ->
+                            viewModel.setRemindersEnabled(enabled)
+                        },
                         hasMoreTransactions = financialState.hasMoreTransactions,
                         isLoadingMoreTransactions = financialState.isLoadingMore,
                         onLoadMoreTransactions = { viewModel.loadMoreTransactions() }

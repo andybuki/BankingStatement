@@ -246,7 +246,12 @@ data class AppStrings(
 
     // Pagination
     val showMore: String,
-    val more: String
+    val more: String,
+
+    // Notification Reminders
+    val reminders: String,
+    val remindersDescription: String,
+    val remindersEnabled: String
 )
 
 /**
@@ -481,5 +486,10 @@ fun defaultEnglishStrings() = AppStrings(
     onboardingSkip = "Skip",
     onboardingGetStarted = "Get Started",
     showMore = "Show more",
-    more = "more"
+    more = "more",
+
+    // Notification Reminders
+    reminders = "Reminders",
+    remindersDescription = "Get notified when you haven't imported a statement in a while or when your monthly report is ready",
+    remindersEnabled = "Enable Reminders"
 )

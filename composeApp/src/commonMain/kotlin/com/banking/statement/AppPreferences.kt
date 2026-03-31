@@ -9,4 +9,8 @@ expect class AppPreferences {
     fun setTutorialDismissed(dismissed: Boolean)
     fun isOnboardingCompleted(): Boolean
     fun setOnboardingCompleted(completed: Boolean)
+    fun areRemindersEnabled(): Boolean
+    fun setRemindersEnabled(enabled: Boolean)
+    fun getLastAppOpenTime(): Long
+    fun setLastAppOpenTime(timeMillis: Long)
 }
