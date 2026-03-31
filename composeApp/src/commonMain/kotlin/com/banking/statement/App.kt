@@ -134,6 +134,12 @@ fun App(
     // Notification Reminders
     remindersEnabled: Boolean = true,
     onRemindersEnabledChange: (Boolean) -> Unit = {},
+    // Share App
+    onShareApp: () -> Unit = {},
+    // Rating prompt
+    onRateApp: (() -> Unit)? = null,
+    onRateLater: (() -> Unit)? = null,
+    onRateNever: (() -> Unit)? = null,
     // Transaction pagination
     hasMoreTransactions: Boolean = false,
     isLoadingMoreTransactions: Boolean = false,
@@ -659,7 +665,8 @@ fun App(
                                 onBiometricLockChange = onBiometricLockChange,
                                 onEmailClick = onEmailClick,
                                 remindersEnabled = remindersEnabled,
-                                onRemindersEnabledChange = onRemindersEnabledChange
+                                onRemindersEnabledChange = onRemindersEnabledChange,
+                                onShareApp = onShareApp
                             )
                         }
                     }
@@ -671,7 +678,10 @@ fun App(
                         onImportChoice = onImportChoice,
                         onDismissSuccessDialog = onDismissSuccessDialog,
                         onRetryImport = onRetryImport,
-                        onDismissErrorDialog = onDismissErrorDialog
+                        onDismissErrorDialog = onDismissErrorDialog,
+                        onRateApp = onRateApp,
+                        onRateLater = onRateLater,
+                        onRateNever = onRateNever
                     )
 
                     // Category management screen overlay
@@ -702,7 +712,10 @@ expect fun HandleImportDialogs(
     onImportChoice: ((ImportChoice) -> Unit)?,
     onDismissSuccessDialog: (() -> Unit)?,
     onRetryImport: (() -> Unit)? = null,
-    onDismissErrorDialog: (() -> Unit)? = null
+    onDismissErrorDialog: (() -> Unit)? = null,
+    onRateApp: (() -> Unit)? = null,
+    onRateLater: (() -> Unit)? = null,
+    onRateNever: (() -> Unit)? = null
 )
 
 @Composable

@@ -469,7 +469,16 @@ class MainViewModel(
     }
 
     fun dismissSuccessDialog() {
+        val result = _dialogState.value.importResult
         _dialogState.update { it.copy(showSuccessDialog = false, importResult = null) }
+
+        // Track successful import (only if transactions were actually imported)
+        if (result != null && result.transactionsImported > 0 && !result.isDuplicateStatement) {
+            appPreferences.incrementSuccessfulImportCount()
+            if (shouldShowRatingPrompt()) {
+                _dialogState.update { it.copy(showRatingDialog = true) }
+            }
+        }
     }
 
     private fun showImportErrorDialog(
@@ -1109,6 +1118,55 @@ class MainViewModel(
     }
 
     fun getBiometricLockManager(): BiometricLockManager = biometricLockManager
+
+    fun shareApp() {
+        try {
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, "Check out Bank++ - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share Bank++").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not open share dialog", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun shouldShowRatingPrompt(): Boolean {
+        val count = appPreferences.getSuccessfulImportCount()
+        return count >= 5 && !appPreferences.isRatingPromptDismissed()
+    }
+
+    fun onRateApp() {
+        appPreferences.setRatingPromptDismissed(true)
+        _dialogState.update { it.copy(showRatingDialog = false) }
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.banking.statement")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.banking.statement")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (e2: Exception) {
+                // Silently fail
+            }
+        }
+    }
+
+    fun onRateLater() {
+        _dialogState.update { it.copy(showRatingDialog = false) }
+    }
+
+    fun onRateNever() {
+        appPreferences.setRatingPromptDismissed(true)
+        _dialogState.update { it.copy(showRatingDialog = false) }
+    }
 
     fun openEmailClient(email: String) {
         try {

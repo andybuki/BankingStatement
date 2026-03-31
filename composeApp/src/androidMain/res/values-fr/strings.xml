@@ -268,4 +268,16 @@
     <string name="reminder_no_import">Vous n\'avez pas importé de relevé depuis 30 jours. Gardez le contrôle de vos finances !</string>
     <string name="reminder_monthly_report">Votre rapport de dépenses mensuel est prêt. Découvrez où est allé votre argent !</string>
     <string name="reminder_miss_you">Cela fait un moment ! Revenez pour suivre vos dépenses.</string>
+
+    <!-- Share App -->
+    <string name="share_app">Partager l\'app</string>
+    <string name="share_app_description">Vous connaissez quelqu\'un qui pourrait bénéficier de Bank++ ? Partagez-le !</string>
+    <string name="share_app_message">Découvrez Bank++ – une super app pour analyser vos relevés bancaires et suivre vos dépenses ! https://play.google.com/store/apps/details?id=com.banking.statement</string>
+
+    <!-- Rating Prompt -->
+    <string name="rating_title">Vous aimez Bank++ ?</string>
+    <string name="rating_message">Vous avez déjà importé plusieurs relevés ! Si l\'app vous est utile, nous apprécierions beaucoup une note sur le store.</string>
+    <string name="rating_rate">Noter maintenant</string>
+    <string name="rating_later">Plus tard</string>
+    <string name="rating_never">Non merci</string>
 </resources>

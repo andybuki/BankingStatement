@@ -57,7 +57,8 @@ fun AccountManagementScreen(
     onBiometricLockChange: (Boolean) -> Unit = {},
     onEmailClick: (String) -> Unit = {},
     remindersEnabled: Boolean = true,
-    onRemindersEnabledChange: (Boolean) -> Unit = {}
+    onRemindersEnabledChange: (Boolean) -> Unit = {},
+    onShareApp: () -> Unit = {}
 ) {
     val strings = LocalStrings.current
     var showDeleteDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
@@ -134,6 +135,10 @@ fun AccountManagementScreen(
                 remindersEnabled = remindersEnabled,
                 onRemindersEnabledChange = onRemindersEnabledChange
             )
+        }
+
+        item {
+            ShareAppCard(onShareApp = onShareApp)
         }
 
         // Danger Zone Section (only show if there's data)
@@ -751,6 +756,52 @@ private fun ReminderSettingsCard(
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShareAppCard(
+    onShareApp: () -> Unit
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.shareApp,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = strings.shareAppDescription,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onShareApp,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(strings.shareApp)
             }
         }
     }

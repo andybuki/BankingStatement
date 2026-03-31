@@ -268,4 +268,16 @@
     <string name="reminder_no_import">You haven\'t imported a statement in 30 days. Stay on top of your finances!</string>
     <string name="reminder_monthly_report">Your monthly spending report is ready. See where your money went!</string>
     <string name="reminder_miss_you">It\'s been a while! Check in to keep track of your spending.</string>
+
+    <!-- Share App -->
+    <string name="share_app">Share App</string>
+    <string name="share_app_description">Know someone who could benefit from Bank++? Share it with them!</string>
+    <string name="share_app_message">Check out Bank++ - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement</string>
+
+    <!-- Rating Prompt -->
+    <string name="rating_title">Enjoying Bank++?</string>
+    <string name="rating_message">You\'ve imported several statements already! If you\'re finding the app useful, we\'d really appreciate a rating on the store.</string>
+    <string name="rating_rate">Rate Now</string>
+    <string name="rating_later">Maybe Later</string>
+    <string name="rating_never">No Thanks</string>
 </resources>

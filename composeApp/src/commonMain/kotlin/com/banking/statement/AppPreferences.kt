@@ -13,4 +13,8 @@ expect class AppPreferences {
     fun setRemindersEnabled(enabled: Boolean)
     fun getLastAppOpenTime(): Long
     fun setLastAppOpenTime(timeMillis: Long)
+    fun getSuccessfulImportCount(): Int
+    fun incrementSuccessfulImportCount()
+    fun isRatingPromptDismissed(): Boolean
+    fun setRatingPromptDismissed(dismissed: Boolean)
 }

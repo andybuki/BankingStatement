@@ -663,6 +663,46 @@ fun ImportErrorDialog(
     }
 }
 
+/**
+ * Dialog shown after the 5th successful import to prompt the user to rate the app
+ */
+@Composable
+fun RatingPromptDialog(
+    onRate: () -> Unit,
+    onLater: () -> Unit,
+    onNever: () -> Unit
+) {
+    val strings = LocalStrings.current
+
+    AlertDialog(
+        onDismissRequest = onLater,
+        title = {
+            Text(
+                text = strings.ratingTitle,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(strings.ratingMessage)
+        },
+        confirmButton = {
+            Button(onClick = onRate) {
+                Text(strings.ratingRate)
+            }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onNever) {
+                    Text(strings.ratingNever)
+                }
+                TextButton(onClick = onLater) {
+                    Text(strings.ratingLater)
+                }
+            }
+        }
+    )
+}
+
 @Composable
 private fun SuggestionRow(text: String) {
     Row(

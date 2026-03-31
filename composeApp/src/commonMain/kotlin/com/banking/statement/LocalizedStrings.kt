@@ -251,7 +251,19 @@ data class AppStrings(
     // Notification Reminders
     val reminders: String,
     val remindersDescription: String,
-    val remindersEnabled: String
+    val remindersEnabled: String,
+
+    // Share App
+    val shareApp: String,
+    val shareAppDescription: String,
+    val shareAppMessage: String,
+
+    // Rating Prompt
+    val ratingTitle: String,
+    val ratingMessage: String,
+    val ratingRate: String,
+    val ratingLater: String,
+    val ratingNever: String
 )
 
 /**
@@ -491,5 +503,17 @@ fun defaultEnglishStrings() = AppStrings(
     // Notification Reminders
     reminders = "Reminders",
     remindersDescription = "Get notified when you haven't imported a statement in a while or when your monthly report is ready",
-    remindersEnabled = "Enable Reminders"
+    remindersEnabled = "Enable Reminders",
+
+    // Share App
+    shareApp = "Share App",
+    shareAppDescription = "Know someone who could benefit from Bank++? Share it with them!",
+    shareAppMessage = "Check out Bank++ - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement",
+
+    // Rating Prompt
+    ratingTitle = "Enjoying Bank++?",
+    ratingMessage = "You've imported several statements already! If you're finding the app useful, we'd really appreciate a rating on the store.",
+    ratingRate = "Rate Now",
+    ratingLater = "Maybe Later",
+    ratingNever = "No Thanks"
 )
