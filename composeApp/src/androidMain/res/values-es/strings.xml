@@ -260,4 +260,12 @@
     <!-- Pagination -->
     <string name="show_more">Mostrar más</string>
     <string name="more">más</string>
+
+    <!-- Notification Reminders -->
+    <string name="reminders">Recordatorios</string>
+    <string name="reminders_description">Recibe notificaciones cuando no hayas importado un extracto en un tiempo o cuando tu informe mensual esté listo</string>
+    <string name="reminders_enabled">Activar recordatorios</string>
+    <string name="reminder_no_import">No has importado un extracto en 30 días. ¡Mantén el control de tus finanzas!</string>
+    <string name="reminder_monthly_report">Tu informe de gastos mensual está listo. ¡Mira a dónde fue tu dinero!</string>
+    <string name="reminder_miss_you">¡Ha pasado un tiempo! Vuelve para seguir controlando tus gastos.</string>
 </resources>

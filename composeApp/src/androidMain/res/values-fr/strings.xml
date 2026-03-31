@@ -260,4 +260,12 @@
     <!-- Pagination -->
     <string name="show_more">Afficher plus</string>
     <string name="more">de plus</string>
+
+    <!-- Notification Reminders -->
+    <string name="reminders">Rappels</string>
+    <string name="reminders_description">Soyez averti lorsque vous n\'avez pas importé de relevé depuis un moment ou lorsque votre rapport mensuel est prêt</string>
+    <string name="reminders_enabled">Activer les rappels</string>
+    <string name="reminder_no_import">Vous n\'avez pas importé de relevé depuis 30 jours. Gardez le contrôle de vos finances !</string>
+    <string name="reminder_monthly_report">Votre rapport de dépenses mensuel est prêt. Découvrez où est allé votre argent !</string>
+    <string name="reminder_miss_you">Cela fait un moment ! Revenez pour suivre vos dépenses.</string>
 </resources>

@@ -260,4 +260,12 @@
     <!-- Pagination -->
     <string name="show_more">Mehr anzeigen</string>
     <string name="more">weitere</string>
+
+    <!-- Notification Reminders -->
+    <string name="reminders">Erinnerungen</string>
+    <string name="reminders_description">Werde benachrichtigt, wenn du längere Zeit keinen Kontoauszug importiert hast oder dein Monatsbericht bereit ist</string>
+    <string name="reminders_enabled">Erinnerungen aktivieren</string>
+    <string name="reminder_no_import">Du hast seit 30 Tagen keinen Kontoauszug importiert. Behalte deine Finanzen im Blick!</string>
+    <string name="reminder_monthly_report">Dein monatlicher Ausgabenbericht ist bereit. Schau nach, wohin dein Geld geflossen ist!</string>
+    <string name="reminder_miss_you">Lange nicht gesehen! Schau vorbei, um deine Ausgaben im Blick zu behalten.</string>
 </resources>

@@ -48,10 +48,28 @@ actual class AppPreferences(private val context: Context) {
         prefs.edit().putBoolean(KEY_BIOMETRIC_LOCK, enabled).apply()
     }
 
+    actual fun areRemindersEnabled(): Boolean {
+        return prefs.getBoolean(KEY_REMINDERS_ENABLED, true)
+    }
+
+    actual fun setRemindersEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_REMINDERS_ENABLED, enabled).apply()
+    }
+
+    actual fun getLastAppOpenTime(): Long {
+        return prefs.getLong(KEY_LAST_APP_OPEN, 0L)
+    }
+
+    actual fun setLastAppOpenTime(timeMillis: Long) {
+        prefs.edit().putLong(KEY_LAST_APP_OPEN, timeMillis).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "bankwise_secure_prefs"
         private const val KEY_TUTORIAL_DISMISSED = "tutorial_dismissed"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_BIOMETRIC_LOCK = "biometric_lock_enabled"
+        private const val KEY_REMINDERS_ENABLED = "reminders_enabled"
+        private const val KEY_LAST_APP_OPEN = "last_app_open_time"
     }
 }

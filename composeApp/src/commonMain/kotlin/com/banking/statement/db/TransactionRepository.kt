@@ -335,6 +335,10 @@ class TransactionRepository(
         return queries.getStatementCount().executeAsOne()
     }
 
+    fun getLatestImportDate(): Long? {
+        return queries.getLatestImportDate().executeAsOneOrNull()?.MAX
+    }
+
     // ==================== Transaction Operations ====================
 
     fun getAllTransactions(): List<Transactions> {

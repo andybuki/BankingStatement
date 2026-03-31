@@ -53,6 +53,9 @@ DELETE FROM statements WHERE id = ?;
 getStatementCount:
 SELECT COUNT(*) FROM statements;
 
+getLatestImportDate:
+SELECT MAX(import_date) FROM statements;
+
 getStatementCountByAccount:
 SELECT COUNT(*) FROM statements WHERE account_id = ?;
 

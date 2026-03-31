@@ -131,6 +131,9 @@ fun App(
     biometricLockEnabled: Boolean = false,
     biometricAvailable: Boolean = false,
     onBiometricLockChange: (Boolean) -> Unit = {},
+    // Notification Reminders
+    remindersEnabled: Boolean = true,
+    onRemindersEnabledChange: (Boolean) -> Unit = {},
     // Transaction pagination
     hasMoreTransactions: Boolean = false,
     isLoadingMoreTransactions: Boolean = false,
@@ -654,7 +657,9 @@ fun App(
                                 biometricLockEnabled = biometricLockEnabled,
                                 biometricAvailable = biometricAvailable,
                                 onBiometricLockChange = onBiometricLockChange,
-                                onEmailClick = onEmailClick
+                                onEmailClick = onEmailClick,
+                                remindersEnabled = remindersEnabled,
+                                onRemindersEnabledChange = onRemindersEnabledChange
                             )
                         }
                     }
