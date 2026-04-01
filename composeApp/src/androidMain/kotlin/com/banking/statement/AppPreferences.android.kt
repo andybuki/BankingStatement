@@ -64,6 +64,23 @@ actual class AppPreferences(private val context: Context) {
         prefs.edit().putLong(KEY_LAST_APP_OPEN, timeMillis).apply()
     }
 
+    actual fun getSuccessfulImportCount(): Int {
+        return prefs.getInt(KEY_SUCCESSFUL_IMPORT_COUNT, 0)
+    }
+
+    actual fun incrementSuccessfulImportCount() {
+        val current = getSuccessfulImportCount()
+        prefs.edit().putInt(KEY_SUCCESSFUL_IMPORT_COUNT, current + 1).apply()
+    }
+
+    actual fun isRatingPromptDismissed(): Boolean {
+        return prefs.getBoolean(KEY_RATING_PROMPT_DISMISSED, false)
+    }
+
+    actual fun setRatingPromptDismissed(dismissed: Boolean) {
+        prefs.edit().putBoolean(KEY_RATING_PROMPT_DISMISSED, dismissed).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "bankwise_secure_prefs"
         private const val KEY_TUTORIAL_DISMISSED = "tutorial_dismissed"
@@ -71,5 +88,7 @@ actual class AppPreferences(private val context: Context) {
         private const val KEY_BIOMETRIC_LOCK = "biometric_lock_enabled"
         private const val KEY_REMINDERS_ENABLED = "reminders_enabled"
         private const val KEY_LAST_APP_OPEN = "last_app_open_time"
+        private const val KEY_SUCCESSFUL_IMPORT_COUNT = "successful_import_count"
+        private const val KEY_RATING_PROMPT_DISMISSED = "rating_prompt_dismissed"
     }
 }

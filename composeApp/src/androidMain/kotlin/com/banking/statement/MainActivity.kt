@@ -161,6 +161,10 @@ class MainActivity : FragmentActivity() {
                         onRemindersEnabledChange = { enabled ->
                             viewModel.setRemindersEnabled(enabled)
                         },
+                        onShareApp = { viewModel.shareApp() },
+                        onRateApp = { viewModel.onRateApp() },
+                        onRateLater = { viewModel.onRateLater() },
+                        onRateNever = { viewModel.onRateNever() },
                         hasMoreTransactions = financialState.hasMoreTransactions,
                         isLoadingMoreTransactions = financialState.isLoadingMore,
                         onLoadMoreTransactions = { viewModel.loadMoreTransactions() }

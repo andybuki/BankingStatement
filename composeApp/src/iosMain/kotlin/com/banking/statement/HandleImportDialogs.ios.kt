@@ -9,7 +9,10 @@ actual fun HandleImportDialogs(
     onImportChoice: ((ImportChoice) -> Unit)?,
     onDismissSuccessDialog: (() -> Unit)?,
     onRetryImport: (() -> Unit)?,
-    onDismissErrorDialog: (() -> Unit)?
+    onDismissErrorDialog: (() -> Unit)?,
+    onRateApp: (() -> Unit)?,
+    onRateLater: (() -> Unit)?,
+    onRateNever: (() -> Unit)?
 ) {
     // iOS implementation - to be implemented when iOS support is added
     // For now, this is a no-op stub

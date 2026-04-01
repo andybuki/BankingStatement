@@ -5,6 +5,7 @@ import com.banking.statement.ui.ImportAccountDialog
 import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.ImportErrorDialog
 import com.banking.statement.ui.ImportSuccessDialog
+import com.banking.statement.ui.RatingPromptDialog
 
 @Composable
 actual fun HandleImportDialogs(
@@ -12,7 +13,10 @@ actual fun HandleImportDialogs(
     onImportChoice: ((ImportChoice) -> Unit)?,
     onDismissSuccessDialog: (() -> Unit)?,
     onRetryImport: (() -> Unit)?,
-    onDismissErrorDialog: (() -> Unit)?
+    onDismissErrorDialog: (() -> Unit)?,
+    onRateApp: (() -> Unit)?,
+    onRateLater: (() -> Unit)?,
+    onRateNever: (() -> Unit)?
 ) {
     // Cast to the Android-specific ImportDialogState
     val state = dialogState as? ImportDialogState ?: return
@@ -64,6 +68,15 @@ actual fun HandleImportDialogs(
             onDismiss = {
                 onDismissErrorDialog?.invoke()
             }
+        )
+    }
+
+    // Show rating prompt dialog
+    if (state.showRatingDialog) {
+        RatingPromptDialog(
+            onRate = { onRateApp?.invoke() },
+            onLater = { onRateLater?.invoke() },
+            onNever = { onRateNever?.invoke() }
         )
     }
 }

@@ -43,10 +43,29 @@ actual class AppPreferences {
         defaults.setInteger(timeMillis, KEY_LAST_APP_OPEN)
     }
 
+    actual fun getSuccessfulImportCount(): Int {
+        return defaults.integerForKey(KEY_SUCCESSFUL_IMPORT_COUNT).toInt()
+    }
+
+    actual fun incrementSuccessfulImportCount() {
+        val current = getSuccessfulImportCount()
+        defaults.setInteger((current + 1).toLong(), KEY_SUCCESSFUL_IMPORT_COUNT)
+    }
+
+    actual fun isRatingPromptDismissed(): Boolean {
+        return defaults.boolForKey(KEY_RATING_PROMPT_DISMISSED)
+    }
+
+    actual fun setRatingPromptDismissed(dismissed: Boolean) {
+        defaults.setBool(dismissed, KEY_RATING_PROMPT_DISMISSED)
+    }
+
     companion object {
         private const val KEY_TUTORIAL_DISMISSED = "tutorial_dismissed"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_REMINDERS_ENABLED = "reminders_enabled"
         private const val KEY_LAST_APP_OPEN = "last_app_open_time"
+        private const val KEY_SUCCESSFUL_IMPORT_COUNT = "successful_import_count"
+        private const val KEY_RATING_PROMPT_DISMISSED = "rating_prompt_dismissed"
     }
 }

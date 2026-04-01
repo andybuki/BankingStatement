@@ -268,4 +268,16 @@
     <string name="reminder_no_import">Du hast seit 30 Tagen keinen Kontoauszug importiert. Behalte deine Finanzen im Blick!</string>
     <string name="reminder_monthly_report">Dein monatlicher Ausgabenbericht ist bereit. Schau nach, wohin dein Geld geflossen ist!</string>
     <string name="reminder_miss_you">Lange nicht gesehen! Schau vorbei, um deine Ausgaben im Blick zu behalten.</string>
+
+    <!-- Share App -->
+    <string name="share_app">App teilen</string>
+    <string name="share_app_description">Kennst du jemanden, der von MoneyLupe profitieren könnte? Teile die App!</string>
+    <string name="share_app_message">Schau dir MoneyLupe an – eine tolle App, um Kontoauszüge zu analysieren und Ausgaben zu verfolgen! https://play.google.com/store/apps/details?id=com.banking.statement</string>
+
+    <!-- Rating Prompt -->
+    <string name="rating_title">Gefällt dir MoneyLupe?</string>
+    <string name="rating_message">Du hast bereits mehrere Kontoauszüge importiert! Wenn dir die App gefällt, würden wir uns über eine Bewertung im Store freuen.</string>
+    <string name="rating_rate">Jetzt bewerten</string>
+    <string name="rating_later">Vielleicht später</string>
+    <string name="rating_never">Nein danke</string>
 </resources>

@@ -232,5 +232,17 @@ actual fun provideStrings(): AppStrings = AppStrings(
     // Notification Reminders
     reminders = stringResource(R.string.reminders),
     remindersDescription = stringResource(R.string.reminders_description),
-    remindersEnabled = stringResource(R.string.reminders_enabled)
+    remindersEnabled = stringResource(R.string.reminders_enabled),
+
+    // Share App
+    shareApp = stringResource(R.string.share_app),
+    shareAppDescription = stringResource(R.string.share_app_description),
+    shareAppMessage = stringResource(R.string.share_app_message),
+
+    // Rating Prompt
+    ratingTitle = stringResource(R.string.rating_title),
+    ratingMessage = stringResource(R.string.rating_message),
+    ratingRate = stringResource(R.string.rating_rate),
+    ratingLater = stringResource(R.string.rating_later),
+    ratingNever = stringResource(R.string.rating_never)
 )
