@@ -777,23 +777,6 @@ private fun ShareAppCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = strings.shareApp,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = strings.shareAppDescription,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             Button(
                 onClick = onShareApp,
                 modifier = Modifier.fillMaxWidth(),

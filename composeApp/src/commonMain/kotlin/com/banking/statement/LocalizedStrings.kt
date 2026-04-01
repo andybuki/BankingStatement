@@ -507,11 +507,11 @@ fun defaultEnglishStrings() = AppStrings(
 
     // Share App
     shareApp = "Share App",
-    shareAppDescription = "Know someone who could benefit from Bank++? Share it with them!",
-    shareAppMessage = "Check out Bank++ - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement",
+    shareAppDescription = "Know someone who could benefit from MoneyLupe? Share it with them!",
+    shareAppMessage = "Check out MoneyLupe - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement",
 
     // Rating Prompt
-    ratingTitle = "Enjoying Bank++?",
+    ratingTitle = "Enjoying MoneyLupe?",
     ratingMessage = "You've imported several statements already! If you're finding the app useful, we'd really appreciate a rating on the store.",
     ratingRate = "Rate Now",
     ratingLater = "Maybe Later",

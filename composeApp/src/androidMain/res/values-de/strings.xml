@@ -271,11 +271,11 @@
 
     <!-- Share App -->
     <string name="share_app">App teilen</string>
-    <string name="share_app_description">Kennst du jemanden, der von Bank++ profitieren könnte? Teile die App!</string>
-    <string name="share_app_message">Schau dir Bank++ an – eine tolle App, um Kontoauszüge zu analysieren und Ausgaben zu verfolgen! https://play.google.com/store/apps/details?id=com.banking.statement</string>
+    <string name="share_app_description">Kennst du jemanden, der von MoneyLupe profitieren könnte? Teile die App!</string>
+    <string name="share_app_message">Schau dir MoneyLupe an – eine tolle App, um Kontoauszüge zu analysieren und Ausgaben zu verfolgen! https://play.google.com/store/apps/details?id=com.banking.statement</string>
 
     <!-- Rating Prompt -->
-    <string name="rating_title">Gefällt dir Bank++?</string>
+    <string name="rating_title">Gefällt dir MoneyLupe?</string>
     <string name="rating_message">Du hast bereits mehrere Kontoauszüge importiert! Wenn dir die App gefällt, würden wir uns über eine Bewertung im Store freuen.</string>
     <string name="rating_rate">Jetzt bewerten</string>
     <string name="rating_later">Vielleicht später</string>

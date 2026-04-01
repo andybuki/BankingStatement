@@ -1123,10 +1123,10 @@ class MainViewModel(
         try {
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, "Check out Bank++ - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement")
+                putExtra(Intent.EXTRA_TEXT, "Check out MoneyLupe - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(Intent.createChooser(intent, "Share Bank++").apply {
+            context.startActivity(Intent.createChooser(intent, "Share MoneyLupe").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
         } catch (e: Exception) {

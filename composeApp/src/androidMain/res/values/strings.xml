@@ -271,11 +271,11 @@
 
     <!-- Share App -->
     <string name="share_app">Share App</string>
-    <string name="share_app_description">Know someone who could benefit from Bank++? Share it with them!</string>
-    <string name="share_app_message">Check out Bank++ - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement</string>
+    <string name="share_app_description">Know someone who could benefit from MoneyLupe? Share it with them!</string>
+    <string name="share_app_message">Check out MoneyLupe - a great app to analyze your bank statements and track spending! https://play.google.com/store/apps/details?id=com.banking.statement</string>
 
     <!-- Rating Prompt -->
-    <string name="rating_title">Enjoying Bank++?</string>
+    <string name="rating_title">Enjoying MoneyLupe?</string>
     <string name="rating_message">You\'ve imported several statements already! If you\'re finding the app useful, we\'d really appreciate a rating on the store.</string>
     <string name="rating_rate">Rate Now</string>
     <string name="rating_later">Maybe Later</string>
