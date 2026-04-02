@@ -65,8 +65,10 @@ actual class DatabaseDriverFactory(private val context: Context) {
             val unencryptedDb = net.zetetic.database.sqlcipher.SQLiteDatabase.openDatabase(
                 dbFile.absolutePath,
                 "",  // empty passphrase = unencrypted
-                null,
-                net.zetetic.database.sqlcipher.SQLiteDatabase.OPEN_READWRITE
+                null,  // cursorFactory
+                net.zetetic.database.sqlcipher.SQLiteDatabase.OPEN_READWRITE,
+                null,  // databaseHook
+                null   // errorHandler
             )
 
             // Attach a new encrypted database and export all data into it
