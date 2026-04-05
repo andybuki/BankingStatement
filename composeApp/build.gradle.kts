@@ -63,12 +63,21 @@ android {
     namespace = "com.banking.statement"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("release-keystore.jks")
+            storePassword = "bankwise123"
+            keyAlias = "bankwise"
+            keyPassword = "bankwise123"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.banking.statement"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 8
-        versionName = "2.0.6"
+        versionCode = 9
+        versionName = "2.1.0"
     }
     packaging {
         resources {
@@ -85,8 +94,12 @@ android {
         }
     }
     buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("release")
+        }
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
