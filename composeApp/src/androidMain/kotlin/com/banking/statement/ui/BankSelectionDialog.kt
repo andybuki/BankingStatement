@@ -26,6 +26,7 @@ import com.banking.statement.R
 fun BankSelectionDialog(
     detectedBanks: List<DetectedBankOption>,
     onBankSelected: (String) -> Unit,
+    onBankNotListed: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var selectedBank by remember { mutableStateOf<String?>(null) }
@@ -78,7 +79,22 @@ fun BankSelectionDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // "My bank is not listed" button
+                TextButton(
+                    onClick = onBankNotListed,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.bank_not_listed),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Action buttons
                 Row(
@@ -101,6 +117,41 @@ fun BankSelectionDialog(
             }
         }
     }
+}
+
+/**
+ * Popup dialog suggesting the user to email the developer to add their bank
+ */
+@Composable
+fun BankNotFoundSuggestionDialog(
+    onSendEmail: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.bank_not_listed_title),
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.bank_not_listed_message),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Button(onClick = onSendEmail) {
+                Text(stringResource(R.string.send_email))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable
