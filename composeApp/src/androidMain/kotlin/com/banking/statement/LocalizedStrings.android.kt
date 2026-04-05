@@ -95,6 +95,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     importErrorTryDifferentFormat = stringResource(R.string.import_error_try_different_format),
     importErrorCheckFileValid = stringResource(R.string.import_error_check_file_valid),
     importErrorContactSupport = stringResource(R.string.import_error_contact_support),
+    importErrorBankNotSupported = stringResource(R.string.import_error_bank_not_supported),
     importErrorFileLabel = stringResource(R.string.import_error_file_label),
     importErrorFormatLabel = stringResource(R.string.import_error_format_label),
     importErrorDetailsLabel = stringResource(R.string.import_error_details_label),

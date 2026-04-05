@@ -468,6 +468,31 @@ class MainViewModel(
         _importState.value = ImportState(isProcessing = false)
     }
 
+    fun showBankNotFoundDialog() {
+        _dialogState.update { it.copy(showBankNotFoundDialog = true) }
+    }
+
+    fun dismissBankNotFoundDialog() {
+        _dialogState.update { it.copy(showBankNotFoundDialog = false) }
+    }
+
+    fun sendBankRequestEmail() {
+        _dialogState.update { it.copy(showBankNotFoundDialog = false) }
+        try {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("mailto:moneylupe.info@gmail.com")
+                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.bank_not_listed_email_subject))
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+            val clip = android.content.ClipData.newPlainText("email", "moneylupe.info@gmail.com")
+            clipboard?.setPrimaryClip(clip)
+            Toast.makeText(context, "Email copied to clipboard: moneylupe.info@gmail.com", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun dismissSuccessDialog() {
         val result = _dialogState.value.importResult
         _dialogState.update { it.copy(showSuccessDialog = false, importResult = null) }

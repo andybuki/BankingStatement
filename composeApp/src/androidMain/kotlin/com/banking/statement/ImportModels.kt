@@ -37,6 +37,7 @@ data class ImportDialogState(
     val showAccountDialog: Boolean = false,
     val showSuccessDialog: Boolean = false,
     val showBankSelectionDialog: Boolean = false,
+    val showBankNotFoundDialog: Boolean = false,
     val showErrorDialog: Boolean = false,
     val showRatingDialog: Boolean = false,
     val pendingImport: PendingImport? = null,

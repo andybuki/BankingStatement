@@ -639,6 +639,7 @@ fun ImportErrorDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     SuggestionRow(strings.importErrorTryDifferentFormat)
                     SuggestionRow(strings.importErrorCheckFileValid)
+                    SuggestionRow(strings.importErrorBankNotSupported)
                     SuggestionRow(strings.importErrorContactSupport)
                 }
 

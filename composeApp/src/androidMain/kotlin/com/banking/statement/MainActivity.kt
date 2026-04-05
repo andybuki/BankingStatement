@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
+import com.banking.statement.ui.BankNotFoundSuggestionDialog
 import com.banking.statement.ui.BankSelectionDialog
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.BankingStatementTheme
@@ -177,7 +178,16 @@ class MainActivity : FragmentActivity() {
                 BankSelectionDialog(
                     detectedBanks = dialogState.detectedBanks,
                     onBankSelected = { bankName -> viewModel.handleBankSelection(bankName) },
+                    onBankNotListed = { viewModel.showBankNotFoundDialog() },
                     onDismiss = { viewModel.cancelBankSelection() }
+                )
+            }
+
+            // Bank not found suggestion dialog
+            if (isAuthenticated && dialogState.showBankNotFoundDialog) {
+                BankNotFoundSuggestionDialog(
+                    onSendEmail = { viewModel.sendBankRequestEmail() },
+                    onDismiss = { viewModel.dismissBankNotFoundDialog() }
                 )
             }
         }

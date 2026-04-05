@@ -149,6 +149,7 @@
     <string name="import_error_try_different_format">Intente exportar desde su banco en un formato diferente (CSV o Excel suelen funcionar mejor)</string>
     <string name="import_error_check_file_valid">Asegúrese de que el archivo sea un extracto bancario válido y sin modificar</string>
     <string name="import_error_contact_support">Si el problema persiste, contacte con soporte</string>
+    <string name="import_error_bank_not_supported">¿Banco no soportado? Envía un correo a moneylupe.info@gmail.com para solicitarlo — ¡lo añadiremos muy pronto!</string>
     <string name="import_error_file_label">Archivo</string>
     <string name="import_error_format_label">Formato</string>
     <string name="import_error_details_label">Detalles</string>
@@ -230,6 +231,11 @@
     <string name="confidence_certain">Seguro</string>
     <string name="confidence_high">Alto</string>
     <string name="confidence_medium">Medio</string>
+    <string name="bank_not_listed">Mi banco no está en la lista</string>
+    <string name="bank_not_listed_title">¿Banco no encontrado?</string>
+    <string name="bank_not_listed_message">¡Envía un mensaje al desarrollador y tu banco será añadido muy pronto!</string>
+    <string name="bank_not_listed_email_subject">Por favor añada mi banco a MoneyLupe</string>
+    <string name="send_email">Enviar correo</string>
 
     <!-- Welcome Tutorial & Contact -->
     <string name="welcome_title">¡Bienvenido a MoneyLupe!</string>
