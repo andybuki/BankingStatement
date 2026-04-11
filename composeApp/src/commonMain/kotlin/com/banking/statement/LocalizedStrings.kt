@@ -210,6 +210,10 @@ data class AppStrings(
     val monthlyBreakdown: String,
     val perMonthAverage: String,
 
+    // Spending Charts
+    val categoryTrends: String,
+    val topMerchantsBySpending: String,
+
     // Bank Selection Dialog
     val selectYourBank: String,
     val multipleBanksDetected: String,
@@ -464,6 +468,10 @@ fun defaultEnglishStrings() = AppStrings(
     tapToViewTopTransactions = "👆 Tap to view top transactions",
     monthlyBreakdown = "Monthly breakdown:",
     perMonthAverage = "/mo avg",
+
+    // Spending Charts
+    categoryTrends = "Category Trends",
+    topMerchantsBySpending = "Top Merchants by Spending",
 
     // Bank Selection Dialog
     selectYourBank = "Select Your Bank",

@@ -34,8 +34,12 @@ import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import com.banking.statement.export.SpendingExportData
 import com.banking.statement.ui.charts.CategorySpendingDonutChart
+import com.banking.statement.ui.charts.CategoryStackedAreaChart
 import com.banking.statement.ui.charts.IncomeVsExpensesBarChart
+import com.banking.statement.ui.charts.MonthCategoryBreakdown
+import com.banking.statement.ui.charts.MerchantSpendingData
 import com.banking.statement.ui.charts.MonthlySpendingLineChart
+import com.banking.statement.ui.charts.TopMerchantsBarChart
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
 import kotlinx.datetime.Clock
@@ -202,6 +206,55 @@ fun SpendingOverviewScreen(
         FilteredSpendingData(income, expenses, categoryList, monthlyList)
     }
 
+    // Compute monthly category breakdown for stacked area chart
+    val monthlyCategoryBreakdown = remember(transactions, selectedAccountId, selectedPeriod, customDateRange) {
+        var filtered = if (selectedAccountId == null) {
+            transactions
+        } else {
+            transactions.filter { it.accountId == selectedAccountId }
+        }
+        filtered = filterByTimePeriod(filtered, selectedPeriod, customDateRange)
+
+        filtered
+            .filter { it.amount < 0 }
+            .groupBy { tx ->
+                val parts = tx.date.split(".")
+                if (parts.size == 3) "${parts[2]}-${parts[1]}" else tx.date
+            }
+            .map { (month, txs) ->
+                val categoryAmounts = txs
+                    .groupBy { it.category }
+                    .map { (cat, catTxs) -> cat to catTxs.sumOf { it.amount.absoluteValue } }
+                MonthCategoryBreakdown(
+                    month = formatMonthDisplay(month),
+                    categoryAmounts = categoryAmounts
+                )
+            }
+            .sortedBy { it.month }
+    }
+
+    // Compute merchant spending for top merchants chart
+    val merchantSpending = remember(transactions, selectedAccountId, selectedPeriod, customDateRange) {
+        var filtered = if (selectedAccountId == null) {
+            transactions
+        } else {
+            transactions.filter { it.accountId == selectedAccountId }
+        }
+        filtered = filterByTimePeriod(filtered, selectedPeriod, customDateRange)
+
+        filtered
+            .filter { it.amount < 0 && !it.counterparty.isNullOrBlank() }
+            .groupBy { it.counterparty!! }
+            .map { (name, txs) ->
+                MerchantSpendingData(
+                    name = name,
+                    amount = txs.sumOf { it.amount.absoluteValue },
+                    transactionCount = txs.size
+                )
+            }
+            .sortedByDescending { it.amount }
+    }
+
     // Use filtered data
     val displayIncome = filteredData.income
     val displayExpenses = filteredData.expenses
@@ -339,6 +392,26 @@ fun SpendingOverviewScreen(
                     item {
                         IncomeVsExpensesBarChart(
                             monthlySummary = displayMonthlySummary,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                // Category Stacked Area Chart
+                if (monthlyCategoryBreakdown.size >= 2) {
+                    item {
+                        CategoryStackedAreaChart(
+                            monthlyBreakdown = monthlyCategoryBreakdown,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                // Top Merchants Bar Chart
+                if (merchantSpending.isNotEmpty()) {
+                    item {
+                        TopMerchantsBarChart(
+                            merchants = merchantSpending,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

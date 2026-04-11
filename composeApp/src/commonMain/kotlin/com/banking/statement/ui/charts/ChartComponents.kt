@@ -662,6 +662,348 @@ fun LegendItem(
 }
 
 /**
+ * Data class for stacked area chart input
+ */
+data class MonthCategoryBreakdown(
+    val month: String,
+    val categoryAmounts: List<Pair<com.banking.statement.categorization.TransactionCategory, Double>>
+)
+
+/**
+ * Data class for merchant spending chart input
+ */
+data class MerchantSpendingData(
+    val name: String,
+    val amount: Double,
+    val transactionCount: Int
+)
+
+/**
+ * Stacked area chart showing how category spending proportions change over time
+ */
+@Composable
+fun CategoryStackedAreaChart(
+    monthlyBreakdown: List<MonthCategoryBreakdown>,
+    modifier: Modifier = Modifier
+) {
+    val strings = LocalStrings.current
+
+    if (monthlyBreakdown.size < 2) return
+
+    // Get all categories across all months, sorted by total spending
+    val allCategories = remember(monthlyBreakdown) {
+        monthlyBreakdown
+            .flatMap { it.categoryAmounts }
+            .groupBy { it.first }
+            .mapValues { (_, pairs) -> pairs.sumOf { it.second } }
+            .entries
+            .sortedByDescending { it.value }
+            .take(6)
+            .map { it.key }
+    }
+
+    // Pre-parse category colors
+    val categoryColors = remember(allCategories) {
+        allCategories.map { it to parseColor(it.color) }
+    }
+
+    // Build stacked values per month: for each month, cumulative amounts per category
+    val stackedData = remember(monthlyBreakdown, allCategories) {
+        monthlyBreakdown.map { month ->
+            val amountMap = month.categoryAmounts.toMap()
+            val values = allCategories.map { cat -> amountMap[cat] ?: 0.0 }
+            // cumulative sums for stacking
+            val cumulative = mutableListOf<Double>()
+            var sum = 0.0
+            values.forEach { v ->
+                sum += v
+                cumulative.add(sum)
+            }
+            cumulative
+        }
+    }
+
+    val maxValue = remember(stackedData) {
+        stackedData.maxOfOrNull { it.lastOrNull() ?: 0.0 } ?: 0.0
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.categoryTrends,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (maxValue > 0) {
+                val gridColor = MaterialTheme.colorScheme.outlineVariant
+
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                ) {
+                    val padding = 40.dp.toPx()
+                    val chartWidth = size.width - padding * 2
+                    val chartHeight = size.height - padding * 2
+                    val monthCount = stackedData.size
+
+                    // Draw grid lines
+                    for (i in 0..4) {
+                        val y = padding + (chartHeight * i / 4)
+                        drawLine(
+                            color = gridColor,
+                            start = Offset(padding, y),
+                            end = Offset(size.width - padding, y),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+
+                    val stepX = chartWidth / (monthCount - 1).coerceAtLeast(1)
+
+                    // Draw stacked areas from top category to bottom (reverse to draw back layers first)
+                    for (catIndex in allCategories.indices.reversed()) {
+                        val color = categoryColors[catIndex].second.copy(alpha = 0.6f)
+                        val borderColor = categoryColors[catIndex].second
+
+                        val path = Path()
+                        val borderPath = Path()
+
+                        // Start from bottom-left
+                        val baselineY = { monthIdx: Int ->
+                            if (catIndex == 0) {
+                                padding + chartHeight
+                            } else {
+                                val prevCum = stackedData[monthIdx][catIndex - 1]
+                                padding + chartHeight - (prevCum / maxValue * chartHeight).toFloat()
+                            }
+                        }
+
+                        val topY = { monthIdx: Int ->
+                            val cum = stackedData[monthIdx][catIndex]
+                            padding + chartHeight - (cum / maxValue * chartHeight).toFloat()
+                        }
+
+                        // Build filled area path
+                        // Top edge (left to right)
+                        path.moveTo(padding, topY(0))
+                        borderPath.moveTo(padding, topY(0))
+                        for (i in 1 until monthCount) {
+                            val x = padding + i * stepX
+                            path.lineTo(x, topY(i))
+                            borderPath.lineTo(x, topY(i))
+                        }
+
+                        // Bottom edge (right to left)
+                        for (i in (monthCount - 1) downTo 0) {
+                            val x = padding + i * stepX
+                            path.lineTo(x, baselineY(i))
+                        }
+                        path.close()
+
+                        drawPath(path = path, color = color)
+                        drawPath(
+                            path = borderPath,
+                            color = borderColor,
+                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Month labels
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 40.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    monthlyBreakdown.forEach { month ->
+                        Text(
+                            text = month.month.takeLast(3),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Legend
+                val legendRows = categoryColors.chunked(3)
+                legendRows.forEach { row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        row.forEach { (category, color) ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(color)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = category.getLocalizedName(strings),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        // Fill remaining space if not full row
+                        repeat(3 - row.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    text = "No data available",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Horizontal bar chart showing top merchants by spending
+ */
+@Composable
+fun TopMerchantsBarChart(
+    merchants: List<MerchantSpendingData>,
+    modifier: Modifier = Modifier
+) {
+    val strings = LocalStrings.current
+
+    if (merchants.isEmpty()) return
+
+    val topMerchants = remember(merchants) {
+        merchants.sortedByDescending { it.amount }.take(8)
+    }
+    val maxAmount = remember(topMerchants) {
+        topMerchants.maxOfOrNull { it.amount } ?: 0.0
+    }
+
+    // Generate colors for merchants based on their position
+    val barColors = remember {
+        listOf(
+            Color(0xFF2563EB), // Blue
+            Color(0xFF7C3AED), // Purple
+            Color(0xFF0891B2), // Cyan
+            Color(0xFF059669), // Emerald
+            Color(0xFFD97706), // Amber
+            Color(0xFFDC2626), // Red
+            Color(0xFF4F46E5), // Indigo
+            Color(0xFFDB2777)  // Pink
+        )
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = strings.topMerchantsBySpending,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (maxAmount > 0) {
+                topMerchants.forEachIndexed { index, merchant ->
+                    val barColor = barColors[index % barColors.size]
+                    val fraction = (merchant.amount / maxAmount).toFloat()
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = merchant.name,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = formatCurrencyChart(merchant.amount),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Bar
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(16.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(barColor.copy(alpha = 0.1f))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(fraction)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(barColor)
+                            )
+                        }
+
+                        // Transaction count
+                        Text(
+                            text = "${merchant.transactionCount} ${strings.transactions.lowercase()}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * Parse hex color string to Color (cross-platform)
  */
 fun parseColor(colorString: String): Color {
