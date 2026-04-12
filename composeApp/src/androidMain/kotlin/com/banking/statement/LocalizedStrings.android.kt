@@ -193,6 +193,10 @@ actual fun provideStrings(): AppStrings = AppStrings(
     monthlyBreakdown = stringResource(R.string.monthly_breakdown),
     perMonthAverage = stringResource(R.string.per_month_average),
 
+    // Spending Charts
+    categoryTrends = stringResource(R.string.category_trends),
+    topMerchantsBySpending = stringResource(R.string.top_merchants_by_spending),
+
     // Bank Selection Dialog
     selectYourBank = stringResource(R.string.select_your_bank),
     multipleBanksDetected = stringResource(R.string.multiple_banks_detected),

@@ -223,6 +223,10 @@
     <string name="monthly_breakdown">Desglose mensual:</string>
     <string name="per_month_average">/mes prom.</string>
 
+    <!-- Spending Charts -->
+    <string name="category_trends">Tendencias por Categoría</string>
+    <string name="top_merchants_by_spending">Top Comercios por Gasto</string>
+
     <!-- Bank Selection Dialog -->
     <string name="select_your_bank">Seleccione su banco</string>
     <string name="multiple_banks_detected">Se detectaron varios bancos. Por favor seleccione el correcto:</string>

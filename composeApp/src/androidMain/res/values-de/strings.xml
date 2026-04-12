@@ -223,6 +223,10 @@
     <string name="monthly_breakdown">Monatliche Aufschlüsselung:</string>
     <string name="per_month_average">/Monat Ø</string>
 
+    <!-- Spending Charts -->
+    <string name="category_trends">Kategorie-Trends</string>
+    <string name="top_merchants_by_spending">Top-Händler nach Ausgaben</string>
+
     <!-- Bank Selection Dialog -->
     <string name="select_your_bank">Bank auswählen</string>
     <string name="multiple_banks_detected">Mehrere Banken erkannt. Bitte wählen Sie die richtige:</string>

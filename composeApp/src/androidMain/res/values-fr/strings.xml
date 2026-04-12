@@ -223,6 +223,10 @@
     <string name="monthly_breakdown">Répartition mensuelle :</string>
     <string name="per_month_average">/mois moy.</string>
 
+    <!-- Spending Charts -->
+    <string name="category_trends">Tendances par Catégorie</string>
+    <string name="top_merchants_by_spending">Top Marchands par Dépenses</string>
+
     <!-- Bank Selection Dialog -->
     <string name="select_your_bank">Sélectionnez votre banque</string>
     <string name="multiple_banks_detected">Plusieurs banques détectées. Veuillez sélectionner la bonne :</string>

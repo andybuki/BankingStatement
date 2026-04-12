@@ -223,6 +223,10 @@
     <string name="monthly_breakdown">Monthly breakdown:</string>
     <string name="per_month_average">/mo avg</string>
 
+    <!-- Spending Charts -->
+    <string name="category_trends">Category Trends</string>
+    <string name="top_merchants_by_spending">Top Merchants by Spending</string>
+
     <!-- Bank Selection Dialog -->
     <string name="select_your_bank">Select Your Bank</string>
     <string name="multiple_banks_detected">Multiple banks were detected. Please select the correct one:</string>
