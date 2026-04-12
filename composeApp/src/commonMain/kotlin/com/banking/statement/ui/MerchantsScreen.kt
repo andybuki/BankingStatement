@@ -12,6 +12,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.charts.MerchantSpendingData
+import com.banking.statement.ui.charts.TopMerchantsBarChart
+import kotlin.math.absoluteValue
 
 /**
  * Dedicated screen for displaying top merchants and spending trends
@@ -43,6 +46,21 @@ fun MerchantsScreen(
     // Calculate merchant trends
     val merchantTrends = remember(filteredTransactions) {
         calculateMerchantTrendsFromTransactions(filteredTransactions)
+    }
+
+    // Calculate merchant spending data for the bar chart
+    val merchantSpending = remember(filteredTransactions) {
+        filteredTransactions
+            .filter { it.amount < 0 && !it.counterparty.isNullOrBlank() }
+            .groupBy { it.counterparty!! }
+            .map { (name, txs) ->
+                MerchantSpendingData(
+                    name = name,
+                    amount = txs.sumOf { it.amount.absoluteValue },
+                    transactionCount = txs.size
+                )
+            }
+            .sortedByDescending { it.amount }
     }
 
     // Calculate total spending across all merchants
@@ -111,19 +129,15 @@ fun MerchantsScreen(
                     }
                 }
 
-                // All Merchants Section
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = strings.topMerchants,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                items(merchantHistory) { history ->
-                    MerchantHistoryItem(history)
+                // Top Merchants Bar Chart
+                if (merchantSpending.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TopMerchantsBarChart(
+                            merchants = merchantSpending,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }

@@ -37,9 +37,7 @@ import com.banking.statement.ui.charts.CategorySpendingDonutChart
 import com.banking.statement.ui.charts.CategoryStackedAreaChart
 import com.banking.statement.ui.charts.IncomeVsExpensesBarChart
 import com.banking.statement.ui.charts.MonthCategoryBreakdown
-import com.banking.statement.ui.charts.MerchantSpendingData
 import com.banking.statement.ui.charts.MonthlySpendingLineChart
-import com.banking.statement.ui.charts.TopMerchantsBarChart
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
 import kotlinx.datetime.Clock
@@ -233,28 +231,6 @@ fun SpendingOverviewScreen(
             .sortedBy { it.month }
     }
 
-    // Compute merchant spending for top merchants chart
-    val merchantSpending = remember(transactions, selectedAccountId, selectedPeriod, customDateRange) {
-        var filtered = if (selectedAccountId == null) {
-            transactions
-        } else {
-            transactions.filter { it.accountId == selectedAccountId }
-        }
-        filtered = filterByTimePeriod(filtered, selectedPeriod, customDateRange)
-
-        filtered
-            .filter { it.amount < 0 && !it.counterparty.isNullOrBlank() }
-            .groupBy { it.counterparty!! }
-            .map { (name, txs) ->
-                MerchantSpendingData(
-                    name = name,
-                    amount = txs.sumOf { it.amount.absoluteValue },
-                    transactionCount = txs.size
-                )
-            }
-            .sortedByDescending { it.amount }
-    }
-
     // Use filtered data
     val displayIncome = filteredData.income
     val displayExpenses = filteredData.expenses
@@ -402,16 +378,6 @@ fun SpendingOverviewScreen(
                     item {
                         CategoryStackedAreaChart(
                             monthlyBreakdown = monthlyCategoryBreakdown,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-
-                // Top Merchants Bar Chart
-                if (merchantSpending.isNotEmpty()) {
-                    item {
-                        TopMerchantsBarChart(
-                            merchants = merchantSpending,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
