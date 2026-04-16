@@ -106,6 +106,7 @@ fun App(
     onDeleteAccount: ((Long) -> Unit)? = null,
     onEditAccount: ((Long, String) -> Unit)? = null,
     onClearAllData: (() -> Unit)? = null,
+    onDeleteStatement: ((Long) -> Unit)? = null,
     // Share callbacks
     onShareTransactions: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
     onShareSpending: ((ExportFormat, SpendingExportData) -> Unit)? = null,
@@ -658,6 +659,7 @@ fun App(
                                 onDeleteAccount = { id -> onDeleteAccount?.invoke(id) },
                                 onEditAccount = { id, name -> onEditAccount?.invoke(id, name) },
                                 onClearAllData = { onClearAllData?.invoke() },
+                                onDeleteStatement = { id -> onDeleteStatement?.invoke(id) },
                                 currentThemeMode = themeMode,
                                 onThemeModeChange = { mode -> onThemeModeChange?.invoke(mode) },
                                 biometricLockEnabled = biometricLockEnabled,

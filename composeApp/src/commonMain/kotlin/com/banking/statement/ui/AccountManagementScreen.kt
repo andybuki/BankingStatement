@@ -1,13 +1,21 @@
 package com.banking.statement.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +31,23 @@ import bankingstatement.composeapp.generated.resources.back
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.ThemeMode
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
+
+enum class StatementSortOrder {
+    NEWEST_FIRST, OLDEST_FIRST, BY_PERIOD, BY_NAME
+}
+
+data class StatementDisplayItem(
+    val id: Long,
+    val fileName: String,
+    val bankName: String,
+    val period: String?,
+    val importDate: Long,
+    val sourceType: String
+)
 
 /**
  * Data class for account display in management screen
@@ -36,7 +60,8 @@ data class AccountManagementItem(
     val color: String?,
     val transactionCount: Long,
     val statementCount: Long,
-    val balance: Double?
+    val balance: Double?,
+    val statements: List<StatementDisplayItem> = emptyList()
 )
 
 /**
@@ -50,6 +75,7 @@ fun AccountManagementScreen(
     onDeleteAccount: (Long) -> Unit,
     onEditAccount: (Long, String) -> Unit,
     onClearAllData: () -> Unit,
+    onDeleteStatement: (Long) -> Unit = {},
     currentThemeMode: ThemeMode = ThemeMode.SYSTEM,
     onThemeModeChange: (ThemeMode) -> Unit = {},
     biometricLockEnabled: Boolean = false,
@@ -107,7 +133,8 @@ fun AccountManagementScreen(
                 AccountManagementCard(
                     account = account,
                     onEdit = { showEditDialog = account },
-                    onDelete = { showDeleteDialog = account }
+                    onDelete = { showDeleteDialog = account },
+                    onDeleteStatement = onDeleteStatement
                 )
             }
         }
@@ -228,9 +255,22 @@ fun AccountManagementScreen(
 private fun AccountManagementCard(
     account: AccountManagementItem,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onDeleteStatement: (Long) -> Unit
 ) {
     val strings = LocalStrings.current
+    var expanded by remember { mutableStateOf(false) }
+    var sortOrder by remember { mutableStateOf(StatementSortOrder.NEWEST_FIRST) }
+    var statementToDelete by remember { mutableStateOf<StatementDisplayItem?>(null) }
+
+    val sortedStatements = remember(account.statements, sortOrder) {
+        when (sortOrder) {
+            StatementSortOrder.NEWEST_FIRST -> account.statements.sortedByDescending { it.importDate }
+            StatementSortOrder.OLDEST_FIRST -> account.statements.sortedBy { it.importDate }
+            StatementSortOrder.BY_PERIOD -> account.statements.sortedByDescending { it.period ?: "" }
+            StatementSortOrder.BY_NAME -> account.statements.sortedBy { it.fileName.lowercase() }
+        }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -381,8 +421,186 @@ private fun AccountManagementCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
+
+            // Expand/collapse button for statements list
+            if (account.statements.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { expanded = !expanded }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (expanded) strings.hideStatements else strings.showStatements,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                AnimatedVisibility(visible = expanded) {
+                    Column {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Sort chips
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            StatementSortOrder.entries.forEach { order ->
+                                val label = when (order) {
+                                    StatementSortOrder.NEWEST_FIRST -> strings.sortNewestFirst
+                                    StatementSortOrder.OLDEST_FIRST -> strings.sortOldestFirst
+                                    StatementSortOrder.BY_PERIOD -> strings.sortByPeriod
+                                    StatementSortOrder.BY_NAME -> strings.sortByName
+                                }
+                                FilterChip(
+                                    selected = sortOrder == order,
+                                    onClick = { sortOrder = order },
+                                    label = {
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Statement rows
+                        sortedStatements.forEach { statement ->
+                            StatementRow(
+                                statement = statement,
+                                onDelete = { statementToDelete = statement }
+                            )
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
+
+    statementToDelete?.let { stmt ->
+        DeleteStatementDialog(
+            fileName = stmt.fileName,
+            onConfirm = {
+                onDeleteStatement(stmt.id)
+                statementToDelete = null
+            },
+            onDismiss = { statementToDelete = null }
+        )
+    }
+}
+
+@Composable
+private fun StatementRow(
+    statement: StatementDisplayItem,
+    onDelete: () -> Unit
+) {
+    val strings = LocalStrings.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Description,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = statement.fileName,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                statement.period?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                Text(
+                    text = "${strings.importedOn} ${formatImportDate(statement.importDate)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+        }
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = strings.delete,
+                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DeleteStatementDialog(
+    fileName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = strings.deleteStatement,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text(strings.deleteStatementConfirm.replace("%s", fileName))
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(strings.delete)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancel)
+            }
+        }
+    )
 }
 
 @Composable
@@ -791,6 +1009,16 @@ private fun ShareAppCard(
 }
 
 // Helper functions
+private fun formatImportDate(epochSeconds: Long): String {
+    return try {
+        val instant = Instant.fromEpochSeconds(epochSeconds)
+        val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+        "%02d.%02d.%d".format(local.dayOfMonth, local.monthNumber, local.year)
+    } catch (_: Exception) {
+        ""
+    }
+}
+
 private fun parseAccountColor(hexColor: String?): Color {
     if (hexColor == null) return Color(0xFF5C6BC0)
 

@@ -290,4 +290,15 @@
     <string name="rating_rate">Valorar ahora</string>
     <string name="rating_later">Quizás luego</string>
     <string name="rating_never">No, gracias</string>
+
+    <!-- Statement sorting -->
+    <string name="show_statements">Mostrar extractos</string>
+    <string name="hide_statements">Ocultar extractos</string>
+    <string name="sort_newest_first">Más recientes primero</string>
+    <string name="sort_oldest_first">Más antiguos primero</string>
+    <string name="sort_by_period">Por período</string>
+    <string name="sort_by_name">Por nombre</string>
+    <string name="imported_on">Importado</string>
+    <string name="delete_statement">Eliminar extracto</string>
+    <string name="delete_statement_confirm">¿Eliminar \"%s\" y todas sus transacciones? Esto no se puede deshacer.</string>
 </resources>

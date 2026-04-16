@@ -24,6 +24,7 @@ import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.AccountManagementItem
 import com.banking.statement.ui.AccountOption
+import com.banking.statement.ui.StatementDisplayItem
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.MonthlySummary
@@ -759,6 +760,16 @@ class MainViewModel(
                 val accountSummaries = repository.getAccountSummary()
                 _accountsForManagement.value = accountSummaries.map { summary ->
                     val statementCount = repository.getStatementCountByAccount(summary.id)
+                    val statements = repository.getStatementsByAccount(summary.id).map { s ->
+                        StatementDisplayItem(
+                            id = s.id,
+                            fileName = s.file_name,
+                            bankName = s.bank_name,
+                            period = s.statement_period,
+                            importDate = s.import_date,
+                            sourceType = s.source_type
+                        )
+                    }
                     AccountManagementItem(
                         id = summary.id,
                         name = summary.name,
@@ -767,10 +778,22 @@ class MainViewModel(
                         color = summary.color,
                         transactionCount = summary.transaction_count,
                         statementCount = statementCount,
-                        balance = summary.balance
+                        balance = summary.balance,
+                        statements = statements
                     )
                 }
             }
+        }
+    }
+
+    fun deleteStatement(statementId: Long) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.deleteStatement(statementId)
+            }
+            updateStats()
+            loadAccountsData()
+            loadTransactionData()
         }
     }
 

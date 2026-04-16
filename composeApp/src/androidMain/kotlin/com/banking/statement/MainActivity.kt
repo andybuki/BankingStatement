@@ -124,6 +124,7 @@ class MainActivity : FragmentActivity() {
                         onDeleteAccount = { accountId -> viewModel.deleteAccount(accountId) },
                         onEditAccount = { accountId, newName -> viewModel.editAccount(accountId, newName) },
                         onClearAllData = { viewModel.clearAllData() },
+                        onDeleteStatement = { statementId -> viewModel.deleteStatement(statementId) },
                         onShareTransactions = { format, txList, accountName ->
                             viewModel.shareTransactions(format, txList, accountName)
                         },

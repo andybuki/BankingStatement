@@ -290,4 +290,15 @@
     <string name="rating_rate">Rate Now</string>
     <string name="rating_later">Maybe Later</string>
     <string name="rating_never">No Thanks</string>
+
+    <!-- Statement sorting -->
+    <string name="show_statements">Show statements</string>
+    <string name="hide_statements">Hide statements</string>
+    <string name="sort_newest_first">Newest first</string>
+    <string name="sort_oldest_first">Oldest first</string>
+    <string name="sort_by_period">By period</string>
+    <string name="sort_by_name">By name</string>
+    <string name="imported_on">Imported</string>
+    <string name="delete_statement">Delete Statement</string>
+    <string name="delete_statement_confirm">Delete \"%s\" and all its transactions? This cannot be undone.</string>
 </resources>

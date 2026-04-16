@@ -249,5 +249,16 @@ actual fun provideStrings(): AppStrings = AppStrings(
     ratingMessage = stringResource(R.string.rating_message),
     ratingRate = stringResource(R.string.rating_rate),
     ratingLater = stringResource(R.string.rating_later),
-    ratingNever = stringResource(R.string.rating_never)
+    ratingNever = stringResource(R.string.rating_never),
+
+    // Statement sorting
+    showStatements = stringResource(R.string.show_statements),
+    hideStatements = stringResource(R.string.hide_statements),
+    sortNewestFirst = stringResource(R.string.sort_newest_first),
+    sortOldestFirst = stringResource(R.string.sort_oldest_first),
+    sortByPeriod = stringResource(R.string.sort_by_period),
+    sortByName = stringResource(R.string.sort_by_name),
+    importedOn = stringResource(R.string.imported_on),
+    deleteStatement = stringResource(R.string.delete_statement),
+    deleteStatementConfirm = stringResource(R.string.delete_statement_confirm)
 )
