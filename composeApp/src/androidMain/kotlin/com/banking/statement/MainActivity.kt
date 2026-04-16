@@ -56,6 +56,8 @@ class MainActivity : FragmentActivity() {
             val dialogState by viewModel.dialogState.collectAsState()
             val accountsForManagement by viewModel.accountsForManagement.collectAsState()
             val appSettings by viewModel.appSettings.collectAsState()
+            val statementExpandedMap by viewModel.statementExpandedMap.collectAsState()
+            val statementSortMap by viewModel.statementSortMap.collectAsState()
 
             // Biometric lock state
             var isAuthenticated by remember { mutableStateOf(!viewModel.isBiometricLockEnabled()) }
@@ -125,6 +127,10 @@ class MainActivity : FragmentActivity() {
                         onEditAccount = { accountId, newName -> viewModel.editAccount(accountId, newName) },
                         onClearAllData = { viewModel.clearAllData() },
                         onDeleteStatement = { statementId -> viewModel.deleteStatement(statementId) },
+                        statementExpandedMap = statementExpandedMap,
+                        statementSortMap = statementSortMap,
+                        onStatementExpandedChange = { id, exp -> viewModel.setStatementExpanded(id, exp) },
+                        onStatementSortOrderChange = { id, order -> viewModel.setStatementSortOrder(id, order) },
                         onShareTransactions = { format, txList, accountName ->
                             viewModel.shareTransactions(format, txList, accountName)
                         },

@@ -25,6 +25,7 @@ import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.AccountManagementItem
 import com.banking.statement.ui.AccountOption
 import com.banking.statement.ui.StatementDisplayItem
+import com.banking.statement.ui.StatementSortOrder
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.MonthlySummary
@@ -112,6 +113,21 @@ class MainViewModel(
 
     private val _accountsForManagement = MutableStateFlow<List<AccountManagementItem>>(emptyList())
     val accountsForManagement: StateFlow<List<AccountManagementItem>> = _accountsForManagement.asStateFlow()
+
+    // Persistent expand/sort state for statement lists — survives tab switches
+    private val _statementExpandedMap = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
+    val statementExpandedMap: StateFlow<Map<Long, Boolean>> = _statementExpandedMap.asStateFlow()
+
+    private val _statementSortMap = MutableStateFlow<Map<Long, StatementSortOrder>>(emptyMap())
+    val statementSortMap: StateFlow<Map<Long, StatementSortOrder>> = _statementSortMap.asStateFlow()
+
+    fun setStatementExpanded(accountId: Long, expanded: Boolean) {
+        _statementExpandedMap.update { it + (accountId to expanded) }
+    }
+
+    fun setStatementSortOrder(accountId: Long, order: StatementSortOrder) {
+        _statementSortMap.update { it + (accountId to order) }
+    }
 
     private val _appSettings = MutableStateFlow(AppSettingsState())
     val appSettings: StateFlow<AppSettingsState> = _appSettings.asStateFlow()

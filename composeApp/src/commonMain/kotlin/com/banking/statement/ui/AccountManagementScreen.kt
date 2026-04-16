@@ -76,6 +76,10 @@ fun AccountManagementScreen(
     onEditAccount: (Long, String) -> Unit,
     onClearAllData: () -> Unit,
     onDeleteStatement: (Long) -> Unit = {},
+    statementExpandedMap: Map<Long, Boolean> = emptyMap(),
+    statementSortMap: Map<Long, StatementSortOrder> = emptyMap(),
+    onStatementExpandedChange: (Long, Boolean) -> Unit = { _, _ -> },
+    onStatementSortOrderChange: (Long, StatementSortOrder) -> Unit = { _, _ -> },
     currentThemeMode: ThemeMode = ThemeMode.SYSTEM,
     onThemeModeChange: (ThemeMode) -> Unit = {},
     biometricLockEnabled: Boolean = false,
@@ -134,7 +138,11 @@ fun AccountManagementScreen(
                     account = account,
                     onEdit = { showEditDialog = account },
                     onDelete = { showDeleteDialog = account },
-                    onDeleteStatement = onDeleteStatement
+                    onDeleteStatement = onDeleteStatement,
+                    expanded = statementExpandedMap[account.id] ?: false,
+                    onExpandedChange = { onStatementExpandedChange(account.id, it) },
+                    sortOrder = statementSortMap[account.id] ?: StatementSortOrder.NEWEST_FIRST,
+                    onSortOrderChange = { onStatementSortOrderChange(account.id, it) }
                 )
             }
         }
@@ -256,11 +264,13 @@ private fun AccountManagementCard(
     account: AccountManagementItem,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onDeleteStatement: (Long) -> Unit
+    onDeleteStatement: (Long) -> Unit,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    sortOrder: StatementSortOrder,
+    onSortOrderChange: (StatementSortOrder) -> Unit
 ) {
     val strings = LocalStrings.current
-    var expanded by remember { mutableStateOf(false) }
-    var sortOrder by remember { mutableStateOf(StatementSortOrder.NEWEST_FIRST) }
     var statementToDelete by remember { mutableStateOf<StatementDisplayItem?>(null) }
 
     val sortedStatements = remember(account.statements, sortOrder) {
@@ -431,7 +441,7 @@ private fun AccountManagementCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(6.dp))
-                        .clickable { expanded = !expanded }
+                        .clickable { onExpandedChange(!expanded) }
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -469,7 +479,7 @@ private fun AccountManagementCard(
                                 }
                                 FilterChip(
                                     selected = sortOrder == order,
-                                    onClick = { sortOrder = order },
+                                    onClick = { onSortOrderChange(order) },
                                     label = {
                                         Text(
                                             text = label,
