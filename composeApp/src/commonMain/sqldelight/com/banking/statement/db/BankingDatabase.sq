@@ -83,6 +83,12 @@ SELECT * FROM transactions WHERE statement_id = ? ORDER BY booking_date DESC;
 getTransactionsByAccount:
 SELECT * FROM transactions WHERE account_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC;
 
+getTransactionsByAccountPaged:
+SELECT * FROM transactions WHERE account_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC LIMIT ? OFFSET ?;
+
+getTransactionCountByAccount:
+SELECT COUNT(*) FROM transactions WHERE account_id = ? AND is_duplicate = 0;
+
 getTransactionsByDateRange:
 SELECT * FROM transactions WHERE booking_date BETWEEN ? AND ? AND is_duplicate = 0 ORDER BY booking_date DESC;
 

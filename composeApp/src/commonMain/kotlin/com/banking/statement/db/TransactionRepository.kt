@@ -353,6 +353,14 @@ class TransactionRepository(
         return queries.getTransactionsByAccount(accountId).executeAsList()
     }
 
+    fun getTransactionsByAccountPaged(accountId: Long, limit: Long, offset: Long): List<Transactions> {
+        return queries.getTransactionsByAccountPaged(accountId, limit, offset).executeAsList()
+    }
+
+    fun getTransactionCountByAccount(accountId: Long): Long {
+        return queries.getTransactionCountByAccount(accountId).executeAsOne()
+    }
+
     fun getTransactionsByStatement(statementId: Long): List<Transactions> {
         return queries.getTransactionsByStatement(statementId).executeAsList()
     }

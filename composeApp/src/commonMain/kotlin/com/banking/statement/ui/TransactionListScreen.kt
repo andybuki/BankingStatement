@@ -8,6 +8,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +31,17 @@ import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import org.jetbrains.compose.resources.painterResource
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+
+enum class TransactionSortOrder {
+    DATE_DESC, DATE_ASC, AMOUNT_DESC, AMOUNT_ASC, NAME_ASC
+}
+
+enum class TransactionTimeFilter {
+    ALL, WEEK, MONTH, YEAR, CUSTOM
+}
 
 /**
  * Display model for a transaction in the list
@@ -240,8 +254,9 @@ data class AccountFilterOption(
 fun TransactionListScreen(
     transactions: List<TransactionDisplay>,
     accounts: List<AccountFilterOption> = emptyList(),
-    selectedAccountId: Long? = null,  // Controlled from outside (App level)
-    onAccountSelected: ((Long?) -> Unit)? = null,  // Callback when account is selected
+    selectedAccountId: Long? = null,  // Controlled from outside (App level) — already DB-filtered
+    onAccountSelected: ((Long?) -> Unit)? = null,
+    totalTransactionCount: Long = 0L,  // Accurate total from DB (account-filtered)
     customCategories: List<com.banking.statement.categorization.CustomCategory> = emptyList(),
     onBackClick: (() -> Unit)? = null,
     onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
@@ -257,15 +272,51 @@ fun TransactionListScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showCategoryPicker by remember { mutableStateOf<TransactionDisplay?>(null) }
 
-    // Use derivedStateOf for filtered transactions to avoid recomputation on unrelated recompositions
-    val filteredTransactions by remember(transactions, selectedAccountId, searchQuery) {
+    // Sort & filter state
+    var sortOrder by remember { mutableStateOf(TransactionSortOrder.DATE_DESC) }
+    var timeFilter by remember { mutableStateOf(TransactionTimeFilter.ALL) }
+    var showSortDialog by remember { mutableStateOf(false) }
+    var showFilterDialog by remember { mutableStateOf(false) }
+    var customDateStart by remember { mutableStateOf("") }
+    var customDateEnd by remember { mutableStateOf("") }
+
+    // Transactions are already account-filtered at DB level; apply search + sort + time filter locally
+    val filteredTransactions by remember(transactions, searchQuery, sortOrder, timeFilter, customDateStart, customDateEnd) {
         derivedStateOf {
-            var result = if (selectedAccountId == null) {
-                transactions
-            } else {
-                transactions.filter { it.accountId == selectedAccountId }
+            var result = transactions
+
+            // Time filter
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            result = when (timeFilter) {
+                TransactionTimeFilter.ALL -> result
+                TransactionTimeFilter.WEEK -> result.filter { tx ->
+                    parseTxDate(tx.date)?.let { d ->
+                        val diff = today.toEpochDays() - d.toEpochDays()
+                        diff in 0..6
+                    } ?: false
+                }
+                TransactionTimeFilter.MONTH -> result.filter { tx ->
+                    parseTxDate(tx.date)?.let { d ->
+                        d.year == today.year && d.monthNumber == today.monthNumber
+                    } ?: false
+                }
+                TransactionTimeFilter.YEAR -> result.filter { tx ->
+                    parseTxDate(tx.date)?.let { d -> d.year == today.year } ?: false
+                }
+                TransactionTimeFilter.CUSTOM -> {
+                    val start = parseDateInput(customDateStart)
+                    val end = parseDateInput(customDateEnd)
+                    if (start != null && end != null) {
+                        result.filter { tx ->
+                            parseTxDate(tx.date)?.let { d ->
+                                d.toEpochDays() in start.toEpochDays()..end.toEpochDays()
+                            } ?: false
+                        }
+                    } else result
+                }
             }
 
+            // Search filter
             if (searchQuery.isNotBlank()) {
                 val query = searchQuery.lowercase().trim()
                 result = result.filter { tx ->
@@ -279,15 +330,32 @@ fun TransactionListScreen(
                 }
             }
 
+            // Sort
+            result = when (sortOrder) {
+                TransactionSortOrder.DATE_DESC -> result.sortedByDescending { parseTxDate(it.date)?.toEpochDays() }
+                TransactionSortOrder.DATE_ASC -> result.sortedBy { parseTxDate(it.date)?.toEpochDays() }
+                TransactionSortOrder.AMOUNT_DESC -> result.sortedByDescending { it.amount }
+                TransactionSortOrder.AMOUNT_ASC -> result.sortedBy { it.amount }
+                TransactionSortOrder.NAME_ASC -> result.sortedBy {
+                    (it.counterparty ?: it.description).lowercase()
+                }
+            }
+
             result
         }
     }
 
-    // Derive count separately to avoid recomposing the count text when list reference changes but size doesn't
-    val transactionCountText by remember(filteredTransactions.size, searchQuery) {
+    val isFiltered = searchQuery.isNotBlank() || timeFilter != TransactionTimeFilter.ALL
+    val sortActive = sortOrder != TransactionSortOrder.DATE_DESC
+
+    // Count text: show DB total when no local filters, otherwise show filtered count
+    val transactionCountText by remember(totalTransactionCount, filteredTransactions.size, isFiltered) {
         derivedStateOf {
-            "${filteredTransactions.size} ${strings.transactions.lowercase()}" +
-                if (searchQuery.isNotBlank()) " (${strings.filtered})" else ""
+            if (!isFiltered) {
+                "$totalTransactionCount ${strings.transactions.lowercase()}"
+            } else {
+                "${filteredTransactions.size} ${strings.transactions.lowercase()} (${strings.filtered})"
+            }
         }
     }
 
@@ -299,26 +367,68 @@ fun TransactionListScreen(
     ) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Search field
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
+        // Search field + Sort + Filter buttons row
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(strings.searchTransactions) },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            ),
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
-                        Text("✕", style = MaterialTheme.typography.bodyMedium)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text(strings.searchTransactions) },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                ),
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Text("✕", style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
+            )
+            // Sort button
+            IconButton(
+                onClick = { showSortDialog = true },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (sortActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Sort,
+                    contentDescription = "Sort",
+                    tint = if (sortActive) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-        )
+            // Filter button
+            IconButton(
+                onClick = { showFilterDialog = true },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (timeFilter != TransactionTimeFilter.ALL) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FilterList,
+                    contentDescription = "Filter",
+                    tint = if (timeFilter != TransactionTimeFilter.ALL) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -402,7 +512,7 @@ fun TransactionListScreen(
         CategoryPickerDialog(
             currentCategory = transaction.category,
             customCategories = customCategories,
-            currentCustomCategoryId = null, // TODO: track custom category ID if transaction has one
+            currentCustomCategoryId = null,
             onCategorySelected = { newCategory ->
                 onCategoryChange?.invoke(transaction, newCategory)
                 showCategoryPicker = null
@@ -413,11 +523,136 @@ fun TransactionListScreen(
             } else null,
             onManageCategories = if (onManageCategories != null) {
                 {
-                    showCategoryPicker = null  // Dismiss picker first
-                    onManageCategories.invoke()  // Then open management screen
+                    showCategoryPicker = null
+                    onManageCategories.invoke()
                 }
             } else null,
             onDismiss = { showCategoryPicker = null }
+        )
+    }
+
+    // Sort dialog
+    if (showSortDialog) {
+        AlertDialog(
+            onDismissRequest = { showSortDialog = false },
+            title = { Text("Sort transactions", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf(
+                        TransactionSortOrder.DATE_DESC to "Date: Newest first",
+                        TransactionSortOrder.DATE_ASC to "Date: Oldest first",
+                        TransactionSortOrder.AMOUNT_DESC to "Amount: Highest first",
+                        TransactionSortOrder.AMOUNT_ASC to "Amount: Lowest first",
+                        TransactionSortOrder.NAME_ASC to "Name: A → Z"
+                    ).forEach { (order, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    sortOrder = order
+                                    showSortDialog = false
+                                }
+                                .background(
+                                    if (sortOrder == order) MaterialTheme.colorScheme.primaryContainer
+                                    else Color.Transparent
+                                )
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = sortOrder == order,
+                                onClick = { sortOrder = order; showSortDialog = false }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSortDialog = false }) { Text("Close") }
+            }
+        )
+    }
+
+    // Filter dialog
+    if (showFilterDialog) {
+        AlertDialog(
+            onDismissRequest = { showFilterDialog = false },
+            title = { Text("Filter by time", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf(
+                        TransactionTimeFilter.ALL to "All time",
+                        TransactionTimeFilter.WEEK to "This week",
+                        TransactionTimeFilter.MONTH to "This month",
+                        TransactionTimeFilter.YEAR to "This year",
+                        TransactionTimeFilter.CUSTOM to "Custom range"
+                    ).forEach { (filter, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    timeFilter = filter
+                                    if (filter != TransactionTimeFilter.CUSTOM) showFilterDialog = false
+                                }
+                                .background(
+                                    if (timeFilter == filter) MaterialTheme.colorScheme.primaryContainer
+                                    else Color.Transparent
+                                )
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = timeFilter == filter,
+                                onClick = {
+                                    timeFilter = filter
+                                    if (filter != TransactionTimeFilter.CUSTOM) showFilterDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+
+                    // Custom date range inputs
+                    if (timeFilter == TransactionTimeFilter.CUSTOM) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = customDateStart,
+                            onValueChange = { customDateStart = it },
+                            label = { Text("From (DD.MM.YYYY)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = customDateEnd,
+                            onValueChange = { customDateEnd = it },
+                            label = { Text("To (DD.MM.YYYY)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showFilterDialog = false }) { Text("Apply") }
+            },
+            dismissButton = {
+                if (timeFilter != TransactionTimeFilter.ALL) {
+                    TextButton(onClick = {
+                        timeFilter = TransactionTimeFilter.ALL
+                        customDateStart = ""
+                        customDateEnd = ""
+                        showFilterDialog = false
+                    }) { Text("Clear") }
+                }
+            }
         )
     }
 }
@@ -546,6 +781,25 @@ private fun parseColor(hexColor: String): Color {
     } catch (e: Exception) {
         Color.Gray
     }
+}
+
+private fun parseTxDate(dateStr: String): kotlinx.datetime.LocalDate? {
+    return try {
+        val parts = dateStr.split(".")
+        if (parts.size == 3) {
+            kotlinx.datetime.LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
+        } else null
+    } catch (_: Exception) { null }
+}
+
+private fun parseDateInput(input: String): kotlinx.datetime.LocalDate? {
+    val trimmed = input.trim()
+    return try {
+        val parts = trimmed.split(".")
+        if (parts.size == 3) {
+            kotlinx.datetime.LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
+        } else null
+    } catch (_: Exception) { null }
 }
 
 private fun getCategoryEmoji(category: TransactionCategory): String {

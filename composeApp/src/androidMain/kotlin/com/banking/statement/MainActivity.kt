@@ -58,6 +58,8 @@ class MainActivity : FragmentActivity() {
             val appSettings by viewModel.appSettings.collectAsState()
             val statementExpandedMap by viewModel.statementExpandedMap.collectAsState()
             val statementSortMap by viewModel.statementSortMap.collectAsState()
+            val selectedAccountId by viewModel.selectedAccountId.collectAsState()
+            val totalTransactionCount by viewModel.totalTransactionCount.collectAsState()
 
             // Biometric lock state
             var isAuthenticated by remember { mutableStateOf(!viewModel.isBiometricLockEnabled()) }
@@ -175,7 +177,10 @@ class MainActivity : FragmentActivity() {
                         onRateNever = { viewModel.onRateNever() },
                         hasMoreTransactions = financialState.hasMoreTransactions,
                         isLoadingMoreTransactions = financialState.isLoadingMore,
-                        onLoadMoreTransactions = { viewModel.loadMoreTransactions() }
+                        onLoadMoreTransactions = { viewModel.loadMoreTransactions() },
+                        selectedAccountId = selectedAccountId,
+                        onAccountSelected = { accountId -> viewModel.setSelectedAccount(accountId) },
+                        totalTransactionCount = totalTransactionCount
                     )
                 }
             }

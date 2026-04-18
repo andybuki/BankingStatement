@@ -470,7 +470,7 @@ private fun AccountManagementCard(
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            StatementSortOrder.entries.forEach { order ->
+                            listOf(StatementSortOrder.NEWEST_FIRST, StatementSortOrder.OLDEST_FIRST).forEach { order ->
                                 val label = when (order) {
                                     StatementSortOrder.NEWEST_FIRST -> strings.sortNewestFirst
                                     StatementSortOrder.OLDEST_FIRST -> strings.sortOldestFirst

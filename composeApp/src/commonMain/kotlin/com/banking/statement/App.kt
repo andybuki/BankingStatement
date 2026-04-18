@@ -148,7 +148,11 @@ fun App(
     // Transaction pagination
     hasMoreTransactions: Boolean = false,
     isLoadingMoreTransactions: Boolean = false,
-    onLoadMoreTransactions: (() -> Unit)? = null
+    onLoadMoreTransactions: (() -> Unit)? = null,
+    // Account selection (lifted to ViewModel for DB-level filtering)
+    selectedAccountId: Long? = null,
+    onAccountSelected: ((Long?) -> Unit)? = null,
+    totalTransactionCount: Long = 0L
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     var showCategoryManagement by remember { mutableStateOf(false) }
@@ -160,8 +164,7 @@ fun App(
     var spendingShareMenuExpanded by remember { mutableStateOf(false) }
     var showChartView by remember { mutableStateOf(false) }
 
-    // Shared account filter state for Transactions and Merchants tabs
-    var selectedAccountId by remember { mutableStateOf<Long?>(null) }
+    // accountDropdownExpanded is local UI state only
     var accountDropdownExpanded by remember { mutableStateOf(false) }
 
     // Time period selector for Spending tab - smart default based on data availability
@@ -284,8 +287,7 @@ fun App(
                         NavigationTab.TRANSACTIONS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.tabTransactions,
-                                totalIncome = filteredIncome,
-                                totalExpenses = filteredExpenses,
+                                showSummary = false,
                                 actions = {
                                     // Account filter dropdown
                                     if (accounts.size > 1) {
@@ -314,7 +316,7 @@ fun App(
                                                 DropdownMenuItem(
                                                     text = { Text(strings.allAccounts) },
                                                     onClick = {
-                                                        selectedAccountId = null
+                                                        onAccountSelected?.invoke(null)
                                                         accountDropdownExpanded = false
                                                     }
                                                 )
@@ -322,7 +324,7 @@ fun App(
                                                     DropdownMenuItem(
                                                         text = { Text(account.name) },
                                                         onClick = {
-                                                            selectedAccountId = account.id
+                                                            onAccountSelected?.invoke(account.id)
                                                             accountDropdownExpanded = false
                                                         }
                                                     )
@@ -368,7 +370,8 @@ fun App(
                                 transactions = transactions,
                                 accounts = accounts,
                                 selectedAccountId = selectedAccountId,
-                                onAccountSelected = { selectedAccountId = it },
+                                onAccountSelected = { onAccountSelected?.invoke(it) },
+                                totalTransactionCount = totalTransactionCount,
                                 customCategories = customCategories,
                                 onBackClick = null,
                                 onShare = null,  // Share moved to header
@@ -427,7 +430,7 @@ fun App(
                                                 DropdownMenuItem(
                                                     text = { Text(strings.allAccounts) },
                                                     onClick = {
-                                                        selectedAccountId = null
+                                                        onAccountSelected?.invoke(null)
                                                         accountDropdownExpanded = false
                                                     }
                                                 )
@@ -435,7 +438,7 @@ fun App(
                                                     DropdownMenuItem(
                                                         text = { Text(account.name) },
                                                         onClick = {
-                                                            selectedAccountId = account.id
+                                                            onAccountSelected?.invoke(account.id)
                                                             accountDropdownExpanded = false
                                                         }
                                                     )
@@ -628,7 +631,7 @@ fun App(
                                                 DropdownMenuItem(
                                                     text = { Text(strings.allAccounts) },
                                                     onClick = {
-                                                        selectedAccountId = null
+                                                        onAccountSelected?.invoke(null)
                                                         accountDropdownExpanded = false
                                                     }
                                                 )
@@ -636,7 +639,7 @@ fun App(
                                                     DropdownMenuItem(
                                                         text = { Text(account.name) },
                                                         onClick = {
-                                                            selectedAccountId = account.id
+                                                            onAccountSelected?.invoke(account.id)
                                                             accountDropdownExpanded = false
                                                         }
                                                     )
