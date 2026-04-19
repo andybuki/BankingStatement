@@ -1,0 +1,51 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+  <!-- Line 1 — longest -->
+  <path
+      android:pathData="M28,82 H368"
+      android:strokeWidth="40"
+      android:strokeColor="#000000"
+      android:strokeLineCap="round"/>
+
+  <!-- Line 2 -->
+  <path
+      android:pathData="M28,196 H292"
+      android:strokeWidth="40"
+      android:strokeColor="#000000"
+      android:strokeLineCap="round"/>
+
+  <!-- Line 3 -->
+  <path
+      android:pathData="M28,310 H210"
+      android:strokeWidth="40"
+      android:strokeColor="#000000"
+      android:strokeLineCap="round"/>
+
+  <!-- Line 4 — shortest -->
+  <path
+      android:pathData="M28,424 H128"
+      android:strokeWidth="40"
+      android:strokeColor="#000000"
+      android:strokeLineCap="round"/>
+
+  <!-- Vertical arrow shaft -->
+  <path
+      android:pathData="M440,52 V396"
+      android:strokeWidth="40"
+      android:strokeColor="#000000"
+      android:strokeLineCap="round"/>
+
+  <!-- Arrowhead pointing down -->
+  <path
+      android:pathData="M378,354 L440,460 L502,354"
+      android:strokeWidth="40"
+      android:strokeColor="#000000"
+      android:fillColor="#00000000"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round"/>
+
+</vector>

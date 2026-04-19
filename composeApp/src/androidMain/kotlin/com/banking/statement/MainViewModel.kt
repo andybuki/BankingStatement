@@ -115,6 +115,10 @@ class MainViewModel(
     private val _selectedAccountId = MutableStateFlow<Long?>(null)
     val selectedAccountId: StateFlow<Long?> = _selectedAccountId.asStateFlow()
 
+    // Date range filter — epoch seconds, null means no filter
+    private val _selectedDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
+    val selectedDateRange: StateFlow<Pair<Long, Long>?> = _selectedDateRange.asStateFlow()
+
     // Total count for the currently filtered view (from DB)
     private val _totalTransactionCount = MutableStateFlow(0L)
     val totalTransactionCount: StateFlow<Long> = _totalTransactionCount.asStateFlow()
@@ -132,6 +136,11 @@ class MainViewModel(
     fun setSelectedAccount(accountId: Long?) {
         if (_selectedAccountId.value == accountId) return
         _selectedAccountId.value = accountId
+        loadTransactionData()
+    }
+
+    fun setDateRange(startEpoch: Long?, endEpoch: Long?) {
+        _selectedDateRange.value = if (startEpoch != null && endEpoch != null) startEpoch to endEpoch else null
         loadTransactionData()
     }
 
@@ -608,18 +617,30 @@ class MainViewModel(
                     )
                 }
 
-                // Load first page — account-filtered at DB level if applicable
-                val firstPage = if (accountId != null) {
-                    repository.getTransactionsByAccountPaged(accountId, PAGE_SIZE.toLong(), 0L)
-                } else {
-                    repository.getTransactionsPaged(PAGE_SIZE.toLong(), 0L)
+                val dateRange = _selectedDateRange.value
+
+                // Load first page — filtered at DB level by account and/or date range
+                val firstPage = when {
+                    accountId != null && dateRange != null ->
+                        repository.getTransactionsByAccountAndDateRangePaged(accountId, dateRange.first, dateRange.second, PAGE_SIZE.toLong(), 0L)
+                    accountId != null ->
+                        repository.getTransactionsByAccountPaged(accountId, PAGE_SIZE.toLong(), 0L)
+                    dateRange != null ->
+                        repository.getTransactionsByDateRangePaged(dateRange.first, dateRange.second, PAGE_SIZE.toLong(), 0L)
+                    else ->
+                        repository.getTransactionsPaged(PAGE_SIZE.toLong(), 0L)
                 }
 
-                // Get total count from DB immediately (account-filtered)
-                val totalCount = if (accountId != null) {
-                    repository.getTransactionCountByAccount(accountId)
-                } else {
-                    repository.getTransactionCount()
+                // Get total count from DB immediately (filtered)
+                val totalCount = when {
+                    accountId != null && dateRange != null ->
+                        repository.getTransactionCountByAccountAndDateRange(accountId, dateRange.first, dateRange.second)
+                    accountId != null ->
+                        repository.getTransactionCountByAccount(accountId)
+                    dateRange != null ->
+                        repository.getTransactionCountInDateRange(dateRange.first, dateRange.second)
+                    else ->
+                        repository.getTransactionCount()
                 }
                 _totalTransactionCount.value = totalCount
 
@@ -723,10 +744,16 @@ class MainViewModel(
                 }
 
                 val offset = currentTransactionPage * PAGE_SIZE
-                val nextPage = if (accountId != null) {
-                    repository.getTransactionsByAccountPaged(accountId, PAGE_SIZE.toLong(), offset.toLong())
-                } else {
-                    repository.getTransactionsPaged(PAGE_SIZE.toLong(), offset.toLong())
+                val dateRange = _selectedDateRange.value
+                val nextPage = when {
+                    accountId != null && dateRange != null ->
+                        repository.getTransactionsByAccountAndDateRangePaged(accountId, dateRange.first, dateRange.second, PAGE_SIZE.toLong(), offset.toLong())
+                    accountId != null ->
+                        repository.getTransactionsByAccountPaged(accountId, PAGE_SIZE.toLong(), offset.toLong())
+                    dateRange != null ->
+                        repository.getTransactionsByDateRangePaged(dateRange.first, dateRange.second, PAGE_SIZE.toLong(), offset.toLong())
+                    else ->
+                        repository.getTransactionsPaged(PAGE_SIZE.toLong(), offset.toLong())
                 }
 
                 if (nextPage.size < PAGE_SIZE) {

@@ -8,9 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,13 +23,18 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import bankingstatement.composeapp.generated.resources.share
+import bankingstatement.composeapp.generated.resources.ic_sort_desc
+import bankingstatement.composeapp.generated.resources.ic_calendar
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import org.jetbrains.compose.resources.painterResource
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.todayIn
 
 enum class TransactionSortOrder {
@@ -256,7 +258,9 @@ fun TransactionListScreen(
     accounts: List<AccountFilterOption> = emptyList(),
     selectedAccountId: Long? = null,  // Controlled from outside (App level) — already DB-filtered
     onAccountSelected: ((Long?) -> Unit)? = null,
-    totalTransactionCount: Long = 0L,  // Accurate total from DB (account-filtered)
+    totalTransactionCount: Long = 0L,  // Accurate total from DB (filtered)
+    selectedDateRange: Pair<Long, Long>? = null,
+    onDateRangeChange: ((Long?, Long?) -> Unit)? = null,
     customCategories: List<com.banking.statement.categorization.CustomCategory> = emptyList(),
     onBackClick: (() -> Unit)? = null,
     onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
@@ -277,44 +281,25 @@ fun TransactionListScreen(
     var timeFilter by remember { mutableStateOf(TransactionTimeFilter.ALL) }
     var showSortDialog by remember { mutableStateOf(false) }
     var showFilterDialog by remember { mutableStateOf(false) }
-    var customDateStart by remember { mutableStateOf("") }
-    var customDateEnd by remember { mutableStateOf("") }
 
-    // Transactions are already account-filtered at DB level; apply search + sort + time filter locally
-    val filteredTransactions by remember(transactions, searchQuery, sortOrder, timeFilter, customDateStart, customDateEnd) {
+    // DatePicker state for custom range
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+    var pendingStartMillis by remember { mutableStateOf<Long?>(null) }
+    val startDatePickerState = rememberDatePickerState()
+    val endDatePickerState = rememberDatePickerState()
+
+    // Sync timeFilter with external selectedDateRange so Clear works
+    LaunchedEffect(selectedDateRange) {
+        if (selectedDateRange == null && timeFilter == TransactionTimeFilter.CUSTOM) {
+            timeFilter = TransactionTimeFilter.ALL
+        }
+    }
+
+    // Transactions are DB-filtered; apply search + sort locally only
+    val filteredTransactions by remember(transactions, searchQuery, sortOrder) {
         derivedStateOf {
             var result = transactions
-
-            // Time filter
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            result = when (timeFilter) {
-                TransactionTimeFilter.ALL -> result
-                TransactionTimeFilter.WEEK -> result.filter { tx ->
-                    parseTxDate(tx.date)?.let { d ->
-                        val diff = today.toEpochDays() - d.toEpochDays()
-                        diff in 0..6
-                    } ?: false
-                }
-                TransactionTimeFilter.MONTH -> result.filter { tx ->
-                    parseTxDate(tx.date)?.let { d ->
-                        d.year == today.year && d.monthNumber == today.monthNumber
-                    } ?: false
-                }
-                TransactionTimeFilter.YEAR -> result.filter { tx ->
-                    parseTxDate(tx.date)?.let { d -> d.year == today.year } ?: false
-                }
-                TransactionTimeFilter.CUSTOM -> {
-                    val start = parseDateInput(customDateStart)
-                    val end = parseDateInput(customDateEnd)
-                    if (start != null && end != null) {
-                        result.filter { tx ->
-                            parseTxDate(tx.date)?.let { d ->
-                                d.toEpochDays() in start.toEpochDays()..end.toEpochDays()
-                            } ?: false
-                        }
-                    } else result
-                }
-            }
 
             // Search filter
             if (searchQuery.isNotBlank()) {
@@ -345,13 +330,14 @@ fun TransactionListScreen(
         }
     }
 
-    val isFiltered = searchQuery.isNotBlank() || timeFilter != TransactionTimeFilter.ALL
+    val isSearchActive = searchQuery.isNotBlank()
+    val isFiltered = isSearchActive || timeFilter != TransactionTimeFilter.ALL
     val sortActive = sortOrder != TransactionSortOrder.DATE_DESC
 
-    // Count text: show DB total when no local filters, otherwise show filtered count
-    val transactionCountText by remember(totalTransactionCount, filteredTransactions.size, isFiltered) {
+    // Count text: always show DB total (accurate) unless search active
+    val transactionCountText by remember(totalTransactionCount, filteredTransactions.size, isSearchActive) {
         derivedStateOf {
-            if (!isFiltered) {
+            if (!isSearchActive) {
                 "$totalTransactionCount ${strings.transactions.lowercase()}"
             } else {
                 "${filteredTransactions.size} ${strings.transactions.lowercase()} (${strings.filtered})"
@@ -403,11 +389,14 @@ fun TransactionListScreen(
                         else MaterialTheme.colorScheme.surfaceVariant
                     )
             ) {
-                Icon(
-                    imageVector = Icons.Default.Sort,
+                Image(
+                    painter = painterResource(Res.drawable.ic_sort_desc),
                     contentDescription = "Sort",
-                    tint = if (sortActive) MaterialTheme.colorScheme.primary
-                           else MaterialTheme.colorScheme.onSurfaceVariant
+                    modifier = Modifier.size(22.dp),
+                    colorFilter = ColorFilter.tint(
+                        if (sortActive) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
             }
             // Filter button
@@ -421,11 +410,14 @@ fun TransactionListScreen(
                         else MaterialTheme.colorScheme.surfaceVariant
                     )
             ) {
-                Icon(
-                    imageVector = Icons.Default.FilterList,
+                Image(
+                    painter = painterResource(Res.drawable.ic_calendar),
                     contentDescription = "Filter",
-                    tint = if (timeFilter != TransactionTimeFilter.ALL) MaterialTheme.colorScheme.primary
-                           else MaterialTheme.colorScheme.onSurfaceVariant
+                    modifier = Modifier.size(22.dp),
+                    colorFilter = ColorFilter.tint(
+                        if (timeFilter != TransactionTimeFilter.ALL) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
             }
         }
@@ -440,6 +432,14 @@ fun TransactionListScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        val listState = rememberLazyListState()
+        val coroutineScope = rememberCoroutineScope()
+
+        // Scroll to top when sort order changes
+        LaunchedEffect(sortOrder) {
+            listState.animateScrollToItem(0)
+        }
+
         if (filteredTransactions.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -452,8 +452,6 @@ fun TransactionListScreen(
                 )
             }
         } else {
-            val listState = rememberLazyListState()
-
             // Detect when user scrolls near the bottom to trigger loading more
             if (hasMoreTransactions && onLoadMore != null) {
                 LaunchedEffect(listState) {
@@ -578,6 +576,7 @@ fun TransactionListScreen(
 
     // Filter dialog
     if (showFilterDialog) {
+        val tz = TimeZone.currentSystemDefault()
         AlertDialog(
             onDismissRequest = { showFilterDialog = false },
             title = { Text("Filter by time", fontWeight = FontWeight.Bold) },
@@ -595,8 +594,36 @@ fun TransactionListScreen(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
-                                    timeFilter = filter
-                                    if (filter != TransactionTimeFilter.CUSTOM) showFilterDialog = false
+                                    if (filter != TransactionTimeFilter.CUSTOM) {
+                                        timeFilter = filter
+                                        val today = Clock.System.todayIn(tz)
+                                        val (start, end) = when (filter) {
+                                            TransactionTimeFilter.ALL -> null to null
+                                            TransactionTimeFilter.WEEK -> {
+                                                val s = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
+                                                val e = today.atStartOfDayIn(tz).epochSeconds + 86399L
+                                                s to e
+                                            }
+                                            TransactionTimeFilter.MONTH -> {
+                                                val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
+                                                val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(today.year, today.monthNumber + 1, 1)
+                                                val e = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
+                                                s to e
+                                            }
+                                            TransactionTimeFilter.YEAR -> {
+                                                val s = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
+                                                val e = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
+                                                s to e
+                                            }
+                                            TransactionTimeFilter.CUSTOM -> null to null
+                                        }
+                                        onDateRangeChange?.invoke(start, end)
+                                        showFilterDialog = false
+                                    } else {
+                                        timeFilter = filter
+                                        showFilterDialog = false
+                                        showStartDatePicker = true
+                                    }
                                 }
                                 .background(
                                     if (timeFilter == filter) MaterialTheme.colorScheme.primaryContainer
@@ -607,53 +634,73 @@ fun TransactionListScreen(
                         ) {
                             RadioButton(
                                 selected = timeFilter == filter,
-                                onClick = {
-                                    timeFilter = filter
-                                    if (filter != TransactionTimeFilter.CUSTOM) showFilterDialog = false
-                                }
+                                onClick = null
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(label, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
-
-                    // Custom date range inputs
-                    if (timeFilter == TransactionTimeFilter.CUSTOM) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = customDateStart,
-                            onValueChange = { customDateStart = it },
-                            label = { Text("From (DD.MM.YYYY)") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = customDateEnd,
-                            onValueChange = { customDateEnd = it },
-                            label = { Text("To (DD.MM.YYYY)") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                    }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showFilterDialog = false }) { Text("Apply") }
+                TextButton(onClick = { showFilterDialog = false }) { Text("Close") }
             },
             dismissButton = {
                 if (timeFilter != TransactionTimeFilter.ALL) {
                     TextButton(onClick = {
                         timeFilter = TransactionTimeFilter.ALL
-                        customDateStart = ""
-                        customDateEnd = ""
+                        onDateRangeChange?.invoke(null, null)
                         showFilterDialog = false
                     }) { Text("Clear") }
                 }
             }
         )
+    }
+
+    // Start date picker
+    if (showStartDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showStartDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = startDatePickerState.selectedDateMillis
+                    if (millis != null) {
+                        pendingStartMillis = millis
+                        showStartDatePicker = false
+                        showEndDatePicker = true
+                    }
+                }) { Text("Next") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = startDatePickerState, title = { Text("Select start date", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) })
+        }
+    }
+
+    // End date picker
+    if (showEndDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showEndDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val startMillis = pendingStartMillis
+                    val endMillis = endDatePickerState.selectedDateMillis
+                    if (startMillis != null && endMillis != null) {
+                        val startEpoch = startMillis / 1000L
+                        val endEpoch = endMillis / 1000L + 86399L
+                        onDateRangeChange?.invoke(startEpoch, endEpoch)
+                    }
+                    showEndDatePicker = false
+                }) { Text("Apply") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = endDatePickerState, title = { Text("Select end date", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) })
+        }
     }
 }
 
@@ -786,16 +833,6 @@ private fun parseColor(hexColor: String): Color {
 private fun parseTxDate(dateStr: String): kotlinx.datetime.LocalDate? {
     return try {
         val parts = dateStr.split(".")
-        if (parts.size == 3) {
-            kotlinx.datetime.LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
-        } else null
-    } catch (_: Exception) { null }
-}
-
-private fun parseDateInput(input: String): kotlinx.datetime.LocalDate? {
-    val trimmed = input.trim()
-    return try {
-        val parts = trimmed.split(".")
         if (parts.size == 3) {
             kotlinx.datetime.LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
         } else null

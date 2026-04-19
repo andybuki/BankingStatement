@@ -361,6 +361,22 @@ class TransactionRepository(
         return queries.getTransactionCountByAccount(accountId).executeAsOne()
     }
 
+    fun getTransactionsByDateRangePaged(startEpoch: Long, endEpoch: Long, limit: Long, offset: Long): List<Transactions> {
+        return queries.getTransactionsByDateRangePaged(startEpoch, endEpoch, limit, offset).executeAsList()
+    }
+
+    fun getTransactionCountInDateRange(startEpoch: Long, endEpoch: Long): Long {
+        return queries.getTransactionCountInDateRange(startEpoch, endEpoch).executeAsOne()
+    }
+
+    fun getTransactionsByAccountAndDateRangePaged(accountId: Long, startEpoch: Long, endEpoch: Long, limit: Long, offset: Long): List<Transactions> {
+        return queries.getTransactionsByAccountAndDateRangePaged(accountId, startEpoch, endEpoch, limit, offset).executeAsList()
+    }
+
+    fun getTransactionCountByAccountAndDateRange(accountId: Long, startEpoch: Long, endEpoch: Long): Long {
+        return queries.getTransactionCountByAccountAndDateRange(accountId, startEpoch, endEpoch).executeAsOne()
+    }
+
     fun getTransactionsByStatement(statementId: Long): List<Transactions> {
         return queries.getTransactionsByStatement(statementId).executeAsList()
     }

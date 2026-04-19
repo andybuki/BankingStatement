@@ -152,7 +152,10 @@ fun App(
     // Account selection (lifted to ViewModel for DB-level filtering)
     selectedAccountId: Long? = null,
     onAccountSelected: ((Long?) -> Unit)? = null,
-    totalTransactionCount: Long = 0L
+    totalTransactionCount: Long = 0L,
+    // Date range filter (DB-level, epoch seconds)
+    selectedDateRange: Pair<Long, Long>? = null,
+    onDateRangeChange: ((Long?, Long?) -> Unit)? = null
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     var showCategoryManagement by remember { mutableStateOf(false) }
@@ -372,6 +375,8 @@ fun App(
                                 selectedAccountId = selectedAccountId,
                                 onAccountSelected = { onAccountSelected?.invoke(it) },
                                 totalTransactionCount = totalTransactionCount,
+                                selectedDateRange = selectedDateRange,
+                                onDateRangeChange = onDateRangeChange,
                                 customCategories = customCategories,
                                 onBackClick = null,
                                 onShare = null,  // Share moved to header

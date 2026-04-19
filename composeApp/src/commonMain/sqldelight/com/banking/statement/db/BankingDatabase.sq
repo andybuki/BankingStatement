@@ -92,6 +92,18 @@ SELECT COUNT(*) FROM transactions WHERE account_id = ? AND is_duplicate = 0;
 getTransactionsByDateRange:
 SELECT * FROM transactions WHERE booking_date BETWEEN ? AND ? AND is_duplicate = 0 ORDER BY booking_date DESC;
 
+getTransactionsByDateRangePaged:
+SELECT * FROM transactions WHERE is_duplicate = 0 AND booking_date >= ? AND booking_date <= ? ORDER BY booking_date DESC LIMIT ? OFFSET ?;
+
+getTransactionCountInDateRange:
+SELECT COUNT(*) FROM transactions WHERE is_duplicate = 0 AND booking_date >= ? AND booking_date <= ?;
+
+getTransactionsByAccountAndDateRangePaged:
+SELECT * FROM transactions WHERE account_id = ? AND is_duplicate = 0 AND booking_date >= ? AND booking_date <= ? ORDER BY booking_date DESC LIMIT ? OFFSET ?;
+
+getTransactionCountByAccountAndDateRange:
+SELECT COUNT(*) FROM transactions WHERE account_id = ? AND is_duplicate = 0 AND booking_date >= ? AND booking_date <= ?;
+
 getTransactionsByCategory:
 SELECT * FROM transactions WHERE category_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC;
 
