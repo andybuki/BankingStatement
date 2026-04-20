@@ -261,6 +261,8 @@ fun TransactionListScreen(
     totalTransactionCount: Long = 0L,  // Accurate total from DB (filtered)
     selectedDateRange: Pair<Long, Long>? = null,
     onDateRangeChange: ((Long?, Long?) -> Unit)? = null,
+    selectedSortOrder: TransactionSortOrder = TransactionSortOrder.DATE_DESC,
+    onSortOrderChange: ((TransactionSortOrder) -> Unit)? = null,
     customCategories: List<com.banking.statement.categorization.CustomCategory> = emptyList(),
     onBackClick: (() -> Unit)? = null,
     onShare: ((ExportFormat, List<TransactionDisplay>, String?) -> Unit)? = null,
@@ -276,8 +278,8 @@ fun TransactionListScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showCategoryPicker by remember { mutableStateOf<TransactionDisplay?>(null) }
 
-    // Sort & filter state
-    var sortOrder by remember { mutableStateOf(TransactionSortOrder.DATE_DESC) }
+    // Sort state is hoisted (DB-level sorting). timeFilter stays local for UI.
+    val sortOrder = selectedSortOrder
     var timeFilter by remember { mutableStateOf(TransactionTimeFilter.ALL) }
     var showSortDialog by remember { mutableStateOf(false) }
     var showFilterDialog by remember { mutableStateOf(false) }
@@ -296,15 +298,14 @@ fun TransactionListScreen(
         }
     }
 
-    // Transactions are DB-filtered; apply search + sort locally only
-    val filteredTransactions by remember(transactions, searchQuery, sortOrder) {
+    // Transactions are DB-filtered AND DB-sorted; only apply search locally
+    val filteredTransactions by remember(transactions, searchQuery) {
         derivedStateOf {
-            var result = transactions
-
-            // Search filter
-            if (searchQuery.isNotBlank()) {
+            if (searchQuery.isBlank()) {
+                transactions
+            } else {
                 val query = searchQuery.lowercase().trim()
-                result = result.filter { tx ->
+                transactions.filter { tx ->
                     tx.description.lowercase().contains(query) ||
                     tx.counterparty?.lowercase()?.contains(query) == true ||
                     tx.category.displayName.lowercase().contains(query) ||
@@ -314,19 +315,6 @@ fun TransactionListScreen(
                     formatAmount(tx.amount, tx.currency).contains(query)
                 }
             }
-
-            // Sort
-            result = when (sortOrder) {
-                TransactionSortOrder.DATE_DESC -> result.sortedByDescending { parseTxDate(it.date)?.toEpochDays() }
-                TransactionSortOrder.DATE_ASC -> result.sortedBy { parseTxDate(it.date)?.toEpochDays() }
-                TransactionSortOrder.AMOUNT_DESC -> result.sortedByDescending { it.amount }
-                TransactionSortOrder.AMOUNT_ASC -> result.sortedBy { it.amount }
-                TransactionSortOrder.NAME_ASC -> result.sortedBy {
-                    (it.counterparty ?: it.description).lowercase()
-                }
-            }
-
-            result
         }
     }
 
@@ -548,7 +536,7 @@ fun TransactionListScreen(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable {
-                                    sortOrder = order
+                                    onSortOrderChange?.invoke(order)
                                     showSortDialog = false
                                 }
                                 .background(
@@ -560,7 +548,10 @@ fun TransactionListScreen(
                         ) {
                             RadioButton(
                                 selected = sortOrder == order,
-                                onClick = { sortOrder = order; showSortDialog = false }
+                                onClick = {
+                                    onSortOrderChange?.invoke(order)
+                                    showSortDialog = false
+                                }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(label, style = MaterialTheme.typography.bodyMedium)
@@ -828,15 +819,6 @@ private fun parseColor(hexColor: String): Color {
     } catch (e: Exception) {
         Color.Gray
     }
-}
-
-private fun parseTxDate(dateStr: String): kotlinx.datetime.LocalDate? {
-    return try {
-        val parts = dateStr.split(".")
-        if (parts.size == 3) {
-            kotlinx.datetime.LocalDate(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
-        } else null
-    } catch (_: Exception) { null }
 }
 
 private fun getCategoryEmoji(category: TransactionCategory): String {

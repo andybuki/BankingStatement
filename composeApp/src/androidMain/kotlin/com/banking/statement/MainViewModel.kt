@@ -26,6 +26,7 @@ import com.banking.statement.ui.AccountManagementItem
 import com.banking.statement.ui.AccountOption
 import com.banking.statement.ui.StatementDisplayItem
 import com.banking.statement.ui.StatementSortOrder
+import com.banking.statement.ui.TransactionSortOrder
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.MonthlySummary
@@ -119,6 +120,10 @@ class MainViewModel(
     private val _selectedDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
     val selectedDateRange: StateFlow<Pair<Long, Long>?> = _selectedDateRange.asStateFlow()
 
+    // Sort order — applied at DB level so sorting covers full filtered corpus
+    private val _selectedSortOrder = MutableStateFlow(TransactionSortOrder.DATE_DESC)
+    val selectedSortOrder: StateFlow<TransactionSortOrder> = _selectedSortOrder.asStateFlow()
+
     // Total count for the currently filtered view (from DB)
     private val _totalTransactionCount = MutableStateFlow(0L)
     val totalTransactionCount: StateFlow<Long> = _totalTransactionCount.asStateFlow()
@@ -141,6 +146,12 @@ class MainViewModel(
 
     fun setDateRange(startEpoch: Long?, endEpoch: Long?) {
         _selectedDateRange.value = if (startEpoch != null && endEpoch != null) startEpoch to endEpoch else null
+        loadTransactionData()
+    }
+
+    fun setSortOrder(order: TransactionSortOrder) {
+        if (_selectedSortOrder.value == order) return
+        _selectedSortOrder.value = order
         loadTransactionData()
     }
 
@@ -618,30 +629,23 @@ class MainViewModel(
                 }
 
                 val dateRange = _selectedDateRange.value
+                val sortOrder = _selectedSortOrder.value
 
-                // Load first page — filtered at DB level by account and/or date range
-                val firstPage = when {
-                    accountId != null && dateRange != null ->
-                        repository.getTransactionsByAccountAndDateRangePaged(accountId, dateRange.first, dateRange.second, PAGE_SIZE.toLong(), 0L)
-                    accountId != null ->
-                        repository.getTransactionsByAccountPaged(accountId, PAGE_SIZE.toLong(), 0L)
-                    dateRange != null ->
-                        repository.getTransactionsByDateRangePaged(dateRange.first, dateRange.second, PAGE_SIZE.toLong(), 0L)
-                    else ->
-                        repository.getTransactionsPaged(PAGE_SIZE.toLong(), 0L)
-                }
+                // Load first page — filtered + sorted at DB level
+                val firstPage = repository.getTransactionsFilteredSortedPaged(
+                    accountId = accountId,
+                    startEpoch = dateRange?.first,
+                    endEpoch = dateRange?.second,
+                    sortOrder = sortOrder.name,
+                    limit = PAGE_SIZE.toLong(),
+                    offset = 0L
+                )
 
-                // Get total count from DB immediately (filtered)
-                val totalCount = when {
-                    accountId != null && dateRange != null ->
-                        repository.getTransactionCountByAccountAndDateRange(accountId, dateRange.first, dateRange.second)
-                    accountId != null ->
-                        repository.getTransactionCountByAccount(accountId)
-                    dateRange != null ->
-                        repository.getTransactionCountInDateRange(dateRange.first, dateRange.second)
-                    else ->
-                        repository.getTransactionCount()
-                }
+                val totalCount = repository.getTransactionCountFiltered(
+                    accountId = accountId,
+                    startEpoch = dateRange?.first,
+                    endEpoch = dateRange?.second
+                )
                 _totalTransactionCount.value = totalCount
 
                 allTransactionsLoaded = firstPage.size < PAGE_SIZE
@@ -745,16 +749,15 @@ class MainViewModel(
 
                 val offset = currentTransactionPage * PAGE_SIZE
                 val dateRange = _selectedDateRange.value
-                val nextPage = when {
-                    accountId != null && dateRange != null ->
-                        repository.getTransactionsByAccountAndDateRangePaged(accountId, dateRange.first, dateRange.second, PAGE_SIZE.toLong(), offset.toLong())
-                    accountId != null ->
-                        repository.getTransactionsByAccountPaged(accountId, PAGE_SIZE.toLong(), offset.toLong())
-                    dateRange != null ->
-                        repository.getTransactionsByDateRangePaged(dateRange.first, dateRange.second, PAGE_SIZE.toLong(), offset.toLong())
-                    else ->
-                        repository.getTransactionsPaged(PAGE_SIZE.toLong(), offset.toLong())
-                }
+                val sortOrder = _selectedSortOrder.value
+                val nextPage = repository.getTransactionsFilteredSortedPaged(
+                    accountId = accountId,
+                    startEpoch = dateRange?.first,
+                    endEpoch = dateRange?.second,
+                    sortOrder = sortOrder.name,
+                    limit = PAGE_SIZE.toLong(),
+                    offset = offset.toLong()
+                )
 
                 if (nextPage.size < PAGE_SIZE) {
                     allTransactionsLoaded = true

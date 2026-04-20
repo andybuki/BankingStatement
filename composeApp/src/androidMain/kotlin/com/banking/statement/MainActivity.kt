@@ -60,6 +60,7 @@ class MainActivity : FragmentActivity() {
             val statementSortMap by viewModel.statementSortMap.collectAsState()
             val selectedAccountId by viewModel.selectedAccountId.collectAsState()
             val selectedDateRange by viewModel.selectedDateRange.collectAsState()
+            val selectedSortOrder by viewModel.selectedSortOrder.collectAsState()
             val totalTransactionCount by viewModel.totalTransactionCount.collectAsState()
 
             // Biometric lock state
@@ -183,7 +184,9 @@ class MainActivity : FragmentActivity() {
                         onAccountSelected = { accountId -> viewModel.setSelectedAccount(accountId) },
                         totalTransactionCount = totalTransactionCount,
                         selectedDateRange = selectedDateRange,
-                        onDateRangeChange = { start, end -> viewModel.setDateRange(start, end) }
+                        onDateRangeChange = { start, end -> viewModel.setDateRange(start, end) },
+                        selectedSortOrder = selectedSortOrder,
+                        onSortOrderChange = { order -> viewModel.setSortOrder(order) }
                     )
                 }
             }

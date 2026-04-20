@@ -155,7 +155,10 @@ fun App(
     totalTransactionCount: Long = 0L,
     // Date range filter (DB-level, epoch seconds)
     selectedDateRange: Pair<Long, Long>? = null,
-    onDateRangeChange: ((Long?, Long?) -> Unit)? = null
+    onDateRangeChange: ((Long?, Long?) -> Unit)? = null,
+    // Sort order (DB-level, applies to full filtered corpus)
+    selectedSortOrder: TransactionSortOrder = TransactionSortOrder.DATE_DESC,
+    onSortOrderChange: ((TransactionSortOrder) -> Unit)? = null
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     var showCategoryManagement by remember { mutableStateOf(false) }
@@ -377,6 +380,8 @@ fun App(
                                 totalTransactionCount = totalTransactionCount,
                                 selectedDateRange = selectedDateRange,
                                 onDateRangeChange = onDateRangeChange,
+                                selectedSortOrder = selectedSortOrder,
+                                onSortOrderChange = onSortOrderChange,
                                 customCategories = customCategories,
                                 onBackClick = null,
                                 onShare = null,  // Share moved to header
