@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import bankingstatement.composeapp.generated.resources.Res
+import bankingstatement.composeapp.generated.resources.ic_calendar
 import bankingstatement.composeapp.generated.resources.share
 import org.jetbrains.compose.resources.painterResource
 import com.banking.statement.categorization.CustomCategory
@@ -39,9 +40,12 @@ import com.banking.statement.ui.*
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.BankingStatementTheme
 import com.banking.statement.ui.theme.ThemeMode
+import androidx.compose.foundation.clickable
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.todayIn
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -173,47 +177,16 @@ fun App(
     // accountDropdownExpanded is local UI state only
     var accountDropdownExpanded by remember { mutableStateOf(false) }
 
-    // Time period selector for Spending tab - smart default based on data availability
-    var selectedTimePeriod by remember { mutableStateOf("month") }
-    var hasAutoSelectedTimePeriod by remember { mutableStateOf(false) }
-
-    // Auto-select the best time period when transactions change
-    LaunchedEffect(transactions.size, hasAutoSelectedTimePeriod) {
-        if (!hasAutoSelectedTimePeriod && transactions.isNotEmpty()) {
-            hasAutoSelectedTimePeriod = true
-            val now = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            val currentYear = now.year
-            val currentMonth = now.monthNumber
-            val currentDay = now.dayOfMonth
-
-            // Check if there's data for current month
-            val hasMonthData = transactions.any { tx ->
-                try {
-                    val parts = tx.date.split(".")
-                    if (parts.size == 3) {
-                        val month = parts[1].toIntOrNull() ?: return@any false
-                        val year = parts[2].toIntOrNull() ?: return@any false
-                        year == currentYear && month == currentMonth
-                    } else false
-                } catch (_: Exception) { false }
-            }
-
-            if (!hasMonthData) {
-                // Check if there's data for current year
-                val hasYearData = transactions.any { tx ->
-                    try {
-                        val parts = tx.date.split(".")
-                        if (parts.size == 3) {
-                            val year = parts[2].toIntOrNull() ?: return@any false
-                            year == currentYear
-                        } else false
-                    } catch (_: Exception) { false }
-                }
-
-                selectedTimePeriod = if (hasYearData) "year" else "all"
-            }
-        }
-    }
+    // Spending tab time period state — defaults to "all" so full corpus is shown
+    var selectedSpendingTimePeriod by remember { mutableStateOf("all") }
+    var showSpendingFilterDialog by remember { mutableStateOf(false) }
+    var showSpendingStartDatePicker by remember { mutableStateOf(false) }
+    var showSpendingEndDatePicker by remember { mutableStateOf(false) }
+    var pendingSpendingStartMillis by remember { mutableStateOf<Long?>(null) }
+    val spendingStartDateState = rememberDatePickerState()
+    val spendingEndDateState = rememberDatePickerState()
+    var spendingEpochStart by remember { mutableStateOf<Long?>(null) }
+    var spendingEpochEnd by remember { mutableStateOf<Long?>(null) }
 
     // Calculate filtered income/expenses based on selected account
     val filteredIncome = remember(transactions, selectedAccountId) {
@@ -457,6 +430,21 @@ fun App(
                                         }
                                     }
 
+                                    // Calendar icon for time period filter
+                                    IconButton(
+                                        onClick = { showSpendingFilterDialog = true },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Image(
+                                            painter = painterResource(Res.drawable.ic_calendar),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            colorFilter = ColorFilter.tint(
+                                                if (selectedSpendingTimePeriod != "all") MaterialTheme.colorScheme.primary else Color.White
+                                            )
+                                        )
+                                    }
+
                                     // Chart/List toggle button - shows different icon based on current view
                                     IconButton(
                                         onClick = { showChartView = !showChartView },
@@ -555,48 +543,9 @@ fun App(
                                 }
                             }
 
-                            // Time period tab row
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(AppColors.HeaderBackground)
-                                    .padding(horizontal = 4.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                listOf("week", "month", "year", "all", "custom").forEach { period ->
-                                    FilterChip(
-                                        selected = selectedTimePeriod == period,
-                                        onClick = { selectedTimePeriod = period },
-                                        label = {
-                                            Text(
-                                                text = when (period) {
-                                                    "week" -> strings.periodWeek
-                                                    "month" -> strings.periodMonth
-                                                    "year" -> strings.periodYear
-                                                    "all" -> strings.periodAll
-                                                    "custom" -> strings.periodCustom
-                                                    else -> period
-                                                },
-                                                style = MaterialTheme.typography.labelSmall,
-                                                maxLines = 1,
-                                                softWrap = false,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            containerColor = AppColors.HeaderSeparator.copy(alpha = 0.5f),
-                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                            labelColor = Color.White.copy(alpha = 0.7f),
-                                            selectedLabelColor = Color.White
-                                        ),
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-
                             SpendingOverviewScreen(
-                                totalIncome = filteredIncome,
-                                totalExpenses = filteredExpenses,
+                                totalIncome = totalIncome,
+                                totalExpenses = totalExpenses,
                                 categorySpending = categorySpending,
                                 monthlySummary = monthlySummary,
                                 transactions = transactions,
@@ -605,8 +554,9 @@ fun App(
                                 onBackClick = null,
                                 onShare = null,
                                 showChartView = showChartView,
-                                selectedTimePeriod = selectedTimePeriod,
-                                onTimePeriodChange = { selectedTimePeriod = it }
+                                selectedTimePeriod = selectedSpendingTimePeriod,
+                                spendingEpochStart = spendingEpochStart,
+                                spendingEpochEnd = spendingEpochEnd
                             )
                         }
                         NavigationTab.MERCHANTS -> Column(modifier = Modifier.fillMaxSize()) {
@@ -690,6 +640,137 @@ fun App(
                                 remindersEnabled = remindersEnabled,
                                 onRemindersEnabledChange = onRemindersEnabledChange,
                                 onShareApp = onShareApp
+                            )
+                        }
+                    }
+
+                    // Spending filter period dialog
+                    if (showSpendingFilterDialog) {
+                        val tz = TimeZone.currentSystemDefault()
+                        AlertDialog(
+                            onDismissRequest = { showSpendingFilterDialog = false },
+                            title = { Text("Time Period", fontWeight = FontWeight.Bold) },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    listOf(
+                                        "all" to strings.periodAll,
+                                        "week" to strings.periodWeek,
+                                        "month" to strings.periodMonth,
+                                        "year" to strings.periodYear,
+                                        "custom" to strings.periodCustom
+                                    ).forEach { (period, label) ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    if (period != "custom") {
+                                                        selectedSpendingTimePeriod = period
+                                                        val today = Clock.System.todayIn(tz)
+                                                        when (period) {
+                                                            "all" -> {
+                                                                spendingEpochStart = null
+                                                                spendingEpochEnd = null
+                                                            }
+                                                            "week" -> {
+                                                                spendingEpochStart = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
+                                                                spendingEpochEnd = today.atStartOfDayIn(tz).epochSeconds + 86399L
+                                                            }
+                                                            "month" -> {
+                                                                val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
+                                                                val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(today.year, today.monthNumber + 1, 1)
+                                                                spendingEpochStart = s
+                                                                spendingEpochEnd = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
+                                                            }
+                                                            "year" -> {
+                                                                spendingEpochStart = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
+                                                                spendingEpochEnd = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
+                                                            }
+                                                        }
+                                                        showSpendingFilterDialog = false
+                                                    } else {
+                                                        selectedSpendingTimePeriod = "custom"
+                                                        showSpendingFilterDialog = false
+                                                        showSpendingStartDatePicker = true
+                                                    }
+                                                }
+                                                .background(
+                                                    if (selectedSpendingTimePeriod == period) MaterialTheme.colorScheme.primaryContainer
+                                                    else Color.Transparent
+                                                )
+                                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(selected = selectedSpendingTimePeriod == period, onClick = null)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    }
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { showSpendingFilterDialog = false }) { Text("Close") }
+                            },
+                            dismissButton = {
+                                if (selectedSpendingTimePeriod != "all") {
+                                    TextButton(onClick = {
+                                        selectedSpendingTimePeriod = "all"
+                                        spendingEpochStart = null
+                                        spendingEpochEnd = null
+                                        showSpendingFilterDialog = false
+                                    }) { Text("Clear") }
+                                }
+                            }
+                        )
+                    }
+
+                    // Spending start date picker
+                    if (showSpendingStartDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showSpendingStartDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val millis = spendingStartDateState.selectedDateMillis
+                                    if (millis != null) {
+                                        pendingSpendingStartMillis = millis
+                                        showSpendingStartDatePicker = false
+                                        showSpendingEndDatePicker = true
+                                    }
+                                }) { Text("Next") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showSpendingStartDatePicker = false }) { Text(strings.cancel) }
+                            }
+                        ) {
+                            DatePicker(
+                                state = spendingStartDateState,
+                                title = { Text("Select start date", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) }
+                            )
+                        }
+                    }
+
+                    // Spending end date picker
+                    if (showSpendingEndDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showSpendingEndDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val startMillis = pendingSpendingStartMillis
+                                    val endMillis = spendingEndDateState.selectedDateMillis
+                                    if (startMillis != null && endMillis != null) {
+                                        spendingEpochStart = startMillis / 1000L
+                                        spendingEpochEnd = endMillis / 1000L + 86399L
+                                    }
+                                    showSpendingEndDatePicker = false
+                                }) { Text(strings.apply) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showSpendingEndDatePicker = false }) { Text(strings.cancel) }
+                            }
+                        ) {
+                            DatePicker(
+                                state = spendingEndDateState,
+                                title = { Text("Select end date", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) }
                             )
                         }
                     }

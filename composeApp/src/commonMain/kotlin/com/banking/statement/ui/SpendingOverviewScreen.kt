@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,9 +20,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import bankingstatement.composeapp.generated.resources.share
@@ -41,7 +37,9 @@ import com.banking.statement.ui.charts.MonthlySpendingLineChart
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.todayIn
 
 /**
@@ -50,14 +48,6 @@ import kotlinx.datetime.todayIn
 enum class TimePeriod {
     WEEK, MONTH, YEAR, ALL, CUSTOM
 }
-
-/**
- * Custom date range for filtering
- */
-data class CustomDateRange(
-    val startDate: String? = null, // DD.MM.YYYY format
-    val endDate: String? = null    // DD.MM.YYYY format
-)
 
 /**
  * Category spending data for display
@@ -121,7 +111,8 @@ fun SpendingOverviewScreen(
     onShare: ((ExportFormat, SpendingExportData) -> Unit)? = null,
     showChartView: Boolean = false,  // Controlled by App level
     selectedTimePeriod: String = "all",  // Controlled by App level
-    onTimePeriodChange: ((String) -> Unit)? = null  // Callback for custom date
+    spendingEpochStart: Long? = null,  // Custom range start (epoch seconds)
+    spendingEpochEnd: Long? = null     // Custom range end (epoch seconds)
 ) {
     val strings = LocalStrings.current
     // Convert string to TimePeriod enum
@@ -133,10 +124,6 @@ fun SpendingOverviewScreen(
         else -> TimePeriod.ALL
     }
 
-    // Custom date range state
-    var customDateRange by remember { mutableStateOf(CustomDateRange()) }
-    var showDateRangeDialog by remember { mutableStateOf(false) }
-
     // Category drill-down state
     var selectedCategoryForDetails by remember { mutableStateOf<TransactionCategory?>(null) }
 
@@ -144,15 +131,8 @@ fun SpendingOverviewScreen(
     val monthlyPageSize = 6
     var monthlyItemsShown by remember { mutableStateOf(monthlyPageSize) }
 
-    // Auto-open date picker when custom is selected
-    LaunchedEffect(selectedPeriod) {
-        if (selectedPeriod == TimePeriod.CUSTOM && customDateRange.startDate == null) {
-            showDateRangeDialog = true
-        }
-    }
-
     // Filter transactions based on selected account and time period
-    val filteredData = remember(transactions, selectedAccountId, selectedPeriod, customDateRange) {
+    val filteredData = remember(transactions, selectedAccountId, selectedPeriod, spendingEpochStart, spendingEpochEnd) {
         var filtered = if (selectedAccountId == null) {
             transactions
         } else {
@@ -160,7 +140,7 @@ fun SpendingOverviewScreen(
         }
 
         // Apply time period filter
-        filtered = filterByTimePeriod(filtered, selectedPeriod, customDateRange)
+        filtered = filterByTimePeriod(filtered, selectedPeriod, spendingEpochStart, spendingEpochEnd)
 
         val income = filtered.filter { it.amount > 0 }.sumOf { it.amount }
         val expenses = filtered.filter { it.amount < 0 }.sumOf { it.amount }
@@ -205,13 +185,13 @@ fun SpendingOverviewScreen(
     }
 
     // Compute monthly category breakdown for stacked area chart
-    val monthlyCategoryBreakdown = remember(transactions, selectedAccountId, selectedPeriod, customDateRange) {
+    val monthlyCategoryBreakdown = remember(transactions, selectedAccountId, selectedPeriod, spendingEpochStart, spendingEpochEnd) {
         var filtered = if (selectedAccountId == null) {
             transactions
         } else {
             transactions.filter { it.accountId == selectedAccountId }
         }
-        filtered = filterByTimePeriod(filtered, selectedPeriod, customDateRange)
+        filtered = filterByTimePeriod(filtered, selectedPeriod, spendingEpochStart, spendingEpochEnd)
 
         filtered
             .filter { it.amount < 0 }
@@ -231,11 +211,13 @@ fun SpendingOverviewScreen(
             .sortedBy { it.month }
     }
 
-    // Use filtered data
-    val displayIncome = filteredData.income
-    val displayExpenses = filteredData.expenses
-    val displayCategorySpending = filteredData.categorySpending
-    val displayMonthlySummary = filteredData.monthlySummary
+    // For "all" period with no account filter, use DB-level aggregates (accurate full-corpus totals).
+    // Otherwise fall back to in-memory computation from loaded transactions.
+    val useDbLevel = selectedPeriod == TimePeriod.ALL && selectedAccountId == null
+    val displayIncome = if (useDbLevel) totalIncome else filteredData.income
+    val displayExpenses = if (useDbLevel) totalExpenses else filteredData.expenses
+    val displayCategorySpending = if (useDbLevel) categorySpending else filteredData.categorySpending
+    val displayMonthlySummary = if (useDbLevel) monthlySummary else filteredData.monthlySummary
 
     LazyColumn(
         modifier = Modifier
@@ -244,49 +226,6 @@ fun SpendingOverviewScreen(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-            // Custom date range display and dialog trigger (time period selector is in App header)
-            item {
-                // Show selected custom date range when Custom is selected
-                if (selectedPeriod == TimePeriod.CUSTOM) {
-                    if (customDateRange.startDate != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-                                .clickable { showDateRangeDialog = true }
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "📅 ${customDateRange.startDate ?: ""} - ${customDateRange.endDate ?: ""}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    } else {
-                        // Show prompt to select date range
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-                                .clickable { showDateRangeDialog = true }
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "📅 ${strings.selectDateRange}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
-
             // Summary Cards
             item {
                 Row(
@@ -451,22 +390,10 @@ fun SpendingOverviewScreen(
             }
         }
 
-    // Custom Date Range Dialog
-    if (showDateRangeDialog) {
-        DateRangePickerDialog(
-            currentRange = customDateRange,
-            onDismiss = { showDateRangeDialog = false },
-            onApply = { range ->
-                customDateRange = range
-                showDateRangeDialog = false
-            }
-        )
-    }
-
     // Category Details Dialog
     selectedCategoryForDetails?.let { category ->
-        val categoryTransactions = remember(transactions, category, selectedPeriod, customDateRange) {
-            filterByTimePeriod(transactions, selectedPeriod, customDateRange)
+        val categoryTransactions = remember(transactions, category, selectedPeriod, spendingEpochStart, spendingEpochEnd) {
+            filterByTimePeriod(transactions, selectedPeriod, spendingEpochStart, spendingEpochEnd)
                 .filter { it.category == category && it.amount < 0 }
                 .sortedBy { it.amount }
                 .take(10)
@@ -480,116 +407,6 @@ fun SpendingOverviewScreen(
     }
 }
 
-/**
- * Date Range Picker Dialog
- */
-@Composable
-private fun DateRangePickerDialog(
-    currentRange: CustomDateRange,
-    onDismiss: () -> Unit,
-    onApply: (CustomDateRange) -> Unit
-) {
-    val strings = LocalStrings.current
-    var startDate by remember { mutableStateOf(currentRange.startDate ?: "") }
-    var endDate by remember { mutableStateOf(currentRange.endDate ?: "") }
-    var startDateError by remember { mutableStateOf(false) }
-    var endDateError by remember { mutableStateOf(false) }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
-            ) {
-                Text(
-                    text = strings.selectDateRange,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Start Date
-                OutlinedTextField(
-                    value = startDate,
-                    onValueChange = {
-                        startDate = it
-                        startDateError = !isValidDate(it) && it.isNotEmpty()
-                    },
-                    label = { Text(strings.startDate) },
-                    placeholder = { Text("DD.MM.YYYY") },
-                    isError = startDateError,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // End Date
-                OutlinedTextField(
-                    value = endDate,
-                    onValueChange = {
-                        endDate = it
-                        endDateError = !isValidDate(it) && it.isNotEmpty()
-                    },
-                    label = { Text(strings.endDate) },
-                    placeholder = { Text("DD.MM.YYYY") },
-                    isError = endDateError,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                if (startDateError || endDateError) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Format: DD.MM.YYYY (e.g., 01.01.2024)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(strings.cancel)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            if (isValidDate(startDate) && isValidDate(endDate)) {
-                                onApply(CustomDateRange(startDate, endDate))
-                            }
-                        },
-                        enabled = isValidDate(startDate) && isValidDate(endDate)
-                    ) {
-                        Text(strings.apply)
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Validate date string format DD.MM.YYYY
- */
-private fun isValidDate(date: String): Boolean {
-    if (date.isBlank()) return false
-    val parts = date.split(".")
-    if (parts.size != 3) return false
-    val day = parts[0].toIntOrNull() ?: return false
-    val month = parts[1].toIntOrNull() ?: return false
-    val year = parts[2].toIntOrNull() ?: return false
-    return day in 1..31 && month in 1..12 && year in 1900..2100
-}
 
 /**
  * Category Details Dialog showing top transactions
@@ -850,73 +667,56 @@ private fun SpendingPieChart(
 }
 
 /**
- * Filter transactions by time period
+ * Filter transactions by time period. CUSTOM uses epoch-second bounds.
  */
 private fun filterByTimePeriod(
     transactions: List<TransactionDisplay>,
     period: TimePeriod,
-    customRange: CustomDateRange = CustomDateRange()
+    customStartEpoch: Long? = null,
+    customEndEpoch: Long? = null
 ): List<TransactionDisplay> {
     if (period == TimePeriod.ALL) return transactions
 
-    // Get actual current date from system
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val tz = TimeZone.currentSystemDefault()
+    val today = Clock.System.todayIn(tz)
     val currentYear = today.year
     val currentMonth = today.monthNumber
     val currentDay = today.dayOfMonth
 
-    // Since we're working with date strings in DD.MM.YYYY format
-    // we need to parse and compare them
+    if (period == TimePeriod.CUSTOM) {
+        if (customStartEpoch == null || customEndEpoch == null) return transactions
+        return transactions.filter { tx ->
+            try {
+                val parts = tx.date.split(".")
+                if (parts.size != 3) return@filter true
+                val day = parts[0].toIntOrNull() ?: return@filter true
+                val month = parts[1].toIntOrNull() ?: return@filter true
+                val year = parts[2].toIntOrNull() ?: return@filter true
+                val txEpoch = LocalDate(year, month, day).atStartOfDayIn(tz).epochSeconds
+                txEpoch in customStartEpoch..customEndEpoch
+            } catch (e: Exception) { true }
+        }
+    }
+
     return transactions.filter { tx ->
         try {
             val parts = tx.date.split(".")
             if (parts.size != 3) return@filter true
-
             val day = parts[0].toIntOrNull() ?: return@filter true
             val month = parts[1].toIntOrNull() ?: return@filter true
             val year = parts[2].toIntOrNull() ?: return@filter true
 
+            val txDays = year * 365 + month * 30 + day
+            val currentDays = currentYear * 365 + currentMonth * 30 + currentDay
+            val daysAgo = currentDays - txDays
+
             when (period) {
-                TimePeriod.CUSTOM -> {
-                    // Filter by custom date range
-                    if (customRange.startDate == null || customRange.endDate == null) {
-                        return@filter true
-                    }
-
-                    val txDayValue = year * 10000 + month * 100 + day
-
-                    val startParts = customRange.startDate.split(".")
-                    val startDay = startParts[0].toIntOrNull() ?: return@filter true
-                    val startMonth = startParts[1].toIntOrNull() ?: return@filter true
-                    val startYear = startParts[2].toIntOrNull() ?: return@filter true
-                    val startDayValue = startYear * 10000 + startMonth * 100 + startDay
-
-                    val endParts = customRange.endDate.split(".")
-                    val endDay = endParts[0].toIntOrNull() ?: return@filter true
-                    val endMonth = endParts[1].toIntOrNull() ?: return@filter true
-                    val endYear = endParts[2].toIntOrNull() ?: return@filter true
-                    val endDayValue = endYear * 10000 + endMonth * 100 + endDay
-
-                    txDayValue in startDayValue..endDayValue
-                }
-                else -> {
-                    // Calculate days ago (simplified - assumes 30 days per month)
-                    val txDays = year * 365 + month * 30 + day
-                    val currentDays = currentYear * 365 + currentMonth * 30 + currentDay
-                    val daysAgo = currentDays - txDays
-
-                    when (period) {
-                        TimePeriod.WEEK -> daysAgo in 0..7
-                        TimePeriod.MONTH -> daysAgo in 0..30
-                        TimePeriod.YEAR -> daysAgo in 0..365
-                        TimePeriod.ALL -> true
-                        TimePeriod.CUSTOM -> true // Already handled above
-                    }
-                }
+                TimePeriod.WEEK -> daysAgo in 0..7
+                TimePeriod.MONTH -> daysAgo in 0..30
+                TimePeriod.YEAR -> daysAgo in 0..365
+                else -> true
             }
-        } catch (e: Exception) {
-            true // Include transaction if date parsing fails
-        }
+        } catch (e: Exception) { true }
     }
 }
 
