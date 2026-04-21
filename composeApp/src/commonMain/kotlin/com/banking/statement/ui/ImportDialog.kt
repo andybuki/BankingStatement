@@ -160,7 +160,7 @@ fun ImportAccountDialog(
                     }
                 }
 
-                Divider()
+                HorizontalDivider()
 
                 // Options
                 Text(
@@ -262,7 +262,7 @@ fun ImportAccountDialog(
                     }
                 }
 
-                Divider()
+                HorizontalDivider()
 
                 // Action buttons
                 Row(
