@@ -290,4 +290,15 @@
     <string name="rating_rate">Jetzt bewerten</string>
     <string name="rating_later">Vielleicht später</string>
     <string name="rating_never">Nein danke</string>
+
+    <!-- Statement sorting -->
+    <string name="show_statements">Kontoauszüge anzeigen</string>
+    <string name="hide_statements">Kontoauszüge ausblenden</string>
+    <string name="sort_newest_first">Neueste zuerst</string>
+    <string name="sort_oldest_first">Älteste zuerst</string>
+    <string name="sort_by_period">Nach Zeitraum</string>
+    <string name="sort_by_name">Nach Name</string>
+    <string name="imported_on">Importiert</string>
+    <string name="delete_statement">Kontoauszug löschen</string>
+    <string name="delete_statement_confirm">\"%s\" und alle zugehörigen Transaktionen löschen? Dies kann nicht rückgängig gemacht werden.</string>
 </resources>

@@ -290,4 +290,15 @@
     <string name="rating_rate">Noter maintenant</string>
     <string name="rating_later">Plus tard</string>
     <string name="rating_never">Non merci</string>
+
+    <!-- Statement sorting -->
+    <string name="show_statements">Afficher les relevés</string>
+    <string name="hide_statements">Masquer les relevés</string>
+    <string name="sort_newest_first">Plus récents d\'abord</string>
+    <string name="sort_oldest_first">Plus anciens d\'abord</string>
+    <string name="sort_by_period">Par période</string>
+    <string name="sort_by_name">Par nom</string>
+    <string name="imported_on">Importé le</string>
+    <string name="delete_statement">Supprimer le relevé</string>
+    <string name="delete_statement_confirm">Supprimer \"%s\" et toutes ses transactions ? Cette action est irréversible.</string>
 </resources>

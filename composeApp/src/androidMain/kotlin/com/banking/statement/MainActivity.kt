@@ -56,6 +56,12 @@ class MainActivity : FragmentActivity() {
             val dialogState by viewModel.dialogState.collectAsState()
             val accountsForManagement by viewModel.accountsForManagement.collectAsState()
             val appSettings by viewModel.appSettings.collectAsState()
+            val statementExpandedMap by viewModel.statementExpandedMap.collectAsState()
+            val statementSortMap by viewModel.statementSortMap.collectAsState()
+            val selectedAccountId by viewModel.selectedAccountId.collectAsState()
+            val selectedDateRange by viewModel.selectedDateRange.collectAsState()
+            val selectedSortOrder by viewModel.selectedSortOrder.collectAsState()
+            val totalTransactionCount by viewModel.totalTransactionCount.collectAsState()
 
             // Biometric lock state
             var isAuthenticated by remember { mutableStateOf(!viewModel.isBiometricLockEnabled()) }
@@ -124,6 +130,11 @@ class MainActivity : FragmentActivity() {
                         onDeleteAccount = { accountId -> viewModel.deleteAccount(accountId) },
                         onEditAccount = { accountId, newName -> viewModel.editAccount(accountId, newName) },
                         onClearAllData = { viewModel.clearAllData() },
+                        onDeleteStatement = { statementId -> viewModel.deleteStatement(statementId) },
+                        statementExpandedMap = statementExpandedMap,
+                        statementSortMap = statementSortMap,
+                        onStatementExpandedChange = { id, exp -> viewModel.setStatementExpanded(id, exp) },
+                        onStatementSortOrderChange = { id, order -> viewModel.setStatementSortOrder(id, order) },
                         onShareTransactions = { format, txList, accountName ->
                             viewModel.shareTransactions(format, txList, accountName)
                         },
@@ -168,7 +179,14 @@ class MainActivity : FragmentActivity() {
                         onRateNever = { viewModel.onRateNever() },
                         hasMoreTransactions = financialState.hasMoreTransactions,
                         isLoadingMoreTransactions = financialState.isLoadingMore,
-                        onLoadMoreTransactions = { viewModel.loadMoreTransactions() }
+                        onLoadMoreTransactions = { viewModel.loadMoreTransactions() },
+                        selectedAccountId = selectedAccountId,
+                        onAccountSelected = { accountId -> viewModel.setSelectedAccount(accountId) },
+                        totalTransactionCount = totalTransactionCount,
+                        selectedDateRange = selectedDateRange,
+                        onDateRangeChange = { start, end -> viewModel.setDateRange(start, end) },
+                        selectedSortOrder = selectedSortOrder,
+                        onSortOrderChange = { order -> viewModel.setSortOrder(order) }
                     )
                 }
             }

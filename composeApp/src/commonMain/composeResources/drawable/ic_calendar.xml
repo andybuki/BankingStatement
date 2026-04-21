@@ -1,0 +1,41 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+  <!-- Calendar body (rounded rectangle) -->
+  <path
+      android:pathData="M80,76 H432 A56,56 0 0 1 488,132 V440 A56,56 0 0 1 432,496 H80 A56,56 0 0 1 24,440 V132 A56,56 0 0 1 80,76 Z"
+      android:strokeWidth="34"
+      android:strokeColor="#000000"
+      android:fillColor="#00000000"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round"/>
+
+  <!-- Left ring/tab (pill shape: x=136,y=24,w=52,h=108,rx=26) -->
+  <path
+      android:pathData="M162,24 A26,26 0 0 1 188,50 V106 A26,26 0 0 1 162,132 A26,26 0 0 1 136,106 V50 A26,26 0 0 1 162,24 Z"
+      android:strokeWidth="32"
+      android:strokeColor="#000000"
+      android:fillColor="#00000000"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round"/>
+
+  <!-- Right ring/tab (pill shape: x=324,y=24,w=52,h=108,rx=26) -->
+  <path
+      android:pathData="M350,24 A26,26 0 0 1 376,50 V106 A26,26 0 0 1 350,132 A26,26 0 0 1 324,106 V50 A26,26 0 0 1 350,24 Z"
+      android:strokeWidth="32"
+      android:strokeColor="#000000"
+      android:fillColor="#00000000"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round"/>
+
+  <!-- Horizontal divider line -->
+  <path
+      android:pathData="M24,172 H488"
+      android:strokeWidth="30"
+      android:strokeColor="#000000"
+      android:strokeLineCap="round"/>
+
+</vector>

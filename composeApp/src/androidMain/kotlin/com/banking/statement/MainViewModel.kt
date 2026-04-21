@@ -24,6 +24,9 @@ import com.banking.statement.parser.ImportFileType
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.ui.AccountManagementItem
 import com.banking.statement.ui.AccountOption
+import com.banking.statement.ui.StatementDisplayItem
+import com.banking.statement.ui.StatementSortOrder
+import com.banking.statement.ui.TransactionSortOrder
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.ImportChoice
 import com.banking.statement.ui.MonthlySummary
@@ -109,8 +112,56 @@ class MainViewModel(
     private var allTransactionsLoaded = false
     private var isLoadingMore = false
 
+    // Account filter state - drives DB-level pagination
+    private val _selectedAccountId = MutableStateFlow<Long?>(null)
+    val selectedAccountId: StateFlow<Long?> = _selectedAccountId.asStateFlow()
+
+    // Date range filter — epoch seconds, null means no filter
+    private val _selectedDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
+    val selectedDateRange: StateFlow<Pair<Long, Long>?> = _selectedDateRange.asStateFlow()
+
+    // Sort order — applied at DB level so sorting covers full filtered corpus
+    private val _selectedSortOrder = MutableStateFlow(TransactionSortOrder.DATE_DESC)
+    val selectedSortOrder: StateFlow<TransactionSortOrder> = _selectedSortOrder.asStateFlow()
+
+    // Total count for the currently filtered view (from DB)
+    private val _totalTransactionCount = MutableStateFlow(0L)
+    val totalTransactionCount: StateFlow<Long> = _totalTransactionCount.asStateFlow()
+
     private val _accountsForManagement = MutableStateFlow<List<AccountManagementItem>>(emptyList())
     val accountsForManagement: StateFlow<List<AccountManagementItem>> = _accountsForManagement.asStateFlow()
+
+    // Persistent expand/sort state for statement lists — survives tab switches
+    private val _statementExpandedMap = MutableStateFlow<Map<Long, Boolean>>(emptyMap())
+    val statementExpandedMap: StateFlow<Map<Long, Boolean>> = _statementExpandedMap.asStateFlow()
+
+    private val _statementSortMap = MutableStateFlow<Map<Long, StatementSortOrder>>(emptyMap())
+    val statementSortMap: StateFlow<Map<Long, StatementSortOrder>> = _statementSortMap.asStateFlow()
+
+    fun setSelectedAccount(accountId: Long?) {
+        if (_selectedAccountId.value == accountId) return
+        _selectedAccountId.value = accountId
+        loadTransactionData()
+    }
+
+    fun setDateRange(startEpoch: Long?, endEpoch: Long?) {
+        _selectedDateRange.value = if (startEpoch != null && endEpoch != null) startEpoch to endEpoch else null
+        loadTransactionData()
+    }
+
+    fun setSortOrder(order: TransactionSortOrder) {
+        if (_selectedSortOrder.value == order) return
+        _selectedSortOrder.value = order
+        loadTransactionData()
+    }
+
+    fun setStatementExpanded(accountId: Long, expanded: Boolean) {
+        _statementExpandedMap.update { it + (accountId to expanded) }
+    }
+
+    fun setStatementSortOrder(accountId: Long, order: StatementSortOrder) {
+        _statementSortMap.update { it + (accountId to order) }
+    }
 
     private val _appSettings = MutableStateFlow(AppSettingsState())
     val appSettings: StateFlow<AppSettingsState> = _appSettings.asStateFlow()
@@ -564,6 +615,7 @@ class MainViewModel(
 
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
+                val accountId = _selectedAccountId.value
                 val accountNames = repository.getAccountSummary().associate { it.id to it.name }
 
                 val customCategoriesMap = repository.getAllCategories().associate { category ->
@@ -576,20 +628,40 @@ class MainViewModel(
                     )
                 }
 
-                // Load first page of transactions for the list
-                val firstPage = repository.getTransactionsPaged(
-                    PAGE_SIZE.toLong(), 0L
+                val dateRange = _selectedDateRange.value
+                val sortOrder = _selectedSortOrder.value
+
+                // Load first page — filtered + sorted at DB level
+                val firstPage = repository.getTransactionsFilteredSortedPaged(
+                    accountId = accountId,
+                    startEpoch = dateRange?.first,
+                    endEpoch = dateRange?.second,
+                    sortOrder = sortOrder.name,
+                    limit = PAGE_SIZE.toLong(),
+                    offset = 0L
                 )
-                val totalCount = repository.getTransactionCount()
+
+                val totalCount = repository.getTransactionCountFiltered(
+                    accountId = accountId,
+                    startEpoch = dateRange?.first,
+                    endEpoch = dateRange?.second
+                )
+                _totalTransactionCount.value = totalCount
+
                 allTransactionsLoaded = firstPage.size < PAGE_SIZE
                 currentTransactionPage = 1
 
                 val mappedFirstPage = mapTransactions(firstPage, accountNames, customCategoriesMap)
 
                 // Load aggregates from DB directly (not from in-memory list)
-                // This avoids loading all transactions into memory for summaries
-                val monthlyCategoryData = repository.getCategorySpendingByMonth().map { row ->
-                    Triple(row.month ?: "", row.auto_category ?: "", row.total ?: 0.0)
+                val monthlyCategoryData = if (accountId != null) {
+                    repository.getCategorySpendingByMonthAndAccount(accountId).map { row ->
+                        Triple(row.month ?: "", row.auto_category ?: "", row.total ?: 0.0)
+                    }
+                } else {
+                    repository.getCategorySpendingByMonth().map { row ->
+                        Triple(row.month ?: "", row.auto_category ?: "", row.total ?: 0.0)
+                    }
                 }
                 val trends = com.banking.statement.ui.TrendCalculator.calculateTrends(monthlyCategoryData)
 
@@ -620,14 +692,24 @@ class MainViewModel(
                 val computedIncome = totals?.total_income ?: 0.0
 
                 // Use SQL aggregate for monthly summary
-                val monthlySpending = repository.getMonthlySpending()
-                val computedMonthlySummary = monthlySpending.map { row ->
-                    MonthlySummary(
-                        month = formatMonth(row.month ?: ""),
-                        income = row.income ?: 0.0,
-                        expenses = row.expenses ?: 0.0
-                    )
-                }.sortedByDescending { it.month }
+                val monthlySpending = if (accountId != null) {
+                    repository.getMonthlySpendingByAccount(accountId).map { row ->
+                        MonthlySummary(
+                            month = formatMonth(row.month ?: ""),
+                            income = row.income ?: 0.0,
+                            expenses = row.expenses ?: 0.0
+                        )
+                    }
+                } else {
+                    repository.getMonthlySpending().map { row ->
+                        MonthlySummary(
+                            month = formatMonth(row.month ?: ""),
+                            income = row.income ?: 0.0,
+                            expenses = row.expenses ?: 0.0
+                        )
+                    }
+                }
+                val computedMonthlySummary = monthlySpending.sortedByDescending { it.month }
 
                 // Atomic update of all financial state
                 _financialState.value = FinancialUiState(
@@ -653,6 +735,7 @@ class MainViewModel(
 
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
+                val accountId = _selectedAccountId.value
                 val accountNames = repository.getAccountSummary().associate { it.id to it.name }
                 val customCategoriesMap = repository.getAllCategories().associate { category ->
                     category.id to CustomCategory(
@@ -665,8 +748,15 @@ class MainViewModel(
                 }
 
                 val offset = currentTransactionPage * PAGE_SIZE
-                val nextPage = repository.getTransactionsPaged(
-                    PAGE_SIZE.toLong(), offset.toLong()
+                val dateRange = _selectedDateRange.value
+                val sortOrder = _selectedSortOrder.value
+                val nextPage = repository.getTransactionsFilteredSortedPaged(
+                    accountId = accountId,
+                    startEpoch = dateRange?.first,
+                    endEpoch = dateRange?.second,
+                    sortOrder = sortOrder.name,
+                    limit = PAGE_SIZE.toLong(),
+                    offset = offset.toLong()
                 )
 
                 if (nextPage.size < PAGE_SIZE) {
@@ -759,6 +849,16 @@ class MainViewModel(
                 val accountSummaries = repository.getAccountSummary()
                 _accountsForManagement.value = accountSummaries.map { summary ->
                     val statementCount = repository.getStatementCountByAccount(summary.id)
+                    val statements = repository.getStatementsByAccount(summary.id).map { s ->
+                        StatementDisplayItem(
+                            id = s.id,
+                            fileName = s.file_name,
+                            bankName = s.bank_name,
+                            period = s.statement_period,
+                            importDate = s.import_date,
+                            sourceType = s.source_type
+                        )
+                    }
                     AccountManagementItem(
                         id = summary.id,
                         name = summary.name,
@@ -767,10 +867,22 @@ class MainViewModel(
                         color = summary.color,
                         transactionCount = summary.transaction_count,
                         statementCount = statementCount,
-                        balance = summary.balance
+                        balance = summary.balance,
+                        statements = statements
                     )
                 }
             }
+        }
+    }
+
+    fun deleteStatement(statementId: Long) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.deleteStatement(statementId)
+            }
+            updateStats()
+            loadAccountsData()
+            loadTransactionData()
         }
     }
 

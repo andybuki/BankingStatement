@@ -83,8 +83,50 @@ SELECT * FROM transactions WHERE statement_id = ? ORDER BY booking_date DESC;
 getTransactionsByAccount:
 SELECT * FROM transactions WHERE account_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC;
 
+getTransactionsByAccountPaged:
+SELECT * FROM transactions WHERE account_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC LIMIT ? OFFSET ?;
+
+getTransactionCountByAccount:
+SELECT COUNT(*) FROM transactions WHERE account_id = ? AND is_duplicate = 0;
+
 getTransactionsByDateRange:
 SELECT * FROM transactions WHERE booking_date BETWEEN ? AND ? AND is_duplicate = 0 ORDER BY booking_date DESC;
+
+getTransactionsByDateRangePaged:
+SELECT * FROM transactions WHERE is_duplicate = 0 AND booking_date >= ? AND booking_date <= ? ORDER BY booking_date DESC LIMIT ? OFFSET ?;
+
+getTransactionCountInDateRange:
+SELECT COUNT(*) FROM transactions WHERE is_duplicate = 0 AND booking_date >= ? AND booking_date <= ?;
+
+getTransactionsByAccountAndDateRangePaged:
+SELECT * FROM transactions WHERE account_id = ? AND is_duplicate = 0 AND booking_date >= ? AND booking_date <= ? ORDER BY booking_date DESC LIMIT ? OFFSET ?;
+
+getTransactionCountByAccountAndDateRange:
+SELECT COUNT(*) FROM transactions WHERE account_id = ? AND is_duplicate = 0 AND booking_date >= ? AND booking_date <= ?;
+
+-- Unified query with dynamic filters + sort. Nullable parameters disable filters.
+-- sort_order: 'DATE_DESC', 'DATE_ASC', 'AMOUNT_DESC', 'AMOUNT_ASC', 'NAME_ASC'
+getTransactionsFilteredSortedPaged:
+SELECT * FROM transactions
+WHERE is_duplicate = 0
+  AND (:account_id IS NULL OR account_id = :account_id)
+  AND (:start_epoch IS NULL OR booking_date >= :start_epoch)
+  AND (:end_epoch IS NULL OR booking_date <= :end_epoch)
+ORDER BY
+  CASE WHEN :sort_order = 'DATE_ASC' THEN booking_date END ASC,
+  CASE WHEN :sort_order = 'DATE_DESC' THEN booking_date END DESC,
+  CASE WHEN :sort_order = 'AMOUNT_ASC' THEN amount END ASC,
+  CASE WHEN :sort_order = 'AMOUNT_DESC' THEN amount END DESC,
+  CASE WHEN :sort_order = 'NAME_ASC' THEN LOWER(COALESCE(counterparty_name, description)) END ASC,
+  id DESC
+LIMIT :limit OFFSET :offset;
+
+getTransactionCountFiltered:
+SELECT COUNT(*) FROM transactions
+WHERE is_duplicate = 0
+  AND (:account_id IS NULL OR account_id = :account_id)
+  AND (:start_epoch IS NULL OR booking_date >= :start_epoch)
+  AND (:end_epoch IS NULL OR booking_date <= :end_epoch);
 
 getTransactionsByCategory:
 SELECT * FROM transactions WHERE category_id = ? AND is_duplicate = 0 ORDER BY booking_date DESC;

@@ -268,7 +268,18 @@ data class AppStrings(
     val ratingMessage: String,
     val ratingRate: String,
     val ratingLater: String,
-    val ratingNever: String
+    val ratingNever: String,
+
+    // Statement sorting
+    val showStatements: String,
+    val hideStatements: String,
+    val sortNewestFirst: String,
+    val sortOldestFirst: String,
+    val sortByPeriod: String,
+    val sortByName: String,
+    val importedOn: String,
+    val deleteStatement: String,
+    val deleteStatementConfirm: String
 )
 
 /**
@@ -525,5 +536,16 @@ fun defaultEnglishStrings() = AppStrings(
     ratingMessage = "You've imported several statements already! If you're finding the app useful, we'd really appreciate a rating on the store.",
     ratingRate = "Rate Now",
     ratingLater = "Maybe Later",
-    ratingNever = "No Thanks"
+    ratingNever = "No Thanks",
+
+    // Statement sorting
+    showStatements = "Show statements",
+    hideStatements = "Hide statements",
+    sortNewestFirst = "Newest first",
+    sortOldestFirst = "Oldest first",
+    sortByPeriod = "By period",
+    sortByName = "By name",
+    importedOn = "Imported",
+    deleteStatement = "Delete Statement",
+    deleteStatementConfirm = "Delete \"%s\" and all its transactions? This cannot be undone."
 )

@@ -353,6 +353,50 @@ class TransactionRepository(
         return queries.getTransactionsByAccount(accountId).executeAsList()
     }
 
+    fun getTransactionsByAccountPaged(accountId: Long, limit: Long, offset: Long): List<Transactions> {
+        return queries.getTransactionsByAccountPaged(accountId, limit, offset).executeAsList()
+    }
+
+    fun getTransactionCountByAccount(accountId: Long): Long {
+        return queries.getTransactionCountByAccount(accountId).executeAsOne()
+    }
+
+    fun getTransactionsByDateRangePaged(startEpoch: Long, endEpoch: Long, limit: Long, offset: Long): List<Transactions> {
+        return queries.getTransactionsByDateRangePaged(startEpoch, endEpoch, limit, offset).executeAsList()
+    }
+
+    fun getTransactionCountInDateRange(startEpoch: Long, endEpoch: Long): Long {
+        return queries.getTransactionCountInDateRange(startEpoch, endEpoch).executeAsOne()
+    }
+
+    fun getTransactionsByAccountAndDateRangePaged(accountId: Long, startEpoch: Long, endEpoch: Long, limit: Long, offset: Long): List<Transactions> {
+        return queries.getTransactionsByAccountAndDateRangePaged(accountId, startEpoch, endEpoch, limit, offset).executeAsList()
+    }
+
+    fun getTransactionCountByAccountAndDateRange(accountId: Long, startEpoch: Long, endEpoch: Long): Long {
+        return queries.getTransactionCountByAccountAndDateRange(accountId, startEpoch, endEpoch).executeAsOne()
+    }
+
+    /**
+     * Unified filtered + sorted paginated query.
+     * sortOrder must be one of: DATE_DESC, DATE_ASC, AMOUNT_DESC, AMOUNT_ASC, NAME_ASC
+     * Null account/date params disable those filters.
+     */
+    fun getTransactionsFilteredSortedPaged(
+        accountId: Long?,
+        startEpoch: Long?,
+        endEpoch: Long?,
+        sortOrder: String,
+        limit: Long,
+        offset: Long
+    ): List<Transactions> {
+        return queries.getTransactionsFilteredSortedPaged(accountId, startEpoch, endEpoch, sortOrder, limit, offset).executeAsList()
+    }
+
+    fun getTransactionCountFiltered(accountId: Long?, startEpoch: Long?, endEpoch: Long?): Long {
+        return queries.getTransactionCountFiltered(accountId, startEpoch, endEpoch).executeAsOne()
+    }
+
     fun getTransactionsByStatement(statementId: Long): List<Transactions> {
         return queries.getTransactionsByStatement(statementId).executeAsList()
     }
