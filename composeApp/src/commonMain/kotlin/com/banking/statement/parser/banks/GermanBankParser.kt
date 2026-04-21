@@ -705,7 +705,7 @@ abstract class GermanBankParser : BankPdfParser {
             }
 
             // Create transaction if we have valid data
-            if (bookingDate != null && amount != null) {
+            if (amount != null) {
                 val fullDescription = descriptionParts.joinToString(" ")
                     .replace(Regex("\\s+"), " ")
                     .trim()
