@@ -127,7 +127,16 @@ fun App(
     onDateRangeChange: ((Long?, Long?) -> Unit)? = null,
     // Sort order (DB-level, applies to full filtered corpus)
     selectedSortOrder: TransactionSortOrder = TransactionSortOrder.DATE_DESC,
-    onSortOrderChange: ((TransactionSortOrder) -> Unit)? = null
+    onSortOrderChange: ((TransactionSortOrder) -> Unit)? = null,
+    // PDF viewer / source linking
+    pdfViewerState: PdfViewerScreenState = PdfViewerScreenState(),
+    onOpenTransactionSourcePdf: ((TransactionDisplay) -> Unit)? = null,
+    onOpenStatementPdf: ((Long) -> Unit)? = null,
+    onClosePdfViewer: (() -> Unit)? = null,
+    onLinkTransactionToPage: ((transactionId: Long, page: Int) -> Unit)? = null,
+    // PDF access setting
+    pdfAccessEnabled: Boolean = true,
+    onPdfAccessEnabledChange: ((Boolean) -> Unit)? = null
 ) {
     var currentTab by remember { mutableStateOf(NavigationTab.HOME) }
     var showCategoryManagement by remember { mutableStateOf(false) }
@@ -326,6 +335,9 @@ fun App(
                                 onCategoryChange = onCategoryChange,
                                 onCustomCategoryChange = onCustomCategoryChange,
                                 onManageCategories = { showCategoryManagement = true },
+                                onViewSourcePdf = if (pdfAccessEnabled && onOpenTransactionSourcePdf != null) {
+                                    onOpenTransactionSourcePdf
+                                } else null,
                                 hasMoreTransactions = hasMoreTransactions,
                                 isLoadingMore = isLoadingMoreTransactions,
                                 onLoadMore = onLoadMoreTransactions
@@ -604,6 +616,8 @@ fun App(
                                 onEmailClick = onEmailClick,
                                 remindersEnabled = remindersEnabled,
                                 onRemindersEnabledChange = onRemindersEnabledChange,
+                                pdfAccessEnabled = pdfAccessEnabled,
+                                onPdfAccessEnabledChange = { enabled -> onPdfAccessEnabledChange?.invoke(enabled) },
                                 onShareApp = onShareApp
                             )
                         }
@@ -767,6 +781,20 @@ fun App(
                             onDeleteCategory = { id ->
                                 onDeleteCustomCategory?.invoke(id)
                             }
+                        )
+                    }
+
+                    // In-app PDF viewer overlay (source linking / receipt view)
+                    if (pdfViewerState.isOpen && pdfViewerState.filePath != null) {
+                        PdfViewerScreen(
+                            filePath = pdfViewerState.filePath,
+                            fileName = pdfViewerState.fileName,
+                            initialPage = pdfViewerState.initialPage,
+                            highlightSnippet = pdfViewerState.highlightSnippet,
+                            highlightTitle = pdfViewerState.highlightTitle,
+                            linkableTransactions = pdfViewerState.linkableTransactions,
+                            onLinkTransaction = onLinkTransactionToPage,
+                            onClose = { onClosePdfViewer?.invoke() }
                         )
                     }
                 }

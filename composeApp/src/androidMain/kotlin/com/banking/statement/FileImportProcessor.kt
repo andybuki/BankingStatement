@@ -248,6 +248,20 @@ class FileImportProcessor(private val context: Context) {
         }
     }
 
+    /**
+     * Delete every PDF persisted by [savePdfToStorage]. Used when the user
+     * turns off "PDF access" in settings to purge existing cached files.
+     * Returns the number of files deleted.
+     */
+    fun purgeStoredPdfs(): Int {
+        val pdfDir = File(context.filesDir, "pdfs")
+        if (!pdfDir.exists()) return 0
+        val files = pdfDir.listFiles() ?: return 0
+        var deleted = 0
+        files.forEach { if (it.delete()) deleted++ }
+        return deleted
+    }
+
     fun detectBankFromText(text: String): String {
         val lowerText = text.lowercase()
         return when {

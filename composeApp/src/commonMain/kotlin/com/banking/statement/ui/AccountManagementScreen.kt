@@ -88,6 +88,8 @@ fun AccountManagementScreen(
     onEmailClick: (String) -> Unit = {},
     remindersEnabled: Boolean = true,
     onRemindersEnabledChange: (Boolean) -> Unit = {},
+    pdfAccessEnabled: Boolean = true,
+    onPdfAccessEnabledChange: (Boolean) -> Unit = {},
     onShareApp: () -> Unit = {}
 ) {
     val strings = LocalStrings.current
@@ -169,6 +171,13 @@ fun AccountManagementScreen(
             ReminderSettingsCard(
                 remindersEnabled = remindersEnabled,
                 onRemindersEnabledChange = onRemindersEnabledChange
+            )
+        }
+
+        item {
+            PdfAccessSettingsCard(
+                pdfAccessEnabled = pdfAccessEnabled,
+                onPdfAccessEnabledChange = onPdfAccessEnabledChange
             )
         }
 

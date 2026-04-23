@@ -17,4 +17,13 @@ expect class AppPreferences {
     fun incrementSuccessfulImportCount()
     fun isRatingPromptDismissed(): Boolean
     fun setRatingPromptDismissed(dismissed: Boolean)
+
+    /**
+     * Whether the app is allowed to persist imported PDFs on disk so they
+     * can be re-opened from the transaction detail ("receipt view"). When
+     * false, new imports won't retain the PDF and the "View source PDF"
+     * action is hidden for future imports.
+     */
+    fun isPdfAccessEnabled(): Boolean
+    fun setPdfAccessEnabled(enabled: Boolean)
 }

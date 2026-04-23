@@ -1,0 +1,8 @@
+-- Version 3: Add source page tracking for PDF-linked transactions
+-- Enables the "View source PDF" feature: highlight the page/line in the
+-- imported PDF that a transaction was extracted from, and support manual
+-- linking when auto-extraction fails.
+
+ALTER TABLE transactions ADD COLUMN source_page INTEGER;
+
+ALTER TABLE transactions ADD COLUMN source_line_snippet TEXT;

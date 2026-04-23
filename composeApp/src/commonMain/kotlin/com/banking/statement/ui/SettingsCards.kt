@@ -281,6 +281,65 @@ internal fun ReminderSettingsCard(
     }
 }
 
+/**
+ * Toggles whether imported bank-statement PDFs are kept on disk after
+ * parsing. When off, the "View source PDF" action is hidden and any
+ * previously-stored PDFs are purged.
+ */
+@Composable
+internal fun PdfAccessSettingsCard(
+    pdfAccessEnabled: Boolean,
+    onPdfAccessEnabledChange: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Source PDF access",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "When enabled, imported PDF statements are kept locally so you can open the original source from any transaction. Turning this off purges all stored PDFs.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = if (pdfAccessEnabled) "PDFs kept on device" else "PDFs not retained",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = pdfAccessEnabled,
+                    onCheckedChange = onPdfAccessEnabledChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            }
+        }
+    }
+}
+
 @Composable
 internal fun ShareAppCard(
     onShareApp: () -> Unit

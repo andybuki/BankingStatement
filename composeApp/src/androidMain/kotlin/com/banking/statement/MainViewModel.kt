@@ -140,6 +140,9 @@ class MainViewModel(
     private val _appSettings = MutableStateFlow(AppSettingsState())
     val appSettings: StateFlow<AppSettingsState> = _appSettings.asStateFlow()
 
+    private val _pdfViewerState = MutableStateFlow(PdfViewerUiState())
+    val pdfViewerState: StateFlow<PdfViewerUiState> = _pdfViewerState.asStateFlow()
+
     private val coroutineScope = viewModelScope
 
     init {
@@ -169,7 +172,8 @@ class MainViewModel(
                 showOnboarding = !appPreferences.isOnboardingCompleted(),
                 biometricLockEnabled = appPreferences.isBiometricLockEnabled(),
                 biometricAvailable = biometricLockManager.canAuthenticate(),
-                remindersEnabled = appPreferences.areRemindersEnabled()
+                remindersEnabled = appPreferences.areRemindersEnabled(),
+                pdfAccessEnabled = appPreferences.isPdfAccessEnabled()
             )
         }
 
@@ -278,13 +282,13 @@ class MainViewModel(
                     _importState.update { it.copy(progress = 80, progressMessage = context.getString(R.string.processing_saving)) }
 
                     val filePath = withContext(Dispatchers.IO) {
-                        if (fileType == ImportFileType.PDF) {
+                        if (fileType == ImportFileType.PDF && appPreferences.isPdfAccessEnabled()) {
                             fileImportProcessor.savePdfToStorage(uri, fileName)
                         } else null
                     }
 
                     _importState.update { it.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing)) }
-                    handleSuccessfulParse(parseResult, fileName, filePath, fileType)
+                    handleSuccessfulParse(parseResult, fileName, filePath, fileType, pdfBytes = bytes.takeIf { fileType == ImportFileType.PDF && filePath != null })
                 } else {
                     _importState.value = ImportState(isProcessing = false)
                     showImportErrorDialog(
@@ -308,7 +312,8 @@ class MainViewModel(
         parseResult: ParseResult,
         fileName: String,
         filePath: String?,
-        fileType: ImportFileType
+        fileType: ImportFileType,
+        pdfBytes: ByteArray? = null
     ) {
         val matchResult = withContext(Dispatchers.IO) {
             repository.findMatchingAccount(
@@ -328,6 +333,8 @@ class MainViewModel(
                         sourceType = fileType.name
                     )
                 }
+
+                backfillSourcePagesIfPdf(pdfBytes, result.statementId)
 
                 _importState.value = ImportState(
                     isProcessing = false,
@@ -368,11 +375,25 @@ class MainViewModel(
                         fileName = fileName,
                         filePath = filePath,
                         fileType = fileType,
-                        matchResult = matchResult
+                        matchResult = matchResult,
+                        pdfBytes = pdfBytes
                     ),
                     existingAccounts = existingAccounts
                 )
             }
+        }
+    }
+
+    /**
+     * After importing a PDF statement, extract per-page text and record which
+     * page each transaction came from. Best-effort: failures are silent.
+     */
+    private suspend fun backfillSourcePagesIfPdf(pdfBytes: ByteArray?, statementId: Long) {
+        if (pdfBytes == null) return
+        withContext(Dispatchers.IO) {
+            val pdfProcessor = com.banking.statement.pdf.PdfProcessor()
+            val pages = pdfProcessor.extractPages(pdfBytes) ?: return@withContext
+            repository.backfillSourcePagesForStatement(statementId, pages)
         }
     }
 
@@ -394,6 +415,8 @@ class MainViewModel(
                             sourceType = pending.fileType.name
                         )
                     }
+
+                    backfillSourcePagesIfPdf(pending.pdfBytes, result.statementId)
 
                     _importState.value = ImportState(
                         isProcessing = false,
@@ -424,6 +447,8 @@ class MainViewModel(
                             sourceType = pending.fileType.name
                         )
                     }
+
+                    backfillSourcePagesIfPdf(pending.pdfBytes, result.statementId)
 
                     _importState.value = ImportState(
                         isProcessing = false,
@@ -469,9 +494,17 @@ class MainViewModel(
             if (parseResult.success && parseResult.transactions.isNotEmpty()) {
                 _importState.update { it.copy(progress = 80, progressMessage = context.getString(R.string.processing_saving)) }
 
-                val filePath = fileImportProcessor.savePdfToStorage(pendingData.uri, pendingData.fileName)
+                val filePath = if (appPreferences.isPdfAccessEnabled()) {
+                    fileImportProcessor.savePdfToStorage(pendingData.uri, pendingData.fileName)
+                } else null
                 _importState.update { it.copy(progress = 90, progressMessage = context.getString(R.string.processing_finalizing)) }
-                handleSuccessfulParse(parseResult, pendingData.fileName, filePath, ImportFileType.PDF)
+                handleSuccessfulParse(
+                    parseResult = parseResult,
+                    fileName = pendingData.fileName,
+                    filePath = filePath,
+                    fileType = ImportFileType.PDF,
+                    pdfBytes = pendingData.bytes.takeIf { filePath != null }
+                )
             } else {
                 _importState.value = ImportState(isProcessing = false)
                 showImportErrorDialog(
@@ -757,6 +790,8 @@ class MainViewModel(
         accountNames: Map<Long, String>,
         customCategoriesMap: Map<Long, CustomCategory>
     ): List<TransactionDisplay> {
+        // Lookup of file_path per statement so each row can carry its source PDF path.
+        val statementsById = repository.getAllStatements().associateBy { it.id }
         return transactions.map { tx ->
             val overrideResult = categoryOverrideManager.findOverrideWithCustom(tx.description, tx.counterparty_name)
 
@@ -781,6 +816,7 @@ class MainViewModel(
                 .toLocalDateTime(TimeZone.currentSystemDefault())
                 .date
 
+            val sourceStatement = statementsById[tx.statement_id]
             TransactionDisplay(
                 id = tx.id,
                 date = "${date.dayOfMonth.toString().padStart(2, '0')}.${date.monthNumber.toString().padStart(2, '0')}.${date.year}",
@@ -799,7 +835,12 @@ class MainViewModel(
                 customCategoryId = customCategoryId,
                 customCategoryName = customCategoryName,
                 customCategoryIcon = customCategoryIcon,
-                customCategoryColor = customCategoryColor
+                customCategoryColor = customCategoryColor,
+                sourceStatementId = tx.statement_id,
+                sourcePdfPath = sourceStatement?.file_path
+                    ?.takeIf { sourceStatement.source_type == "PDF" },
+                sourcePage = tx.source_page?.toInt(),
+                sourceLineSnippet = tx.source_line_snippet
             )
         }
     }
@@ -1157,6 +1198,118 @@ class MainViewModel(
             NotificationReminderManager.schedule(context)
         } else {
             NotificationReminderManager.cancel(context)
+        }
+    }
+
+    // =====================================================================
+    // PDF ACCESS (SETTINGS + VIEWER)
+    // =====================================================================
+
+    /**
+     * Flip the "PDF access" setting. When turning OFF, also purge any
+     * previously-stored PDFs so no statement data lingers on disk.
+     */
+    fun setPdfAccessEnabled(enabled: Boolean) {
+        _appSettings.update { it.copy(pdfAccessEnabled = enabled) }
+        appPreferences.setPdfAccessEnabled(enabled)
+        if (!enabled) {
+            coroutineScope.launch(Dispatchers.IO) {
+                val removed = fileImportProcessor.purgeStoredPdfs()
+                if (removed > 0) {
+                    android.util.Log.i("PdfAccess", "Purged $removed stored PDFs after disabling PDF access")
+                }
+            }
+        }
+    }
+
+    /** Open the in-app PDF viewer for the given transaction (if it has a source PDF). */
+    fun openTransactionSourcePdf(transaction: TransactionDisplay) {
+        val path = transaction.sourcePdfPath ?: return
+        if (!appPreferences.isPdfAccessEnabled()) return
+        val statementId = transaction.sourceStatementId
+        coroutineScope.launch {
+            val candidates = if (statementId != null) loadLinkableTransactions(statementId) else emptyList()
+            val fileName = statementId?.let { id ->
+                withContext(Dispatchers.IO) { repository.getStatementById(id)?.file_name }
+            } ?: path.substringAfterLast('/')
+            _pdfViewerState.value = PdfViewerUiState(
+                isOpen = true,
+                statementId = statementId,
+                filePath = path,
+                fileName = fileName,
+                initialPage = transaction.sourcePage ?: 0,
+                highlightSnippet = transaction.sourceLineSnippet
+                    ?: TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description),
+                highlightTitle = "Transaction · ${transaction.date}",
+                linkableTransactions = candidates
+            )
+        }
+    }
+
+    /** Open the in-app PDF viewer directly from the statements list. */
+    fun openStatementPdf(statementId: Long) {
+        if (!appPreferences.isPdfAccessEnabled()) return
+        coroutineScope.launch {
+            val statement = withContext(Dispatchers.IO) { repository.getStatementById(statementId) }
+            val filePath = statement?.file_path ?: return@launch
+            val candidates = loadLinkableTransactions(statementId)
+            _pdfViewerState.value = PdfViewerUiState(
+                isOpen = true,
+                statementId = statementId,
+                filePath = filePath,
+                fileName = statement.file_name,
+                initialPage = 0,
+                highlightSnippet = null,
+                highlightTitle = null,
+                linkableTransactions = candidates
+            )
+        }
+    }
+
+    fun closePdfViewer() {
+        _pdfViewerState.value = PdfViewerUiState()
+    }
+
+    /**
+     * Manual assignment: user tapped "link this page to transaction X" in
+     * the PDF viewer. Writes `source_page` on the chosen transaction so
+     * future opens jump to this page.
+     */
+    fun linkTransactionToPage(transactionId: Long, page: Int) {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.updateTransactionSourceLink(
+                    transactionId = transactionId,
+                    page = page,
+                    lineSnippet = null
+                )
+            }
+            // Refresh candidates so the "currentlyLinkedPage" status updates.
+            val current = _pdfViewerState.value
+            if (current.isOpen && current.statementId != null) {
+                val refreshed = loadLinkableTransactions(current.statementId)
+                _pdfViewerState.update { it.copy(linkableTransactions = refreshed) }
+            }
+            loadTransactionData()
+            Toast.makeText(context, "Linked to page ${page + 1}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private suspend fun loadLinkableTransactions(statementId: Long): List<com.banking.statement.ui.LinkableTransaction> {
+        return withContext(Dispatchers.IO) {
+            repository.getTransactionsByStatement(statementId).map { tx ->
+                val date = Instant.fromEpochSeconds(tx.booking_date)
+                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                val dateStr = "${date.dayOfMonth.toString().padStart(2, '0')}.${date.monthNumber.toString().padStart(2, '0')}.${date.year}"
+                com.banking.statement.ui.LinkableTransaction(
+                    id = tx.id,
+                    date = dateStr,
+                    description = tx.counterparty_name?.takeIf { it.isNotBlank() } ?: tx.description,
+                    amount = tx.amount,
+                    currency = tx.currency,
+                    currentlyLinkedPage = tx.source_page?.toInt()
+                )
+            }
         }
     }
 

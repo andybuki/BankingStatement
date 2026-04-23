@@ -55,6 +55,12 @@ actual class PdfProcessor {
     }
 
     /**
+     * Extract text page by page for source-linking (common interface).
+     * Returns null when PDFBox cannot open the document.
+     */
+    actual fun extractPages(pdfBytes: ByteArray): List<String>? = extractTextByPage(pdfBytes)
+
+    /**
      * Alternative extraction mode optimized for tabular data.
      * Try this if standard extraction doesn't work well.
      */

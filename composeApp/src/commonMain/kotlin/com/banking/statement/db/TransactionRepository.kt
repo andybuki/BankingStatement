@@ -416,6 +416,59 @@ class TransactionRepository(
         queries.updateTransactionCategory(categoryId, categoryName, transactionId)
     }
 
+    /**
+     * Record which PDF page (and optionally which line) a transaction was
+     * extracted from, so the user can open the source PDF highlighted.
+     */
+    fun updateTransactionSourceLink(transactionId: Long, page: Int?, lineSnippet: String?) {
+        queries.updateTransactionSourceLink(
+            source_page = page?.toLong(),
+            source_line_snippet = lineSnippet,
+            id = transactionId
+        )
+    }
+
+    fun getStatementById(statementId: Long): Statements? {
+        return queries.getStatementById(statementId).executeAsOneOrNull()
+    }
+
+    fun getTransactionsMissingSourcePageByStatement(statementId: Long): List<Transactions> {
+        return queries.getTransactionsMissingSourcePageByStatement(statementId).executeAsList()
+    }
+
+    /**
+     * Populate transactions.source_page / source_line_snippet for every
+     * transaction of [statementId] by matching their description/amount
+     * against [pageTexts] (one entry per page of the source PDF).
+     *
+     * Safe to call on empty [pageTexts]; does nothing in that case.
+     */
+    fun backfillSourcePagesForStatement(
+        statementId: Long,
+        pageTexts: List<String>
+    ): Int {
+        if (pageTexts.isEmpty()) return 0
+        val transactions = queries.getTransactionsByStatement(statementId).executeAsList()
+        var matched = 0
+        transactions.forEach { tx ->
+            val match = com.banking.statement.pdf.TransactionPageMatcher.match(
+                pageTexts = pageTexts,
+                description = tx.description,
+                counterparty = tx.counterparty_name,
+                amount = tx.amount
+            )
+            if (match != null) {
+                queries.updateTransactionSourceLink(
+                    source_page = match.pageIndex.toLong(),
+                    source_line_snippet = match.lineSnippet,
+                    id = tx.id
+                )
+                matched++
+            }
+        }
+        return matched
+    }
+
     // ==================== Category Operations ====================
 
     fun getAllCategories(): List<Categories> {

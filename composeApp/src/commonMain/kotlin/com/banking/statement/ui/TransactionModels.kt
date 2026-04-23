@@ -28,8 +28,15 @@ data class TransactionDisplay(
     val customCategoryId: Long? = null,
     val customCategoryName: String? = null,
     val customCategoryIcon: String? = null,
-    val customCategoryColor: String? = null
+    val customCategoryColor: String? = null,
+    // Source-document linking (PDF receipt view)
+    val sourceStatementId: Long? = null,
+    val sourcePdfPath: String? = null,
+    val sourcePage: Int? = null,
+    val sourceLineSnippet: String? = null
 ) {
+    /** Returns true if the transaction has a linked source PDF that can be opened. */
+    val hasSourcePdf: Boolean get() = !sourcePdfPath.isNullOrBlank()
     /** Returns true if this transaction has a custom category assigned. */
     val hasCustomCategory: Boolean get() = customCategoryId != null
 

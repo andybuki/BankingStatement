@@ -148,6 +148,12 @@ UPDATE transactions SET category_id = ?, auto_category = ? WHERE id = ?;
 updateTransactionNotes:
 UPDATE transactions SET notes = ? WHERE id = ?;
 
+updateTransactionSourceLink:
+UPDATE transactions SET source_page = ?, source_line_snippet = ? WHERE id = ?;
+
+getTransactionsMissingSourcePageByStatement:
+SELECT * FROM transactions WHERE statement_id = ? AND source_page IS NULL;
+
 markAsDuplicate:
 UPDATE transactions SET is_duplicate = 1 WHERE id = ?;
 

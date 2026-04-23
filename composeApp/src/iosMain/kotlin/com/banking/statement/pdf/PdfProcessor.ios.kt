@@ -8,6 +8,11 @@ actual class PdfProcessor {
         return null
     }
 
+    actual fun extractPages(pdfBytes: ByteArray): List<String>? {
+        // TODO: Implement using PDFKit on iOS.
+        return null
+    }
+
     actual fun isPdfFile(bytes: ByteArray): Boolean {
         // Check for PDF magic bytes: %PDF-
         if (bytes.size < 5) return false
