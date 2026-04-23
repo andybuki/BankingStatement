@@ -1,0 +1,43 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+html,body{margin:0;padding:0;background:#fff;font-family:var(--ml-font-sans);color:var(--ml-ink)}
+.wrap{padding:20px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.block{display:flex;flex-direction:column;gap:10px}
+.label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ml-muted);font-weight:600}
+.row{display:flex;align-items:center;gap:10px}
+.chip{width:44px;height:44px;border-radius:10px;flex:none}
+.val{font:600 22px/1 var(--ml-font-mono);font-variant-numeric:tabular-nums}
+.hex{font-family:var(--ml-font-mono);font-size:11px;color:var(--ml-text)}
+.name{font-size:13px;font-weight:600;color:var(--ml-ink)}
+</style></head><body><div class="wrap">
+<div class="cols">
+  <div class="block">
+    <div class="label">Income</div>
+    <div class="row"><div class="chip" style="background:#16A34A"></div>
+      <div><div class="name">Income green</div><div class="hex">#16A34A</div></div>
+      <div style="margin-left:auto" class="val" ><span style="color:#16A34A">+€2,480.00</span></div>
+    </div>
+  </div>
+  <div class="block">
+    <div class="label">Expenses</div>
+    <div class="row"><div class="chip" style="background:#DC2626"></div>
+      <div><div class="name">Expense red</div><div class="hex">#DC2626</div></div>
+      <div style="margin-left:auto" class="val"><span style="color:#DC2626">−€1,342.18</span></div>
+    </div>
+  </div>
+  <div class="block">
+    <div class="label">Container tints</div>
+    <div class="row">
+      <div class="chip" style="background:#DCFCE7;border:1px solid rgba(0,0,0,.04)"></div>
+      <div><div class="name">Income 50</div><div class="hex">#DCFCE7</div></div>
+    </div>
+  </div>
+  <div class="block">
+    <div class="label">Error container</div>
+    <div class="row">
+      <div class="chip" style="background:#FEE2E2;border:1px solid rgba(0,0,0,.04)"></div>
+      <div><div class="name">Expense 50</div><div class="hex">#FEE2E2</div></div>
+    </div>
+  </div>
+</div></div></body></html>

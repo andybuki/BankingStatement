@@ -1,0 +1,29 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+html,body{margin:0;padding:0;background:#F1F5F9;font-family:var(--ml-font-sans);color:var(--ml-ink)}
+.wrap{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:var(--sh-xs)}
+.h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.t{font:600 14px var(--ml-font-sans)}
+.a{font:600 22px/1 var(--ml-font-mono);font-variant-numeric:tabular-nums}
+.sub{font-size:12px;color:var(--ml-muted)}
+.bar{height:6px;background:#F1F5F9;border-radius:999px;overflow:hidden;margin-top:8px}
+.bar>span{display:block;height:100%;background:#2563EB}
+.floating{box-shadow:var(--sh-sm)}
+</style></head><body><div class="wrap">
+<div class="card">
+  <div class="h"><span class="sub">Total Income</span><span style="color:#16A34A">↑</span></div>
+  <div class="a" style="color:#16A34A">+€4,820.00</div>
+  <div class="sub" style="margin-top:4px">This month</div>
+</div>
+<div class="card">
+  <div class="h"><span class="sub">Total Expenses</span><span style="color:#DC2626">↓</span></div>
+  <div class="a" style="color:#DC2626">−€1,342.18</div>
+  <div class="sub" style="margin-top:4px">This month</div>
+</div>
+<div class="card floating" style="grid-column:span 2">
+  <div class="h"><div class="t">Supermarket</div><div class="a" style="font-size:16px">€287.40</div></div>
+  <div class="bar"><span style="width:62%;background:#22C55E"></span></div>
+  <div class="sub" style="margin-top:6px">14 transactions · 22% of spending</div>
+</div>
+</div></body></html>

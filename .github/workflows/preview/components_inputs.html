@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+html,body{margin:0;padding:0;background:#fff;font-family:var(--ml-font-sans);color:var(--ml-ink)}
+.wrap{padding:20px;display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.in{display:flex;flex-direction:column;gap:4px}
+.lbl{font-size:11px;color:var(--ml-muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.i{border:1px solid var(--ml-border);border-radius:12px;padding:12px 14px;font:400 14px var(--ml-font-sans);background:#fff}
+.i.focus{border-color:var(--ml-blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+.i.err{border-color:var(--ml-expense);background:#FEF2F2}
+.hint{font-size:11px;color:var(--ml-muted)}
+.err-txt{font-size:11px;color:var(--ml-expense)}
+</style></head><body><div class="wrap">
+<div class="in"><div class="lbl">Account name</div><div class="i">DKB — Giro</div><div class="hint">Shown under the header</div></div>
+<div class="in"><div class="lbl">Search</div><div class="i focus">REWE</div><div class="hint">Searching transactions…</div></div>
+<div class="in"><div class="lbl">IBAN</div><div class="i" style="font-family:var(--ml-font-mono)">DE89 3704 0044 0532 0130 00</div></div>
+<div class="in"><div class="lbl">Amount</div><div class="i err" style="font-family:var(--ml-font-mono)">−</div><div class="err-txt">Enter a valid amount</div></div>
+</div></body></html>
