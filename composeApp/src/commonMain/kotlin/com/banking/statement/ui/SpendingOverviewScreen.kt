@@ -1,7 +1,6 @@
 package com.banking.statement.ui
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,15 +15,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import bankingstatement.composeapp.generated.resources.Res
-import bankingstatement.composeapp.generated.resources.back
-import bankingstatement.composeapp.generated.resources.share
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.categorization.TransactionCategory
@@ -35,7 +30,6 @@ import com.banking.statement.ui.charts.CategoryStackedAreaChart
 import com.banking.statement.ui.charts.IncomeVsExpensesBarChart
 import com.banking.statement.ui.charts.MonthCategoryBreakdown
 import com.banking.statement.ui.charts.MonthlySpendingLineChart
-import org.jetbrains.compose.resources.painterResource
 import kotlin.math.absoluteValue
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
@@ -43,60 +37,11 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.todayIn
 
-/**
- * Time period for filtering spending
- */
-enum class TimePeriod {
-    WEEK, MONTH, YEAR, ALL, CUSTOM
-}
-
-/**
- * Category spending data for display
- */
-data class CategorySpending(
-    val category: TransactionCategory,
-    val totalAmount: Double,
-    val transactionCount: Int,
-    val percentage: Float,
-    val trend: SpendingTrend? = null
-)
-
-/**
- * Spending trend comparison data
- */
-data class SpendingTrend(
-    val currentAmount: Double,
-    val previousAmount: Double,
-    val changeAmount: Double,
-    val changePercentage: Float,
-    val direction: TrendDirection
-) {
-    enum class TrendDirection {
-        UP,      // Spending increased
-        DOWN,    // Spending decreased
-        STABLE   // No significant change (<5%)
-    }
-}
-
-/**
- * Monthly category spending for trend analysis
- */
-data class CategoryMonthlySpending(
-    val month: String,
-    val category: TransactionCategory,
-    val amount: Double
-)
-
-/**
- * Monthly summary data
- */
-data class MonthlySummary(
-    val month: String,
-    val income: Double,
-    val expenses: Double
-) {
-    val netAmount: Double get() = income + expenses // expenses are negative
-}
+// Data classes (CategorySpending, MonthlySummary, TimePeriod, SpendingTrend,
+// CategoryMonthlySpending) live in SpendingModels.kt.
+// List item composables (SummaryCard, CategorySpendingItem, MonthlyItem) live
+// in SpendingListItems.kt.
+// Merchant-tab composables and aggregators live in MerchantSpendingItems.kt.
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -408,7 +353,6 @@ fun SpendingOverviewScreen(
     }
 }
 
-
 /**
  * Category Details Dialog showing top transactions
  */
@@ -667,10 +611,15 @@ private fun SpendingPieChart(
     }
 }
 
+// ============================================================
+// Shared helpers — internal so sibling files in the ui package
+// (SpendingListItems.kt, MerchantSpendingItems.kt) can reuse them.
+// ============================================================
+
 /**
  * Filter transactions by time period. CUSTOM uses epoch-second bounds.
  */
-private fun filterByTimePeriod(
+internal fun filterByTimePeriod(
     transactions: List<TransactionDisplay>,
     period: TimePeriod,
     customStartEpoch: Long? = null,
@@ -722,9 +671,9 @@ private fun filterByTimePeriod(
 }
 
 /**
- * Helper data class for filtered spending calculations
+ * Helper data class for filtered spending calculations.
  */
-private data class FilteredSpendingData(
+internal data class FilteredSpendingData(
     val income: Double,
     val expenses: Double,
     val categorySpending: List<CategorySpending>,
@@ -732,9 +681,9 @@ private data class FilteredSpendingData(
 )
 
 /**
- * Format month string for display
+ * Format month string for display.
  */
-private fun formatMonthDisplay(yearMonth: String): String {
+internal fun formatMonthDisplay(yearMonth: String): String {
     val parts = yearMonth.split("-")
     if (parts.size != 2) return yearMonth
     val monthNames = listOf(
@@ -747,245 +696,6 @@ private fun formatMonthDisplay(yearMonth: String): String {
     } else yearMonth
 }
 
-@Composable
-fun SummaryCard(
-    title: String,
-    amount: Double,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.1f)
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = formatCurrency(amount),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-        }
-    }
-}
-
-@Composable
-fun CategorySpendingItem(
-    spending: CategorySpending,
-    onClick: (() -> Unit)? = null
-) {
-    val strings = LocalStrings.current
-    val categoryColor = parseHexColor(spending.category.color)
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(
-                if (onClick != null) Modifier.clickable(onClick = onClick)
-                else Modifier
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = getCategoryEmoji(spending.category),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = spending.category.getLocalizedName(strings),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "${spending.transactionCount} ${strings.transactions}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = formatCurrency(spending.totalAmount),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "${spending.percentage.toInt()}%",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        // Show trend indicator
-                        spending.trend?.let { trend ->
-                            Text(
-                                text = "${TrendCalculator.getTrendIndicator(trend)} ${TrendCalculator.formatTrendPercentage(trend)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = TrendCalculator.getTrendColor(trend, MaterialTheme.colorScheme.primary)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Progress bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(spending.percentage / 100f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(categoryColor)
-                )
-            }
-
-            // Trend details
-            spending.trend?.let { trend ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "vs last month:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = "${formatCurrency(trend.previousAmount)} → ${formatCurrency(trend.currentAmount)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Clickable hint
-            if (onClick != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = strings.tapToViewTopTransactions,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun MonthlyItem(summary: MonthlySummary) {
-    val strings = LocalStrings.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = summary.month,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = strings.income,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = formatCurrency(summary.income),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = AppColors.Income
-                    )
-                }
-                Column {
-                    Text(
-                        text = strings.expenses,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = formatCurrency(summary.expenses),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = AppColors.Expenses
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = strings.net,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = formatCurrency(summary.netAmount),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = if (summary.netAmount >= 0) AppColors.Income else AppColors.Expenses
-                    )
-                }
-            }
-        }
-    }
-}
-
-/*internal fun formatCurrency(amount: Double): String {
-    val absAmount = amount.absoluteValue
-    val formatted = "%.2f".format(absAmount).replace(".", ",")
-    return if (amount >= 0) "+$formatted €" else "-$formatted €"
-}*/
-
 internal fun formatCurrency(amount: Double): String {
     val absAmount = kotlin.math.abs(amount)
     val rounded = kotlin.math.round(absAmount * 100) / 100
@@ -993,7 +703,7 @@ internal fun formatCurrency(amount: Double): String {
     return if (amount >= 0) "+$formatted €" else "-$formatted €"
 }
 
-private fun parseHexColor(hexColor: String): Color {
+internal fun parseHexColor(hexColor: String): Color {
     return try {
         val hex = hexColor.removePrefix("#")
         val r = hex.substring(0, 2).toInt(16)
@@ -1005,7 +715,7 @@ private fun parseHexColor(hexColor: String): Color {
     }
 }
 
-private fun getCategoryEmoji(category: TransactionCategory): String {
+internal fun getCategoryEmoji(category: TransactionCategory): String {
     return when (category) {
         TransactionCategory.RENT -> "🏠"
         TransactionCategory.TRANSPORT -> "🚌"
@@ -1025,252 +735,4 @@ private fun getCategoryEmoji(category: TransactionCategory): String {
         TransactionCategory.TAXES -> "📋"
         TransactionCategory.OTHER -> "❓"
     }
-}
-// Add at end of SpendingOverviewScreen.kt
-
-@Composable
-fun MerchantTrendItem(trend: MerchantTrend) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Merchant name
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = trend.merchantName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "${trend.currentMonthTransactions} transactions",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Trend indicator and amount
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = formatCurrency(trend.currentMonthAmount),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "${MerchantTrendCalculator.getTrendIndicator(trend)} ${MerchantTrendCalculator.formatTrendPercentage(trend)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MerchantTrendCalculator.getTrendColor(trend, MaterialTheme.colorScheme.primary)
-                        )
-                    }
-                }
-            }
-
-            // Comparison details
-            if (trend.direction != MerchantTrend.TrendDirection.NEW) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "vs last month: ${formatCurrency(trend.previousMonthAmount)} → ${formatCurrency(trend.currentMonthAmount)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-/**
- * Calculate merchant trends from transactions
- */
-fun calculateMerchantTrendsFromTransactions(transactions: List<TransactionDisplay>): List<MerchantTrend> {
-    // Group transactions by month and merchant
-    val monthlyData = transactions
-        .filter { it.amount < 0 && !it.counterparty.isNullOrBlank() }
-        .groupBy { tx ->
-            val dateParts = tx.date.split(".")
-            if (dateParts.size >= 3) {
-                "${dateParts[2]}-${dateParts[1]}" // YYYY-MM format
-            } else {
-                null
-            }
-        }
-        .filterKeys { it != null }
-        .flatMap { (month, txs) ->
-            txs.groupBy { it.counterparty!! }
-                .map { (merchant, merchantTxs) ->
-                    MerchantMonthlyData(
-                        month = month!!,
-                        merchantName = merchant,
-                        category = merchantTxs.first().category,
-                        totalAmount = merchantTxs.sumOf { it.amount },
-                        transactionCount = merchantTxs.size
-                    )
-                }
-        }
-
-    return MerchantTrendCalculator.calculateMerchantTrends(monthlyData, topN = 10)
-}
-
-/**
- * Calculate merchant spending history from transactions
- */
-fun calculateMerchantHistoryFromTransactions(transactions: List<TransactionDisplay>): List<MerchantHistory> {
-    // Group transactions by month and merchant
-    val monthlyData = transactions
-        .filter { it.amount < 0 && !it.counterparty.isNullOrBlank() }
-        .groupBy { tx ->
-            val dateParts = tx.date.split(".")
-            if (dateParts.size >= 3) {
-                "${dateParts[2]}-${dateParts[1]}" // YYYY-MM format
-            } else {
-                null
-            }
-        }
-        .filterKeys { it != null }
-        .flatMap { (month, txs) ->
-            txs.groupBy { it.counterparty!! }
-                .map { (merchant, merchantTxs) ->
-                    MerchantMonthlyData(
-                        month = month!!,
-                        merchantName = merchant,
-                        category = merchantTxs.first().category,
-                        totalAmount = merchantTxs.sumOf { it.amount },
-                        transactionCount = merchantTxs.size
-                    )
-                }
-        }
-
-    return calculateMerchantHistory(monthlyData, topN = 10)
-}
-
-/**
- * Merchant history item showing spending across all months
- */
-@Composable
-fun MerchantHistoryItem(history: MerchantHistory) {
-    val strings = LocalStrings.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Header with merchant name and total
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = history.merchantName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "${getCategoryEmoji(history.category)} ${history.category.getLocalizedName(strings)} • ${history.totalTransactions} ${strings.transactions}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = formatCurrency(history.totalSpending),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Text(
-                        text = "${formatCurrency(history.averageMonthlySpending)}${strings.perMonthAverage}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Monthly breakdown
-            if (history.monthlySpending.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = strings.monthlyBreakdown,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    history.monthlySpending.forEach { monthData ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = formatMonthYear(monthData.month),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "${monthData.transactionCount}x",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = formatCurrency(monthData.amount),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Format month string (YYYY-MM) to readable format
- */
-private fun formatMonthYear(month: String): String {
-    val parts = month.split("-")
-    if (parts.size != 2) return month
-
-    val year = parts[0]
-    val monthNum = parts[1].toIntOrNull() ?: return month
-
-    val monthNames = listOf(
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    )
-
-    val monthName = monthNames.getOrNull(monthNum - 1) ?: return month
-    return "$monthName $year"
 }
