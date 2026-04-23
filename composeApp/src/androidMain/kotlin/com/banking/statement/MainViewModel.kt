@@ -46,32 +46,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 /**
- * Consolidated UI state for the financial data displayed across screens.
- */
-data class FinancialUiState(
-    val transactions: List<TransactionDisplay> = emptyList(),
-    val categorySpending: List<CategorySpending> = emptyList(),
-    val monthlySummary: List<MonthlySummary> = emptyList(),
-    val totalIncome: Double = 0.0,
-    val totalExpenses: Double = 0.0,
-    val hasMoreTransactions: Boolean = false,
-    val isLoadingMore: Boolean = false
-)
-
-/**
- * Consolidated UI state for app-level settings and preferences.
- */
-data class AppSettingsState(
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val showTutorial: Boolean = false,
-    val showOnboarding: Boolean = false,
-    val customCategories: List<CustomCategory> = emptyList(),
-    val biometricLockEnabled: Boolean = false,
-    val biometricAvailable: Boolean = false,
-    val remindersEnabled: Boolean = true
-)
-
-/**
  * Main ViewModel holding all app state and business logic.
  * Uses StateFlow for reactive, lifecycle-aware state management.
  */
@@ -830,19 +804,6 @@ class MainViewModel(
         }
     }
 
-    private fun formatMonth(yearMonth: String): String {
-        val parts = yearMonth.split("-")
-        if (parts.size != 2) return yearMonth
-        val monthNames = listOf(
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        )
-        val monthIndex = parts[1].toIntOrNull()?.minus(1) ?: return yearMonth
-        return if (monthIndex in 0..11) {
-            "${monthNames[monthIndex]} ${parts[0]}"
-        } else yearMonth
-    }
-
     private fun loadAccountsData() {
         coroutineScope.launch {
             withContext(Dispatchers.IO) {
@@ -1015,61 +976,6 @@ class MainViewModel(
             if (updatedCount > 1) "$updatedCount transactions updated to '${customCategory.name}'" else "Category updated to '${customCategory.name}'",
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    private fun getTransactionMatchKey(transaction: TransactionDisplay): String {
-        fun normalize(text: String): String {
-            return text.lowercase()
-                .replace(Regex("[^a-z0-9äöüß ]"), " ")
-                .replace(Regex("\\s+"), " ")
-                .trim()
-        }
-
-        val counterparty = transaction.counterparty
-        val description = transaction.description
-        val counterpartyLower = counterparty?.lowercase() ?: ""
-        val descriptionLower = description.lowercase()
-
-        if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
-            val displayName = TransactionDisplay.extractDisplayName(counterparty, description)
-            return normalize(displayName)
-        }
-
-        return if (!counterparty.isNullOrBlank()) {
-            normalize(counterparty)
-        } else {
-            normalize(description)
-        }
-    }
-
-    /**
-     * Recomputes derived financial fields (spending, income, expenses) from transactions.
-     * Returns the updated state for use in atomic [MutableStateFlow.update] calls.
-     */
-    private fun recomputeFinancialState(state: FinancialUiState): FinancialUiState {
-        val spendingByCategory = state.transactions
-            .filter { it.amount < 0 }
-            .groupBy { it.category }
-            .mapValues { (_, txs) -> txs.sumOf { it.amount } }
-
-        val totalExpensesAmount = spendingByCategory.values.sum()
-
-        val computedSpending = spendingByCategory.map { (cat, total) ->
-            CategorySpending(
-                category = cat,
-                totalAmount = total,
-                transactionCount = state.transactions.count { it.category == cat && it.amount < 0 },
-                percentage = if (totalExpensesAmount != 0.0) {
-                    (total / totalExpensesAmount * 100).toFloat()
-                } else 0f
-            )
-        }.sortedBy { it.totalAmount }
-
-        return state.copy(
-            categorySpending = computedSpending,
-            totalExpenses = state.transactions.filter { it.amount < 0 }.sumOf { it.amount },
-            totalIncome = state.transactions.filter { it.amount > 0 }.sumOf { it.amount }
-        )
     }
 
     // =====================================================================
