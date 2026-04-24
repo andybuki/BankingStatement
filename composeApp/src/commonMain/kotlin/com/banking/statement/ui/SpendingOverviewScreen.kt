@@ -196,35 +196,30 @@ fun SpendingOverviewScreen(
             // Net balance
             item {
                 val netAmount = displayIncome + displayExpenses
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (netAmount >= 0) {
-                            AppColors.Income.copy(alpha = 0.1f)
-                        } else {
-                            AppColors.Expenses.copy(alpha = 0.1f)
-                        }
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (netAmount >= 0) AppColors.IncomeTint
+                            else AppColors.ExpenseTint
+                        )
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = strings.netBalance,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = formatCurrency(netAmount),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
-                        )
-                    }
+                    Text(
+                        text = strings.netBalance,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        text = formatCurrency(netAmount),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
+                    )
                 }
             }
 
