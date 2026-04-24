@@ -21,15 +21,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.components.EyebrowLabel
 import com.banking.statement.ui.theme.AppColors
+import com.banking.statement.ui.theme.AppElevations
+import com.banking.statement.ui.theme.AppRadii
+import com.banking.statement.ui.theme.AppSpacing
 import com.banking.statement.ui.theme.ThemeMode
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -95,45 +101,56 @@ fun AccountManagementScreen(
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
 
-    // Content - no Scaffold, title is now in AppHeader
-    // Use LazyColumn for full scrollability of all content
+    // Settings tab: navy header is rendered by App.kt; this pane sits on
+    // SurfaceTint like every other tab, with eyebrow-grouped sections that
+    // mirror ui_kits/mobile/ScreensB.MLSettingsScreen.
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .background(AppColors.SurfaceTint)
+            .padding(horizontal = AppSpacing.s4),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.s3 + 2.dp)
     ) {
-        item { Spacer(modifier = Modifier.height(0.dp)) }
+        item { Spacer(modifier = Modifier.height(AppSpacing.s2)) }
 
         if (accounts.isEmpty()) {
-            // Empty state
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 48.dp),
+                        .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+                        .clip(RoundedCornerShape(AppRadii.lg))
+                        .background(AppColors.CardBackground)
+                        .padding(vertical = AppSpacing.s10, horizontal = AppSpacing.s4),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
                             text = strings.noAccounts,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.TextPrimary
                         )
                         Text(
                             text = strings.noAccountsHint,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            fontSize = 13.sp,
+                            color = AppColors.TextSecondary
                         )
                     }
                 }
             }
         } else {
-            // Account list
-            items(accounts) { account ->
+            // Accounts section
+            item(key = "accounts-eyebrow") {
+                AccountsSectionHeader(
+                    accountCount = accounts.size,
+                    totalStatements = accounts.sumOf { it.statementCount }
+                )
+            }
+            items(accounts, key = { "acc-${it.id}" }) { account ->
                 AccountManagementCard(
                     account = account,
                     onEdit = { showEditDialog = account },
@@ -147,17 +164,35 @@ fun AccountManagementScreen(
             }
         }
 
-        // Settings Section
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
+        // Appearance section
+        item(key = "appearance-eyebrow") {
+            EyebrowLabel(
+                text = strings.theme,
+                modifier = Modifier.padding(start = 4.dp, top = AppSpacing.s2)
+            )
+        }
+        item(key = "theme") {
             ThemeSettingsCard(
                 currentThemeMode = currentThemeMode,
                 onThemeModeChange = onThemeModeChange
             )
         }
+        item(key = "reminders") {
+            ReminderSettingsCard(
+                remindersEnabled = remindersEnabled,
+                onRemindersEnabledChange = onRemindersEnabledChange
+            )
+        }
 
+        // Security section
         if (biometricAvailable) {
-            item {
+            item(key = "security-eyebrow") {
+                EyebrowLabel(
+                    text = strings.security,
+                    modifier = Modifier.padding(start = 4.dp, top = AppSpacing.s2)
+                )
+            }
+            item(key = "security") {
                 SecuritySettingsCard(
                     biometricLockEnabled = biometricLockEnabled,
                     onBiometricLockChange = onBiometricLockChange
@@ -165,62 +200,84 @@ fun AccountManagementScreen(
             }
         }
 
-        item {
-            ReminderSettingsCard(
-                remindersEnabled = remindersEnabled,
-                onRemindersEnabledChange = onRemindersEnabledChange
+        // About section
+        item(key = "about-eyebrow") {
+            EyebrowLabel(
+                text = strings.contactTitle,
+                modifier = Modifier.padding(start = 4.dp, top = AppSpacing.s2)
             )
         }
-
-        item {
+        item(key = "share") {
             ShareAppCard(onShareApp = onShareApp)
         }
+        item(key = "contact") {
+            ContactSettingsCard(onEmailClick = onEmailClick)
+        }
 
-        // Danger Zone Section (only show if there's data)
+        // Danger Zone
         if (accounts.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                    )
+            item(key = "danger-eyebrow") {
+                EyebrowLabel(
+                    text = strings.dangerZone,
+                    color = AppColors.Expenses,
+                    modifier = Modifier.padding(start = 4.dp, top = AppSpacing.s2)
+                )
+            }
+            item(key = "danger") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+                        .clip(RoundedCornerShape(AppRadii.lg))
+                        .background(AppColors.CardBackground)
+                        .padding(AppSpacing.s4)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                    Text(
+                        text = strings.clearAllDataConfirm,
+                        fontSize = 12.sp,
+                        color = AppColors.TextSecondary,
+                        modifier = Modifier.padding(bottom = AppSpacing.s3)
+                    )
+                    Button(
+                        onClick = { showClearAllDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppRadii.md),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.Expenses,
+                            contentColor = Color.White
+                        )
                     ) {
                         Text(
-                            text = strings.dangerZone,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
+                            text = strings.clearAllData,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Button(
-                            onClick = { showClearAllDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
-                            )
-                        ) {
-                            Text(strings.clearAllData)
-                        }
                     }
                 }
             }
         }
 
-        // Contact / Feedback Section
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
-            ContactSettingsCard(onEmailClick = onEmailClick)
+        // Version footer
+        item(key = "footer") {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = AppSpacing.s5),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = "${strings.appName} · v2.4.0",
+                    fontSize = 11.sp,
+                    color = AppColors.TextTertiary
+                )
+                Text(
+                    text = strings.contactEmail,
+                    fontSize = 11.sp,
+                    color = AppColors.TextTertiary
+                )
+            }
         }
-
-        item { Spacer(modifier = Modifier.height(16.dp)) }
     }
 
     // Delete account confirmation dialog
@@ -260,6 +317,25 @@ fun AccountManagementScreen(
 }
 
 @Composable
+private fun AccountsSectionHeader(accountCount: Int, totalStatements: Long) {
+    val strings = LocalStrings.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 4.dp, top = AppSpacing.s2),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        EyebrowLabel(text = strings.manageAccounts)
+        Text(
+            text = "$accountCount · $totalStatements ${strings.statements.lowercase()}",
+            fontSize = 11.sp,
+            color = AppColors.TextTertiary
+        )
+    }
+}
+
+@Composable
 private fun AccountManagementCard(
     account: AccountManagementItem,
     onEdit: () -> Unit,
@@ -282,18 +358,17 @@ private fun AccountManagementCard(
         }
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+            .clip(RoundedCornerShape(AppRadii.lg))
+            .background(AppColors.CardBackground)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(AppSpacing.s4)
         ) {
             // Top row: Icon, Name, and Action buttons
             Row(

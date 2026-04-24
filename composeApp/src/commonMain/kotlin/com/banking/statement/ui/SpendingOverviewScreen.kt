@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.theme.AppColors
@@ -168,9 +169,14 @@ fun SpendingOverviewScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(AppColors.SurfaceTint),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 12.dp,
+            bottom = 24.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
             // Summary Cards
             item {
@@ -196,35 +202,31 @@ fun SpendingOverviewScreen(
             // Net balance
             item {
                 val netAmount = displayIncome + displayExpenses
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (netAmount >= 0) {
-                            AppColors.Income.copy(alpha = 0.1f)
-                        } else {
-                            AppColors.Expenses.copy(alpha = 0.1f)
-                        }
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (netAmount >= 0) AppColors.IncomeTint
+                            else AppColors.ExpenseTint
+                        )
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = strings.netBalance,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = formatCurrency(netAmount),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
-                        )
-                    }
+                    Text(
+                        text = strings.netBalance,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        text = formatMoneyLupeAmount(netAmount),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
+                    )
                 }
             }
 
@@ -270,11 +272,9 @@ fun SpendingOverviewScreen(
             } else {
                 // Category breakdown title
                 item {
-                    Text(
+                    com.banking.statement.ui.components.EyebrowLabel(
                         text = strings.spendingByCategory,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(start = 4.dp, top = 6.dp)
                     )
                 }
 
@@ -299,11 +299,9 @@ fun SpendingOverviewScreen(
                 // Monthly summary title with pagination
                 if (displayMonthlySummary.isNotEmpty()) {
                     item {
-                        Text(
+                        com.banking.statement.ui.components.EyebrowLabel(
                             text = strings.monthlySummary,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 16.dp)
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                         )
                     }
 
@@ -701,6 +699,21 @@ internal fun formatCurrency(amount: Double): String {
     val rounded = kotlin.math.round(absAmount * 100) / 100
     val formatted = rounded.toString().replace(".", ",")
     return if (amount >= 0) "+$formatted €" else "-$formatted €"
+}
+
+/**
+ * MoneyLupe-style amount: sign prefix + € prefix + thousand separator with
+ * "." decimal (matches the hi-fi kit's Roboto Mono numerals).
+ */
+internal fun formatMoneyLupeAmount(amount: Double): String {
+    val abs = kotlin.math.abs(amount)
+    val cents = kotlin.math.round(abs * 100).toLong()
+    val whole = cents / 100
+    val frac = cents % 100
+    val wholeStr = whole.toString().reversed().chunked(3).joinToString(",").reversed()
+    val sign = if (amount >= 0) "+" else "−"
+    val fracStr = frac.toString().padStart(2, '0')
+    return "$sign€$wholeStr.$fracStr"
 }
 
 internal fun parseHexColor(hexColor: String): Color {

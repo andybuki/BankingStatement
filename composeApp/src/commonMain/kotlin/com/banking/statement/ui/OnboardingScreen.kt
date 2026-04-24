@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.banking.statement.LocalStrings
+import com.banking.statement.categorization.TransactionCategory
+import com.banking.statement.ui.components.composeColor
 import com.banking.statement.ui.theme.AppColors
 
 /**
@@ -177,10 +179,56 @@ private fun OnboardingPageImport() {
                 .background(AppColors.Primary.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "\uD83C\uDFE6",  // bank emoji
-                fontSize = 48.sp
-            )
+            Canvas(modifier = Modifier.size(88.dp)) {
+                val w = size.width
+                val h = size.height
+                val sheetW = w * 0.54f
+                val sheetH = h * 0.70f
+                val backTopLeft = Offset(w * 0.18f, h * 0.14f)
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.75f),
+                    topLeft = backTopLeft,
+                    size = Size(sheetW, sheetH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
+                )
+                val frontTopLeft = Offset(w * 0.08f, h * 0.20f)
+                drawRoundRect(
+                    color = Color.White,
+                    topLeft = frontTopLeft,
+                    size = Size(sheetW, sheetH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f)
+                )
+                val lineLeft = frontTopLeft.x + w * 0.06f
+                val lineStart = frontTopLeft.y + h * 0.12f
+                for (i in 0 until 3) {
+                    drawRoundRect(
+                        color = AppColors.Primary.copy(alpha = 0.25f),
+                        topLeft = Offset(lineLeft, lineStart + i * h * 0.11f),
+                        size = Size(sheetW * 0.64f, h * 0.04f),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f, 2f)
+                    )
+                }
+                val lensCenter = Offset(w * 0.66f, h * 0.70f)
+                val lensRadius = w * 0.17f
+                drawCircle(
+                    color = AppColors.Primary,
+                    radius = lensRadius + 4f,
+                    center = lensCenter,
+                    style = Stroke(width = 5f, cap = StrokeCap.Round)
+                )
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.18f),
+                    radius = lensRadius,
+                    center = lensCenter
+                )
+                drawLine(
+                    color = AppColors.Primary,
+                    start = Offset(lensCenter.x + lensRadius * 0.70f, lensCenter.y + lensRadius * 0.70f),
+                    end = Offset(lensCenter.x + lensRadius * 1.55f, lensCenter.y + lensRadius * 1.55f),
+                    strokeWidth = 6f,
+                    cap = StrokeCap.Round
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -293,12 +341,14 @@ private fun OnboardingPageSpending() {
 
 @Composable
 private fun SampleDonutChart() {
+    // Use MoneyLupe category seed colors so the onboarding preview matches
+    // what users will see once they import real transactions.
     val categories = listOf(
-        Triple("Rent", Color(0xFF3B82F6), 35f),
-        Triple("Food", Color(0xFF10B981), 25f),
-        Triple("Transport", Color(0xFFF59E0B), 15f),
-        Triple("Shopping", Color(0xFFEF4444), 12f),
-        Triple("Other", Color(0xFF8B5CF6), 13f)
+        Triple("Rent", TransactionCategory.RENT.composeColor(), 35f),
+        Triple("Food", TransactionCategory.SUPERMARKET.composeColor(), 25f),
+        Triple("Transport", TransactionCategory.TRANSPORT.composeColor(), 15f),
+        Triple("Shopping", TransactionCategory.SHOPPING.composeColor(), 12f),
+        Triple("Other", TransactionCategory.OTHER.composeColor(), 13f)
     )
 
     Box(
@@ -461,7 +511,7 @@ private fun SampleLineChart() {
                 }
                 drawPath(
                     path = expensePath,
-                    color = Color(0xFFF59E0B),
+                    color = AppColors.Expenses,
                     style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                 )
 
@@ -474,7 +524,7 @@ private fun SampleLineChart() {
                 expenseData.forEachIndexed { index, value ->
                     val x = index * stepX
                     val y = height - (value / maxVal * height)
-                    drawCircle(color = Color(0xFFF59E0B), radius = 4.dp.toPx(), center = Offset(x, y))
+                    drawCircle(color = AppColors.Expenses, radius = 4.dp.toPx(), center = Offset(x, y))
                 }
             }
         }
@@ -522,7 +572,7 @@ private fun SampleLineChart() {
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFF59E0B))
+                        .background(AppColors.Expenses)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(

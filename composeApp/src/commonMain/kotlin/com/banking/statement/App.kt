@@ -223,10 +223,15 @@ fun App(
                             accounts = accountsForManagement,
                             totalIncome = totalIncome,
                             totalExpenses = totalExpenses,
+                            transactions = transactions,
+                            categorySpending = categorySpending,
                             showSuccessCard = showSuccessCard,
                             showTutorial = showTutorial,
                             onDismissTutorial = onDismissTutorial,
-                            onEmailClick = onEmailClick
+                            onEmailClick = onEmailClick,
+                            onNavigateToTransactions = { currentTab = NavigationTab.TRANSACTIONS },
+                            onNavigateToSpending = { currentTab = NavigationTab.SPENDING },
+                            onNavigateToSettings = { currentTab = NavigationTab.SETTINGS }
                         )
                         NavigationTab.TRANSACTIONS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
