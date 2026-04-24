@@ -355,13 +355,14 @@ fun QuickActionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val shape = RoundedCornerShape(AppRadii.lg)
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(AppRadii.lg))
+            .shadow(AppElevations.xs, shape, clip = false)
+            .clip(shape)
             .background(AppColors.CardBackground)
-            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
             .clickable(onClick = onClick)
-            .padding(AppSpacing.s3 + 2.dp),
+            .padding(AppSpacing.s4),
         verticalArrangement = Arrangement.spacedBy(AppSpacing.s3 - 2.dp)
     ) {
         Box(

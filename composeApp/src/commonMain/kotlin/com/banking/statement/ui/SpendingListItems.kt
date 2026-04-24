@@ -50,12 +50,16 @@ fun SummaryCard(
     ) {
         EyebrowLabel(text = title)
         Spacer(modifier = Modifier.height(4.dp))
+        // Sign is implied by the label + color; dropping it keeps the amount
+        // on one line even at 5-6-digit magnitudes (e.g. €109,618.74).
         Text(
-            text = formatSummaryAmount(amount),
-            fontSize = 22.sp,
+            text = formatCompactAmount(amount),
+            fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = FontFamily.Monospace,
-            color = color
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -277,7 +281,23 @@ private fun formatAbs2dp(value: Double): String {
     return "$wholeStr.${frac.toString().padStart(2, '0')}"
 }
 
-private fun formatSummaryAmount(amount: Double): String {
-    val sign = if (amount >= 0) "+" else "−"
-    return "$sign€${formatAbs2dp(amount)}"
+/**
+ * Compact, single-line "€…" for the half-width summary cards on the
+ * Spending tab. Uses K/M suffixes above 10,000 so yearly totals fit.
+ */
+private fun formatCompactAmount(amount: Double): String {
+    val abs = abs(amount)
+    return when {
+        abs >= 1_000_000 -> "€${formatOneDecimal(abs / 1_000_000)}M"
+        abs >= 10_000 -> "€${formatOneDecimal(abs / 1_000)}K"
+        else -> "€${formatAbs2dp(abs)}"
+    }
+}
+
+private fun formatOneDecimal(value: Double): String {
+    val tenths = (value * 10.0).roundToInt()
+    val whole = tenths / 10
+    val frac = tenths % 10
+    val wholeStr = whole.toString().reversed().chunked(3).joinToString(",").reversed()
+    return if (frac == 0) wholeStr else "$wholeStr.$frac"
 }

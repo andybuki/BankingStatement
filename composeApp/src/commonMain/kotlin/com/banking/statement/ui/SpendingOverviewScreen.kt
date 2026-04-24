@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.theme.AppColors
@@ -168,7 +169,7 @@ fun SpendingOverviewScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(AppColors.SurfaceTint)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -210,14 +211,15 @@ fun SpendingOverviewScreen(
                 ) {
                     Text(
                         text = strings.netBalance,
-                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextPrimary
                     )
                     Text(
-                        text = formatCurrency(netAmount),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        text = formatMoneyLupeAmount(netAmount),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                         color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
                     )
                 }
@@ -696,6 +698,21 @@ internal fun formatCurrency(amount: Double): String {
     val rounded = kotlin.math.round(absAmount * 100) / 100
     val formatted = rounded.toString().replace(".", ",")
     return if (amount >= 0) "+$formatted €" else "-$formatted €"
+}
+
+/**
+ * MoneyLupe-style amount: sign prefix + € prefix + thousand separator with
+ * "." decimal (matches the hi-fi kit's Roboto Mono numerals).
+ */
+internal fun formatMoneyLupeAmount(amount: Double): String {
+    val abs = kotlin.math.abs(amount)
+    val cents = kotlin.math.round(abs * 100).toLong()
+    val whole = cents / 100
+    val frac = cents % 100
+    val wholeStr = whole.toString().reversed().chunked(3).joinToString(",").reversed()
+    val sign = if (amount >= 0) "+" else "−"
+    val fracStr = frac.toString().padStart(2, '0')
+    return "$sign€$wholeStr.$fracStr"
 }
 
 internal fun parseHexColor(hexColor: String): Color {
