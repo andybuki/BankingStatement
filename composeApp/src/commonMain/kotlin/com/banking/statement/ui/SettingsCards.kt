@@ -9,17 +9,48 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.components.EyebrowLabel
+import com.banking.statement.ui.theme.AppColors
+import com.banking.statement.ui.theme.AppElevations
+import com.banking.statement.ui.theme.AppRadii
+import com.banking.statement.ui.theme.AppSpacing
 import com.banking.statement.ui.theme.ThemeMode
 
 // ============================================================
-// Settings cards shown on the Settings tab.
-// Extracted from AccountManagementScreen.kt to keep the screen
-// file focused on accounts/statements.
+// Settings cards shown on the Settings tab, restyled to match
+// the MoneyLupe MLSettingsScreen mockup — white surface,
+// 16dp radius, xs shadow, eyebrow section titles.
 // ============================================================
+
+@Composable
+private fun SettingsGroup(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.s2)) {
+        EyebrowLabel(
+            text = title,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+                .clip(RoundedCornerShape(AppRadii.lg))
+                .background(AppColors.CardBackground)
+                .padding(AppSpacing.s4),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.s3)
+        ) {
+            content()
+        }
+    }
+}
 
 @Composable
 internal fun ThemeSettingsCard(
@@ -28,50 +59,29 @@ internal fun ThemeSettingsCard(
 ) {
     val strings = LocalStrings.current
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    SettingsGroup(title = strings.settings) {
+        Text(
+            text = strings.theme,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = AppColors.TextPrimary
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.s2)
         ) {
-            Text(
-                text = strings.settings,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+            ThemeOption(
+                label = strings.themeLight,
+                selected = currentThemeMode == ThemeMode.LIGHT,
+                onClick = { onThemeModeChange(ThemeMode.LIGHT) },
+                modifier = Modifier.weight(1f)
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = strings.theme,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            ThemeOption(
+                label = strings.themeDark,
+                selected = currentThemeMode == ThemeMode.DARK || currentThemeMode == ThemeMode.SYSTEM,
+                onClick = { onThemeModeChange(ThemeMode.DARK) },
+                modifier = Modifier.weight(1f)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ThemeOption(
-                    label = strings.themeLight,
-                    selected = currentThemeMode == ThemeMode.LIGHT,
-                    onClick = { onThemeModeChange(ThemeMode.LIGHT) },
-                    modifier = Modifier.weight(1f)
-                )
-                ThemeOption(
-                    label = strings.themeDark,
-                    selected = currentThemeMode == ThemeMode.DARK || currentThemeMode == ThemeMode.SYSTEM,
-                    onClick = { onThemeModeChange(ThemeMode.DARK) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
         }
     }
 }
@@ -83,32 +93,25 @@ private fun ThemeOption(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor = if (selected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    val textColor = if (selected) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val bg = if (selected) AppColors.Primary else AppColors.SurfaceTint
+    val fg = if (selected) AppColors.ButtonPrimaryText else AppColors.TextSecondary
 
-    Surface(
+    Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        color = backgroundColor
+            .clip(RoundedCornerShape(AppRadii.sm))
+            .background(bg)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = AppSpacing.s2)
     ) {
         Text(
             text = label,
-            modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            color = textColor,
+            modifier = Modifier.fillMaxWidth(),
+            fontSize = 13.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            color = fg,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
 }
@@ -119,53 +122,23 @@ internal fun SecuritySettingsCard(
     onBiometricLockChange: (Boolean) -> Unit
 ) {
     val strings = LocalStrings.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = strings.security,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = strings.biometricLock,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = strings.biometricLockDescription,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+    SettingsGroup(title = strings.security) {
+        SettingRow(
+            title = strings.biometricLock,
+            subtitle = strings.biometricLockDescription,
+            trailing = {
                 Switch(
                     checked = biometricLockEnabled,
                     onCheckedChange = onBiometricLockChange,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        checkedThumbColor = androidx.compose.ui.graphics.Color.White,
+                        checkedTrackColor = AppColors.Primary,
+                        uncheckedThumbColor = androidx.compose.ui.graphics.Color.White,
+                        uncheckedTrackColor = AppColors.Disabled
                     )
                 )
             }
-        }
+        )
     }
 }
 
@@ -174,51 +147,27 @@ internal fun ContactSettingsCard(
     onEmailClick: (String) -> Unit
 ) {
     val strings = LocalStrings.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    SettingsGroup(title = strings.contactTitle) {
+        Text(
+            text = strings.contactHint,
+            fontSize = 13.sp,
+            color = AppColors.TextSecondary
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(AppRadii.sm))
+                .background(AppColors.SurfaceTint)
+                .clickable { onEmailClick(strings.contactEmail) }
+                .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s3),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = strings.contactTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                text = strings.contactEmail,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = AppColors.Primary
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = strings.contactHint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable { onEmailClick(strings.contactEmail) }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = strings.contactEmail,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
         }
     }
 }
@@ -229,55 +178,23 @@ internal fun ReminderSettingsCard(
     onRemindersEnabledChange: (Boolean) -> Unit
 ) {
     val strings = LocalStrings.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = strings.reminders,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = strings.remindersDescription,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = strings.remindersEnabled,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
+    SettingsGroup(title = strings.reminders) {
+        SettingRow(
+            title = strings.remindersEnabled,
+            subtitle = strings.remindersDescription,
+            trailing = {
                 Switch(
                     checked = remindersEnabled,
                     onCheckedChange = onRemindersEnabledChange,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        checkedThumbColor = androidx.compose.ui.graphics.Color.White,
+                        checkedTrackColor = AppColors.Primary,
+                        uncheckedThumbColor = androidx.compose.ui.graphics.Color.White,
+                        uncheckedTrackColor = AppColors.Disabled
                     )
                 )
             }
-        }
+        )
     }
 }
 
@@ -286,26 +203,56 @@ internal fun ShareAppCard(
     onShareApp: () -> Unit
 ) {
     val strings = LocalStrings.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+            .clip(RoundedCornerShape(AppRadii.lg))
+            .background(AppColors.CardBackground)
+            .padding(AppSpacing.s4)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Button(
+            onClick = onShareApp,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(AppRadii.md),
+            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
         ) {
-            Button(
-                onClick = onShareApp,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+            Text(
+                text = strings.shareApp,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingRow(
+    title: String,
+    subtitle: String? = null,
+    trailing: @Composable () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = AppColors.TextPrimary
+            )
+            if (subtitle != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    color = AppColors.TextSecondary
                 )
-            ) {
-                Text(strings.shareApp)
             }
         }
+        trailing()
     }
 }
