@@ -12,12 +12,13 @@ enum class TransactionCategory(
     val icon: String,
     val color: String
 ) {
+    // Colors follow MoneyLupe category seed palette (see README.md VISUAL FOUNDATIONS).
     // Housing (includes utilities)
     RENT(
         displayName = "Rent & Utilities",
         displayNameDe = "Miete & Nebenkosten",
         icon = "home",
-        color = "#E57373"
+        color = "#0EA5E9"
     ),
 
     // Transportation (includes public transport, car, fuel)
@@ -25,7 +26,7 @@ enum class TransactionCategory(
         displayName = "Transport",
         displayNameDe = "Transport",
         icon = "directions_bus",
-        color = "#2196F3"
+        color = "#F59E0B"
     ),
 
     // Food & Groceries
@@ -33,13 +34,13 @@ enum class TransactionCategory(
         displayName = "Supermarket",
         displayNameDe = "Supermarkt",
         icon = "shopping_cart",
-        color = "#81C784"
+        color = "#22C55E"
     ),
     RESTAURANT(
         displayName = "Restaurant",
         displayNameDe = "Restaurant",
         icon = "restaurant",
-        color = "#FF8A65"
+        color = "#EF4444"
     ),
 
     // Shopping (includes online shopping)
@@ -47,7 +48,7 @@ enum class TransactionCategory(
         displayName = "Shopping",
         displayNameDe = "Einkaufen",
         icon = "shopping_bag",
-        color = "#BA68C8"
+        color = "#EC4899"
     ),
 
     // Health
@@ -55,7 +56,7 @@ enum class TransactionCategory(
         displayName = "Health",
         displayNameDe = "Gesundheit",
         icon = "medical_services",
-        color = "#F06292"
+        color = "#14B8A6"
     ),
 
     // Insurance
@@ -63,7 +64,7 @@ enum class TransactionCategory(
         displayName = "Insurance",
         displayNameDe = "Versicherung",
         icon = "security",
-        color = "#7986CB"
+        color = "#6366F1"
     ),
 
     // Entertainment
@@ -71,7 +72,7 @@ enum class TransactionCategory(
         displayName = "Entertainment",
         displayNameDe = "Unterhaltung",
         icon = "movie",
-        color = "#9575CD"
+        color = "#A855F7"
     ),
 
     // Subscriptions (includes fitness, phone & internet)
@@ -79,7 +80,7 @@ enum class TransactionCategory(
         displayName = "Subscriptions",
         displayNameDe = "Abonnements",
         icon = "subscriptions",
-        color = "#4DB6AC"
+        color = "#8B5CF6"
     ),
 
     // Investment
@@ -87,7 +88,7 @@ enum class TransactionCategory(
         displayName = "Investment",
         displayNameDe = "Investition",
         icon = "trending_up",
-        color = "#AED581"
+        color = "#10B981"
     ),
 
     // Travel
@@ -95,7 +96,7 @@ enum class TransactionCategory(
         displayName = "Travel",
         displayNameDe = "Reisen",
         icon = "flight",
-        color = "#29B6F6"
+        color = "#06B6D4"
     ),
 
     // Income
@@ -103,13 +104,13 @@ enum class TransactionCategory(
         displayName = "Salary",
         displayNameDe = "Gehalt",
         icon = "payments",
-        color = "#66BB6A"
+        color = "#16A34A"
     ),
     REFUND(
         displayName = "Refund",
         displayNameDe = "Rückerstattung",
         icon = "replay",
-        color = "#26A69A"
+        color = "#84CC16"
     ),
 
     // Transfers
@@ -117,7 +118,7 @@ enum class TransactionCategory(
         displayName = "Transfer",
         displayNameDe = "Überweisung",
         icon = "swap_horiz",
-        color = "#78909C"
+        color = "#64748B"
     ),
 
     // Education
@@ -125,7 +126,7 @@ enum class TransactionCategory(
         displayName = "Education",
         displayNameDe = "Bildung",
         icon = "school",
-        color = "#FFD54F"
+        color = "#F97316"
     ),
 
     // Taxes
@@ -133,7 +134,7 @@ enum class TransactionCategory(
         displayName = "Taxes",
         displayNameDe = "Steuern",
         icon = "receipt_long",
-        color = "#795548"
+        color = "#71717A"
     ),
 
     // Other/Unknown
@@ -141,7 +142,7 @@ enum class TransactionCategory(
         displayName = "Other",
         displayNameDe = "Sonstiges",
         icon = "category",
-        color = "#B0BEC5"
+        color = "#94A3B8"
     );
 
     /**
