@@ -169,9 +169,14 @@ fun SpendingOverviewScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.SurfaceTint)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(AppColors.SurfaceTint),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 12.dp,
+            bottom = 24.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
             // Summary Cards
             item {
@@ -267,11 +272,9 @@ fun SpendingOverviewScreen(
             } else {
                 // Category breakdown title
                 item {
-                    Text(
+                    com.banking.statement.ui.components.EyebrowLabel(
                         text = strings.spendingByCategory,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(start = 4.dp, top = 6.dp)
                     )
                 }
 
@@ -296,11 +299,9 @@ fun SpendingOverviewScreen(
                 // Monthly summary title with pagination
                 if (displayMonthlySummary.isNotEmpty()) {
                     item {
-                        Text(
+                        com.banking.statement.ui.components.EyebrowLabel(
                             text = strings.monthlySummary,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 16.dp)
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                         )
                     }
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Home
@@ -428,6 +429,111 @@ fun SectionTitle(
                 color = AppColors.Primary,
                 modifier = if (onAction != null) Modifier.clickable(onClick = onAction) else Modifier
             )
+        }
+    }
+}
+
+// ============================================================
+// MoneyLupeChoiceDialog — a single-select list dialog styled to
+// match the MoneyLupe kit. Replaces Material's AlertDialog with
+// RadioButton rows across the app's Sort / Filter menus.
+// ============================================================
+
+@Composable
+fun <T> MoneyLupeChoiceDialog(
+    eyebrow: String? = null,
+    title: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    onDismiss: () -> Unit,
+    secondaryAction: Pair<String, () -> Unit>? = null
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(AppElevations.md, RoundedCornerShape(AppRadii.xl), clip = false)
+                .clip(RoundedCornerShape(AppRadii.xl))
+                .background(AppColors.CardBackground)
+                .padding(AppSpacing.s5)
+        ) {
+            if (eyebrow != null) {
+                EyebrowLabel(text = eyebrow)
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(AppSpacing.s3))
+
+            options.forEach { (value, label) ->
+                val isSelected = value == selected
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(AppRadii.md))
+                        .clickable { onSelect(value) }
+                        .background(
+                            if (isSelected) AppColors.PrimaryContainer.copy(alpha = 0.5f)
+                            else Color.Transparent
+                        )
+                        .padding(horizontal = AppSpacing.s3, vertical = AppSpacing.s3 - 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 14.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        color = if (isSelected) AppColors.Primary else AppColors.TextPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            tint = AppColors.Primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(AppSpacing.s3))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (secondaryAction != null) {
+                    TextButton(
+                        onClick = secondaryAction.second,
+                        colors = ButtonDefaults.textButtonColors(contentColor = AppColors.TextSecondary)
+                    ) {
+                        Text(
+                            text = secondaryAction.first,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(AppSpacing.s1))
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Primary)
+                ) {
+                    Text(
+                        text = "Close",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
     }
 }

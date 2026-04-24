@@ -32,7 +32,7 @@ import com.banking.statement.LocalStrings
 import com.banking.statement.ui.components.CategoryAvatar
 import com.banking.statement.ui.components.EyebrowLabel
 import com.banking.statement.ui.components.MoneyAmount
-import com.banking.statement.ui.components.PeriodPills
+import com.banking.statement.ui.components.MoneyLupeChoiceDialog
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.AppElevations
 import com.banking.statement.ui.theme.AppRadii
@@ -135,18 +135,20 @@ fun TransactionListScreen(
             .fillMaxSize()
             .background(AppColors.SurfaceTint)
     ) {
-        // Search + sort + filter chrome
+        // Search + sort + filter chrome (compact)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s2 + 2.dp),
+                .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s2),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppSpacing.s2)
         ) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 40.dp),
                 placeholder = {
                     Text(
                         text = strings.searchTransactions,
@@ -185,60 +187,13 @@ fun TransactionListScreen(
             )
         }
 
-        // Period pills + item count
+        // Item count (single line — period selection happens inside the calendar dialog)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = AppSpacing.s4),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = AppSpacing.s4 + 4.dp, vertical = AppSpacing.s1),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            val pillOptions = listOf(
-                strings.periodWeek,
-                strings.periodMonth,
-                strings.periodYear,
-                strings.periodAll
-            )
-            val pillSelected = when (timeFilter) {
-                TransactionTimeFilter.WEEK -> strings.periodWeek
-                TransactionTimeFilter.MONTH -> strings.periodMonth
-                TransactionTimeFilter.YEAR -> strings.periodYear
-                else -> strings.periodAll
-            }
-            val tz = TimeZone.currentSystemDefault()
-            PeriodPills(
-                selected = pillSelected,
-                options = pillOptions,
-                onSelect = { opt ->
-                    val today = Clock.System.todayIn(tz)
-                    when (opt) {
-                        strings.periodWeek -> {
-                            timeFilter = TransactionTimeFilter.WEEK
-                            val s = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
-                            val e = today.atStartOfDayIn(tz).epochSeconds + 86399L
-                            onDateRangeChange?.invoke(s, e)
-                        }
-                        strings.periodMonth -> {
-                            timeFilter = TransactionTimeFilter.MONTH
-                            val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
-                            val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1)
-                            else LocalDate(today.year, today.monthNumber + 1, 1)
-                            val e = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
-                            onDateRangeChange?.invoke(s, e)
-                        }
-                        strings.periodYear -> {
-                            timeFilter = TransactionTimeFilter.YEAR
-                            val s = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
-                            val e = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
-                            onDateRangeChange?.invoke(s, e)
-                        }
-                        else -> {
-                            timeFilter = TransactionTimeFilter.ALL
-                            onDateRangeChange?.invoke(null, null)
-                        }
-                    }
-                }
-            )
             Text(
                 text = transactionCountText,
                 fontSize = 11.sp,
@@ -246,7 +201,7 @@ fun TransactionListScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(AppSpacing.s3))
+        Spacer(modifier = Modifier.height(AppSpacing.s2))
 
         val listState = rememberLazyListState()
         val coroutineScope = rememberCoroutineScope()
@@ -366,132 +321,79 @@ fun TransactionListScreen(
 
     // Sort dialog
     if (showSortDialog) {
-        AlertDialog(
-            onDismissRequest = { showSortDialog = false },
-            title = { Text("Sort transactions", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf(
-                        TransactionSortOrder.DATE_DESC to "Date: Newest first",
-                        TransactionSortOrder.DATE_ASC to "Date: Oldest first",
-                        TransactionSortOrder.AMOUNT_DESC to "Amount: Highest first",
-                        TransactionSortOrder.AMOUNT_ASC to "Amount: Lowest first",
-                        TransactionSortOrder.NAME_ASC to "Name: A → Z"
-                    ).forEach { (order, label) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    onSortOrderChange?.invoke(order)
-                                    showSortDialog = false
-                                }
-                                .background(
-                                    if (sortOrder == order) MaterialTheme.colorScheme.primaryContainer
-                                    else Color.Transparent
-                                )
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = sortOrder == order,
-                                onClick = {
-                                    onSortOrderChange?.invoke(order)
-                                    showSortDialog = false
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(label, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
+        MoneyLupeChoiceDialog(
+            eyebrow = "Sort",
+            title = "Sort transactions",
+            options = listOf(
+                TransactionSortOrder.DATE_DESC to "Date: Newest first",
+                TransactionSortOrder.DATE_ASC to "Date: Oldest first",
+                TransactionSortOrder.AMOUNT_DESC to "Amount: Highest first",
+                TransactionSortOrder.AMOUNT_ASC to "Amount: Lowest first",
+                TransactionSortOrder.NAME_ASC to "Name: A → Z"
+            ),
+            selected = sortOrder,
+            onSelect = {
+                onSortOrderChange?.invoke(it)
+                showSortDialog = false
             },
-            confirmButton = {
-                TextButton(onClick = { showSortDialog = false }) { Text("Close") }
-            }
+            onDismiss = { showSortDialog = false }
         )
     }
 
     // Filter dialog
     if (showFilterDialog) {
         val tz = TimeZone.currentSystemDefault()
-        AlertDialog(
-            onDismissRequest = { showFilterDialog = false },
-            title = { Text("Filter by time", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf(
-                        TransactionTimeFilter.ALL to "All time",
-                        TransactionTimeFilter.WEEK to "This week",
-                        TransactionTimeFilter.MONTH to "This month",
-                        TransactionTimeFilter.YEAR to "This year",
-                        TransactionTimeFilter.CUSTOM to "Custom range"
-                    ).forEach { (filter, label) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    if (filter != TransactionTimeFilter.CUSTOM) {
-                                        timeFilter = filter
-                                        val today = Clock.System.todayIn(tz)
-                                        val (start, end) = when (filter) {
-                                            TransactionTimeFilter.ALL -> null to null
-                                            TransactionTimeFilter.WEEK -> {
-                                                val s = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
-                                                val e = today.atStartOfDayIn(tz).epochSeconds + 86399L
-                                                s to e
-                                            }
-                                            TransactionTimeFilter.MONTH -> {
-                                                val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
-                                                val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(today.year, today.monthNumber + 1, 1)
-                                                val e = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
-                                                s to e
-                                            }
-                                            TransactionTimeFilter.YEAR -> {
-                                                val s = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
-                                                val e = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
-                                                s to e
-                                            }
-                                            TransactionTimeFilter.CUSTOM -> null to null
-                                        }
-                                        onDateRangeChange?.invoke(start, end)
-                                        showFilterDialog = false
-                                    } else {
-                                        timeFilter = filter
-                                        showFilterDialog = false
-                                        showStartDatePicker = true
-                                    }
-                                }
-                                .background(
-                                    if (timeFilter == filter) MaterialTheme.colorScheme.primaryContainer
-                                    else Color.Transparent
-                                )
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = timeFilter == filter,
-                                onClick = null
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(label, style = MaterialTheme.typography.bodyMedium)
+        MoneyLupeChoiceDialog(
+            eyebrow = "Time range",
+            title = "Filter by time",
+            options = listOf(
+                TransactionTimeFilter.ALL to "All time",
+                TransactionTimeFilter.WEEK to "This week",
+                TransactionTimeFilter.MONTH to "This month",
+                TransactionTimeFilter.YEAR to "This year",
+                TransactionTimeFilter.CUSTOM to "Custom range"
+            ),
+            selected = timeFilter,
+            onSelect = { filter ->
+                if (filter != TransactionTimeFilter.CUSTOM) {
+                    timeFilter = filter
+                    val today = Clock.System.todayIn(tz)
+                    val (start, end) = when (filter) {
+                        TransactionTimeFilter.ALL -> null to null
+                        TransactionTimeFilter.WEEK -> {
+                            val s = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
+                            val e = today.atStartOfDayIn(tz).epochSeconds + 86399L
+                            s to e
                         }
+                        TransactionTimeFilter.MONTH -> {
+                            val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
+                            val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(today.year, today.monthNumber + 1, 1)
+                            val e = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
+                            s to e
+                        }
+                        TransactionTimeFilter.YEAR -> {
+                            val s = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
+                            val e = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
+                            s to e
+                        }
+                        TransactionTimeFilter.CUSTOM -> null to null
                     }
+                    onDateRangeChange?.invoke(start, end)
+                    showFilterDialog = false
+                } else {
+                    timeFilter = filter
+                    showFilterDialog = false
+                    showStartDatePicker = true
                 }
             },
-            confirmButton = {
-                TextButton(onClick = { showFilterDialog = false }) { Text("Close") }
-            },
-            dismissButton = {
-                if (timeFilter != TransactionTimeFilter.ALL) {
-                    TextButton(onClick = {
-                        timeFilter = TransactionTimeFilter.ALL
-                        onDateRangeChange?.invoke(null, null)
-                        showFilterDialog = false
-                    }) { Text("Clear") }
+            onDismiss = { showFilterDialog = false },
+            secondaryAction = if (timeFilter != TransactionTimeFilter.ALL) {
+                "Clear" to {
+                    timeFilter = TransactionTimeFilter.ALL
+                    onDateRangeChange?.invoke(null, null)
+                    showFilterDialog = false
                 }
-            }
+            } else null
         )
     }
 
