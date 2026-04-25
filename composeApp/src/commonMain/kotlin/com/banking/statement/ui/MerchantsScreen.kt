@@ -1,54 +1,80 @@
 package com.banking.statement.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.charts.MerchantSpendingData
 import com.banking.statement.ui.charts.TopMerchantsBarChart
+import com.banking.statement.ui.components.CategoryAvatar
+import com.banking.statement.ui.components.EyebrowLabel
+import com.banking.statement.ui.components.MoneyLupeChoiceDialog
+import com.banking.statement.ui.theme.AppColors
+import com.banking.statement.ui.theme.AppElevations
+import com.banking.statement.ui.theme.AppRadii
+import com.banking.statement.ui.theme.AppSpacing
 import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 /**
- * Dedicated screen for displaying top merchants and spending trends
+ * Dedicated screen for displaying top merchants and spending trends,
+ * styled to match MoneyLupe MLMerchantsScreen (ui_kits/mobile/ScreensB.jsx).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MerchantsScreen(
     transactions: List<TransactionDisplay>,
     accounts: List<AccountFilterOption> = emptyList(),
-    selectedAccountId: Long? = null,  // Controlled by App level
+    selectedAccountId: Long? = null,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
 
-    // Filter transactions by selected account
-    val filteredTransactions = remember(transactions, selectedAccountId) {
-        if (selectedAccountId == null) {
-            transactions
-        } else {
-            transactions.filter { it.accountId == selectedAccountId }
-        }
+    // Local time-period filter — same options Activity exposes via the
+    // calendar dialog. Filtering happens in-memory off the date strings,
+    // identical to the Spending tab path.
+    var timePeriod by remember { mutableStateOf(TimePeriod.ALL) }
+    var showPeriodPicker by remember { mutableStateOf(false) }
+
+    val periodLabel = when (timePeriod) {
+        TimePeriod.WEEK -> strings.periodWeek
+        TimePeriod.MONTH -> strings.periodMonth
+        TimePeriod.YEAR -> strings.periodYear
+        TimePeriod.CUSTOM -> strings.periodCustom
+        TimePeriod.ALL -> strings.periodAll
     }
 
-    // Calculate merchant history from filtered transactions
+    val filteredTransactions = remember(transactions, selectedAccountId, timePeriod) {
+        val byAccount = if (selectedAccountId == null) transactions
+        else transactions.filter { it.accountId == selectedAccountId }
+        filterByTimePeriod(byAccount, timePeriod)
+    }
+
     val merchantHistory = remember(filteredTransactions) {
         calculateMerchantHistoryFromTransactions(filteredTransactions)
     }
 
-    // Calculate merchant trends
     val merchantTrends = remember(filteredTransactions) {
         calculateMerchantTrendsFromTransactions(filteredTransactions)
     }
 
-    // Calculate merchant spending data for the bar chart
     val merchantSpending = remember(filteredTransactions) {
         filteredTransactions
             .filter { it.amount < 0 && !it.counterparty.isNullOrBlank() }
@@ -63,48 +89,73 @@ fun MerchantsScreen(
             .sortedByDescending { it.amount }
     }
 
-    // Calculate total spending across all merchants
     val totalMerchantSpending = remember(merchantHistory) {
         merchantHistory.sumOf { it.totalSpending }
     }
-
     val totalMerchantTransactions = remember(merchantHistory) {
         merchantHistory.sumOf { it.totalTransactions }
+    }
+
+    // Join history rows with trend info (by merchant name) so we can render
+    // name / category / tx count / total / trend in one row per merchant.
+    val ranked = remember(merchantHistory, merchantTrends) {
+        val trendByName = merchantTrends.associateBy { it.merchantName }
+        merchantHistory
+            .sortedByDescending { it.totalSpending }
+            .map { history ->
+                val trend = trendByName[history.merchantName]
+                RankedMerchant(history = history, trend = trend)
+            }
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .background(AppColors.SurfaceTint)
     ) {
-        Spacer(modifier = Modifier.height(8.dp))
+        // Period chrome — always rendered so the filter is reachable even
+        // when the current period yields zero merchants.
+        Box(modifier = Modifier.padding(AppSpacing.s4).padding(top = AppSpacing.s3, bottom = 0.dp)) {
+            PeriodChromeRow(
+                periodLabel = periodLabel,
+                active = timePeriod != TimePeriod.ALL,
+                onClick = { showPeriodPicker = true }
+            )
+        }
 
         if (merchantHistory.isEmpty()) {
-            // Empty state
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
+                modifier = Modifier.fillMaxSize().padding(AppSpacing.s8),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = strings.noMerchantData,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(Modifier.height(AppSpacing.s1))
+                    Text(
+                        text = strings.importFirst,
+                        fontSize = 13.sp,
+                        color = AppColors.TextSecondary,
                         textAlign = TextAlign.Center
                     )
                 }
             }
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                contentPadding = PaddingValues(
+                    start = AppSpacing.s4,
+                    end = AppSpacing.s4,
+                    top = AppSpacing.s3,
+                    bottom = AppSpacing.s6
+                ),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.s3 + 2.dp)
             ) {
-                // Summary Card
-                item {
+                item(key = "summary") {
                     MerchantSummaryCard(
                         merchantCount = merchantHistory.size,
                         totalSpending = totalMerchantSpending,
@@ -112,27 +163,49 @@ fun MerchantsScreen(
                     )
                 }
 
-                // Trends Section (if we have trend data)
-                if (merchantTrends.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
+                item(key = "title") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 4.dp, end = 4.dp, top = AppSpacing.s1),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        EyebrowLabel(text = strings.topMerchants)
                         Text(
-                            text = strings.trend,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            text = "By ${strings.totalSpent.lowercase()}",
+                            fontSize = 11.sp,
+                            color = AppColors.TextTertiary
                         )
-                    }
-
-                    items(merchantTrends.take(5)) { trend ->
-                        MerchantTrendItem(trend)
                     }
                 }
 
-                // Top Merchants Bar Chart
+                item(key = "top-merchants-card") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+                            .clip(RoundedCornerShape(AppRadii.lg))
+                            .background(AppColors.CardBackground)
+                    ) {
+                        ranked.take(10).forEachIndexed { idx, rm ->
+                            if (idx > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 78.dp)
+                                        .height(1.dp)
+                                        .background(AppColors.SurfaceTint)
+                                )
+                            }
+                            RankedMerchantRow(rank = idx + 1, merchant = rm)
+                        }
+                    }
+                }
+
                 if (merchantSpending.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
+                    item(key = "chart") {
+                        Spacer(Modifier.height(AppSpacing.s2))
                         TopMerchantsBarChart(
                             merchants = merchantSpending,
                             modifier = Modifier.fillMaxWidth()
@@ -142,11 +215,175 @@ fun MerchantsScreen(
             }
         }
     }
+
+    if (showPeriodPicker) {
+        MoneyLupeChoiceDialog(
+            eyebrow = "Time range",
+            title = "Filter by time",
+            options = listOf(
+                TimePeriod.ALL to strings.periodAll,
+                TimePeriod.WEEK to strings.periodWeek,
+                TimePeriod.MONTH to strings.periodMonth,
+                TimePeriod.YEAR to strings.periodYear
+            ),
+            selected = timePeriod,
+            onSelect = {
+                timePeriod = it
+                showPeriodPicker = false
+            },
+            onDismiss = { showPeriodPicker = false },
+            secondaryAction = if (timePeriod != TimePeriod.ALL) {
+                strings.clear to {
+                    timePeriod = TimePeriod.ALL
+                    showPeriodPicker = false
+                }
+            } else null
+        )
+    }
 }
 
-/**
- * Summary card showing overall merchant statistics
- */
+@Composable
+private fun PeriodChromeRow(
+    periodLabel: String,
+    active: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(AppRadii.md))
+            .background(AppColors.CardBackground)
+            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.md), clip = false)
+            .clickable(onClick = onClick)
+            .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s3),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(
+                    (if (active) AppColors.Primary else AppColors.TextTertiary).copy(alpha = 0.13f)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.CalendarToday,
+                contentDescription = null,
+                tint = if (active) AppColors.Primary else AppColors.TextSecondary,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(AppSpacing.s2 + 2.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Time range".uppercase(),
+                fontSize = 10.sp,
+                letterSpacing = 0.6.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextTertiary
+            )
+            Spacer(modifier = Modifier.height(1.dp))
+            Text(
+                text = periodLabel,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary
+            )
+        }
+        Text(
+            text = "Change",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.Primary
+        )
+    }
+}
+
+private data class RankedMerchant(
+    val history: MerchantHistory,
+    val trend: MerchantTrend?
+)
+
+@Composable
+private fun RankedMerchantRow(rank: Int, merchant: RankedMerchant) {
+    val strings = LocalStrings.current
+    val history = merchant.history
+    val trend = merchant.trend
+    val trendPercent = trend?.let { MerchantTrendCalculator.formatTrendPercentage(it) }
+    val trendDir = trend?.direction
+
+    // For expense merchants, spending going UP is bad (red), DOWN is good (green).
+    val trendColor = when (trendDir) {
+        MerchantTrend.TrendDirection.UP -> AppColors.Expenses
+        MerchantTrend.TrendDirection.DOWN -> AppColors.Income
+        else -> AppColors.TextTertiary
+    }
+    val trendLabel = when (trendDir) {
+        MerchantTrend.TrendDirection.UP -> "↑ $trendPercent"
+        MerchantTrend.TrendDirection.DOWN -> "↓ $trendPercent"
+        MerchantTrend.TrendDirection.NEW -> "NEW"
+        MerchantTrend.TrendDirection.STABLE -> "—"
+        else -> "—"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s3),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.s3)
+    ) {
+        Text(
+            text = rank.toString(),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = FontFamily.Monospace,
+            color = AppColors.TextTertiary,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(22.dp)
+        )
+
+        CategoryAvatar(category = history.category, size = 36.dp)
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = history.merchantName,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${history.category.getLocalizedName(strings)} · ${history.totalTransactions} tx",
+                fontSize = 11.sp,
+                color = AppColors.TextTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "€${formatMoneyAbs2dp(history.totalSpending)}",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Monospace,
+                color = AppColors.TextPrimary
+            )
+            Spacer(modifier = Modifier.height(1.dp))
+            Text(
+                text = trendLabel,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Monospace,
+                color = trendColor
+            )
+        }
+    }
+}
+
 @Composable
 private fun MerchantSummaryCard(
     merchantCount: Int,
@@ -154,54 +391,40 @@ private fun MerchantSummaryCard(
     totalTransactions: Int
 ) {
     val strings = LocalStrings.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+            .clip(RoundedCornerShape(AppRadii.lg))
+            .background(AppColors.CardBackground)
+            .padding(AppSpacing.s4),
+        horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            SummaryStatItem(
-                value = merchantCount.toString(),
-                label = strings.tabMerchants
-            )
-            SummaryStatItem(
-                value = formatCurrency(totalSpending),
-                label = strings.totalSpent
-            )
-            SummaryStatItem(
-                value = totalTransactions.toString(),
-                label = strings.transactions
-            )
-        }
+        SummaryStat(label = strings.tabMerchants, value = merchantCount.toString())
+        SummaryStat(label = strings.totalSpent, value = "€${formatMoneyAbs2dp(totalSpending)}", mono = true)
+        SummaryStat(label = strings.transactions, value = totalTransactions.toString())
     }
 }
 
 @Composable
-private fun SummaryStatItem(
-    value: String,
-    label: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+private fun SummaryStat(label: String, value: String, mono: Boolean = false) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        EyebrowLabel(text = label)
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
+            color = AppColors.TextPrimary
         )
     }
+}
+
+private fun formatMoneyAbs2dp(value: Double): String {
+    val cents = (value.absoluteValue * 100.0).roundToInt()
+    val whole = cents / 100
+    val frac = cents % 100
+    val wholeStr = whole.toString().reversed().chunked(3).joinToString(",").reversed()
+    return "$wholeStr.${frac.toString().padStart(2, '0')}"
 }

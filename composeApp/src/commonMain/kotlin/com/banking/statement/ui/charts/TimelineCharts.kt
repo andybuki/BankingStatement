@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.MonthlySummary
 import com.banking.statement.ui.theme.AppColors
@@ -38,36 +40,21 @@ fun MonthlySpendingLineChart(
 ) {
     val strings = LocalStrings.current
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp)
+    com.banking.statement.ui.components.ChartCard(
+        title = "Monthly Trend",
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Monthly Trend",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        if (monthlySummary.isNotEmpty()) {
+            val reversed = remember(monthlySummary) { monthlySummary.reversed() }
+            val incomeData = remember(reversed) { reversed.map { it.income } }
+            val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
+            val maxValue = remember(incomeData, expensesData) {
+                maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (monthlySummary.isNotEmpty()) {
-                val reversed = remember(monthlySummary) { monthlySummary.reversed() }
-                val incomeData = remember(reversed) { reversed.map { it.income } }
-                val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
-                val maxValue = remember(incomeData, expensesData) {
-                    maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
-                }
-
-                val incomeColor = AppColors.Income
-                val expensesColor = AppColors.Expenses
-                val gridColor = MaterialTheme.colorScheme.outlineVariant
+            val incomeColor = AppColors.Income
+            val expensesColor = AppColors.Expenses
+            val gridColor = AppColors.Divider
 
                 Canvas(
                     modifier = Modifier
@@ -188,13 +175,12 @@ fun MonthlySpendingLineChart(
                         }
                     }
                 }
-            } else {
-                Text(
-                    text = "No data available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        } else {
+            Text(
+                text = "No data available",
+                fontSize = 13.sp,
+                color = AppColors.TextSecondary
+            )
         }
     }
 }
@@ -209,36 +195,21 @@ fun IncomeVsExpensesBarChart(
 ) {
     val strings = LocalStrings.current
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp)
+    com.banking.statement.ui.components.ChartCard(
+        title = "Income vs Expenses",
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Income vs Expenses",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        if (monthlySummary.isNotEmpty()) {
+            val reversed = remember(monthlySummary) { monthlySummary.reversed() }
+            val incomeData = remember(reversed) { reversed.map { it.income } }
+            val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
+            val maxValue = remember(incomeData, expensesData) {
+                maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (monthlySummary.isNotEmpty()) {
-                val reversed = remember(monthlySummary) { monthlySummary.reversed() }
-                val incomeData = remember(reversed) { reversed.map { it.income } }
-                val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
-                val maxValue = remember(incomeData, expensesData) {
-                    maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
-                }
-
-                val incomeColor = AppColors.Income
-                val expensesColor = AppColors.Expenses
-                val gridColor = MaterialTheme.colorScheme.outlineVariant
+            val incomeColor = AppColors.Income
+            val expensesColor = AppColors.Expenses
+            val gridColor = AppColors.Divider
 
                 Canvas(
                     modifier = Modifier
@@ -370,13 +341,12 @@ fun IncomeVsExpensesBarChart(
                         }
                     }
                 }
-            } else {
-                Text(
-                    text = "No data available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        } else {
+            Text(
+                text = "No data available",
+                fontSize = 13.sp,
+                color = AppColors.TextSecondary
+            )
         }
     }
 }
@@ -414,83 +384,82 @@ fun TopMerchantsBarChart(
         )
     }
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = modifier
+            .shadow(1.dp, shape, clip = false)
+            .clip(shape)
+            .background(AppColors.CardBackground)
+            .padding(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = strings.topMerchantsBySpending,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        Text(
+            text = strings.topMerchantsBySpending,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.TextPrimary
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-            if (maxAmount > 0) {
-                topMerchants.forEachIndexed { index, merchant ->
-                    val barColor = barColors[index % barColors.size]
-                    val fraction = (merchant.amount / maxAmount).toFloat()
+        if (maxAmount > 0) {
+            topMerchants.forEachIndexed { index, merchant ->
+                val barColor = barColors[index % barColors.size]
+                val fraction = (merchant.amount / maxAmount).toFloat()
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = merchant.name,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = formatCurrencyChart(merchant.amount),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // Bar
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(16.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(barColor.copy(alpha = 0.1f))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(fraction)
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(barColor)
-                            )
-                        }
-
-                        // Transaction count
                         Text(
-                            text = "${merchant.transactionCount} ${strings.transactions.lowercase()}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 2.dp)
+                            text = merchant.name,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AppColors.TextPrimary,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = formatCurrencyChart(merchant.amount),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            color = AppColors.TextPrimary
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Bar
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(AppColors.SurfaceTint)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(fraction)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(barColor)
+                        )
+                    }
+
+                    // Transaction count
+                    Text(
+                        text = "${merchant.transactionCount} ${strings.transactions.lowercase()}",
+                        fontSize = 11.sp,
+                        color = AppColors.TextTertiary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
             }
         }

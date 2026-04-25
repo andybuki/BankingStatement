@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.ic_calendar
 import bankingstatement.composeapp.generated.resources.share
@@ -222,7 +223,8 @@ fun App(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
+                    contentColor = AppColors.TextPrimary
                 ) {
                     when (currentTab) {
                         NavigationTab.HOME -> HomeScreen(
@@ -232,10 +234,15 @@ fun App(
                             accounts = accountsForManagement,
                             totalIncome = totalIncome,
                             totalExpenses = totalExpenses,
+                            transactions = transactions,
+                            categorySpending = categorySpending,
                             showSuccessCard = showSuccessCard,
                             showTutorial = showTutorial,
                             onDismissTutorial = onDismissTutorial,
-                            onEmailClick = onEmailClick
+                            onEmailClick = onEmailClick,
+                            onNavigateToTransactions = { currentTab = NavigationTab.TRANSACTIONS },
+                            onNavigateToSpending = { currentTab = NavigationTab.SPENDING },
+                            onNavigateToSettings = { currentTab = NavigationTab.SETTINGS }
                         )
                         NavigationTab.TRANSACTIONS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
@@ -349,13 +356,14 @@ fun App(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(AppColors.HeaderBackground)
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 12.dp, bottom = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = strings.spendingTitle,
-                                    style = MaterialTheme.typography.titleMedium,
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.HeaderText
                                 )

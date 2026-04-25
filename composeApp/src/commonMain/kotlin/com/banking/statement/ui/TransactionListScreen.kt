@@ -13,11 +13,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import bankingstatement.composeapp.generated.resources.Res
@@ -26,7 +29,14 @@ import bankingstatement.composeapp.generated.resources.share
 import bankingstatement.composeapp.generated.resources.ic_sort_desc
 import bankingstatement.composeapp.generated.resources.ic_calendar
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.components.CategoryAvatar
+import com.banking.statement.ui.components.EyebrowLabel
+import com.banking.statement.ui.components.MoneyAmount
+import com.banking.statement.ui.components.MoneyLupeChoiceDialog
 import com.banking.statement.ui.theme.AppColors
+import com.banking.statement.ui.theme.AppElevations
+import com.banking.statement.ui.theme.AppRadii
+import com.banking.statement.ui.theme.AppSpacing
 import com.banking.statement.categorization.TransactionCategory
 import com.banking.statement.export.ExportFormat
 import org.jetbrains.compose.resources.painterResource
@@ -36,6 +46,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.todayIn
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,94 +135,79 @@ fun TransactionListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp)
+            .background(AppColors.SurfaceTint)
     ) {
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Search field + Sort + Filter buttons row
+        // Search + sort + filter chrome (compact)
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s2),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.s2)
         ) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text(strings.searchTransactions) },
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 40.dp),
+                placeholder = {
+                    Text(
+                        text = strings.searchTransactions,
+                        color = AppColors.TextTertiary,
+                        fontSize = 13.sp
+                    )
+                },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(AppRadii.md),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = AppColors.TextPrimary),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                    focusedContainerColor = AppColors.CardBackground,
+                    unfocusedContainerColor = AppColors.CardBackground,
+                    focusedBorderColor = AppColors.Primary,
+                    unfocusedBorderColor = AppColors.Divider
                 ),
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Text("✕", style = MaterialTheme.typography.bodyMedium)
+                            Text("✕", color = AppColors.TextTertiary, fontSize = 14.sp)
                         }
                     }
                 }
             )
-            // Sort button
-            IconButton(
+            ChromeIconButton(
+                active = sortActive,
                 onClick = { showSortDialog = true },
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        if (sortActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        else MaterialTheme.colorScheme.surfaceVariant
-                    )
-            ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_sort_desc),
-                    contentDescription = "Sort",
-                    modifier = Modifier.size(22.dp),
-                    colorFilter = ColorFilter.tint(
-                        if (sortActive) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
-            // Filter button
-            IconButton(
+                iconRes = Res.drawable.ic_sort_desc,
+                contentDescription = "Sort"
+            )
+            ChromeIconButton(
+                active = timeFilter != TransactionTimeFilter.ALL,
                 onClick = { showFilterDialog = true },
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        if (timeFilter != TransactionTimeFilter.ALL) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        else MaterialTheme.colorScheme.surfaceVariant
-                    )
-            ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_calendar),
-                    contentDescription = "Filter",
-                    modifier = Modifier.size(22.dp),
-                    colorFilter = ColorFilter.tint(
-                        if (timeFilter != TransactionTimeFilter.ALL) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
+                iconRes = Res.drawable.ic_calendar,
+                contentDescription = "Filter"
+            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        // Item count (single line — period selection happens inside the calendar dialog)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppSpacing.s4 + 4.dp, vertical = AppSpacing.s1),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = transactionCountText,
+                fontSize = 11.sp,
+                color = AppColors.TextSecondary
+            )
+        }
 
-        Text(
-            text = transactionCountText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(AppSpacing.s2))
 
         val listState = rememberLazyListState()
         val coroutineScope = rememberCoroutineScope()
 
-        // Scroll to top when sort order changes
         LaunchedEffect(sortOrder) {
             listState.animateScrollToItem(0)
         }
@@ -221,14 +217,22 @@ fun TransactionListScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "${strings.noTransactions}.\n${strings.importFirst}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = strings.noTransactions,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary
+                    )
+                    Spacer(Modifier.height(AppSpacing.s1))
+                    Text(
+                        text = strings.importFirst,
+                        fontSize = 13.sp,
+                        color = AppColors.TextSecondary
+                    )
+                }
             }
         } else {
-            // Detect when user scrolls near the bottom to trigger loading more
             if (hasMoreTransactions && onLoadMore != null) {
                 LaunchedEffect(listState) {
                     snapshotFlow {
@@ -245,36 +249,46 @@ fun TransactionListScreen(
                 }
             }
 
+            val dayGroups = remember(filteredTransactions) {
+                filteredTransactions
+                    .groupBy { it.date }
+                    .map { (date, txs) -> date to txs }
+            }
+
             LazyColumn(
                 state = listState,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(
+                    start = AppSpacing.s4,
+                    end = AppSpacing.s4,
+                    top = 0.dp,
+                    bottom = AppSpacing.s6
+                ),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.s3 + 2.dp)
             ) {
                 items(
-                    items = filteredTransactions,
-                    key = { it.id }
-                ) { transaction ->
-                    TransactionItem(
-                        transaction = transaction,
-                        onClick = if (onCategoryChange != null) {
-                            {
-                                // Single tap opens the actions sheet with
-                                // "Change category" + "View source PDF" (if
-                                // available). The user taps the row once and
-                                // picks their action instead of jumping
-                                // straight into the category picker.
-                                showActionsFor = transaction
-                            }
+                    items = dayGroups,
+                    key = { it.first }
+                ) { (date, txs) ->
+                    DayGroupCard(
+                        date = date,
+                        txs = txs,
+                        onClickTx = if (onCategoryChange != null) {
+                            // Single tap opens the actions sheet with
+                            // "Change category" + "View source PDF" (if
+                            // available). The user taps the row once and
+                            // picks their action instead of jumping
+                            // straight into the category picker.
+                            { tx -> showActionsFor = tx }
                         } else null
                     )
                 }
 
-                // Loading indicator at the bottom when loading more
                 if (isLoadingMore) {
                     item(key = "loading_indicator") {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(AppSpacing.s4),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(
@@ -331,132 +345,79 @@ fun TransactionListScreen(
 
     // Sort dialog
     if (showSortDialog) {
-        AlertDialog(
-            onDismissRequest = { showSortDialog = false },
-            title = { Text("Sort transactions", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf(
-                        TransactionSortOrder.DATE_DESC to "Date: Newest first",
-                        TransactionSortOrder.DATE_ASC to "Date: Oldest first",
-                        TransactionSortOrder.AMOUNT_DESC to "Amount: Highest first",
-                        TransactionSortOrder.AMOUNT_ASC to "Amount: Lowest first",
-                        TransactionSortOrder.NAME_ASC to "Name: A → Z"
-                    ).forEach { (order, label) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    onSortOrderChange?.invoke(order)
-                                    showSortDialog = false
-                                }
-                                .background(
-                                    if (sortOrder == order) MaterialTheme.colorScheme.primaryContainer
-                                    else Color.Transparent
-                                )
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = sortOrder == order,
-                                onClick = {
-                                    onSortOrderChange?.invoke(order)
-                                    showSortDialog = false
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(label, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
+        MoneyLupeChoiceDialog(
+            eyebrow = "Sort",
+            title = "Sort transactions",
+            options = listOf(
+                TransactionSortOrder.DATE_DESC to "Date: Newest first",
+                TransactionSortOrder.DATE_ASC to "Date: Oldest first",
+                TransactionSortOrder.AMOUNT_DESC to "Amount: Highest first",
+                TransactionSortOrder.AMOUNT_ASC to "Amount: Lowest first",
+                TransactionSortOrder.NAME_ASC to "Name: A → Z"
+            ),
+            selected = sortOrder,
+            onSelect = {
+                onSortOrderChange?.invoke(it)
+                showSortDialog = false
             },
-            confirmButton = {
-                TextButton(onClick = { showSortDialog = false }) { Text("Close") }
-            }
+            onDismiss = { showSortDialog = false }
         )
     }
 
     // Filter dialog
     if (showFilterDialog) {
         val tz = TimeZone.currentSystemDefault()
-        AlertDialog(
-            onDismissRequest = { showFilterDialog = false },
-            title = { Text("Filter by time", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf(
-                        TransactionTimeFilter.ALL to "All time",
-                        TransactionTimeFilter.WEEK to "This week",
-                        TransactionTimeFilter.MONTH to "This month",
-                        TransactionTimeFilter.YEAR to "This year",
-                        TransactionTimeFilter.CUSTOM to "Custom range"
-                    ).forEach { (filter, label) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    if (filter != TransactionTimeFilter.CUSTOM) {
-                                        timeFilter = filter
-                                        val today = Clock.System.todayIn(tz)
-                                        val (start, end) = when (filter) {
-                                            TransactionTimeFilter.ALL -> null to null
-                                            TransactionTimeFilter.WEEK -> {
-                                                val s = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
-                                                val e = today.atStartOfDayIn(tz).epochSeconds + 86399L
-                                                s to e
-                                            }
-                                            TransactionTimeFilter.MONTH -> {
-                                                val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
-                                                val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(today.year, today.monthNumber + 1, 1)
-                                                val e = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
-                                                s to e
-                                            }
-                                            TransactionTimeFilter.YEAR -> {
-                                                val s = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
-                                                val e = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
-                                                s to e
-                                            }
-                                            TransactionTimeFilter.CUSTOM -> null to null
-                                        }
-                                        onDateRangeChange?.invoke(start, end)
-                                        showFilterDialog = false
-                                    } else {
-                                        timeFilter = filter
-                                        showFilterDialog = false
-                                        showStartDatePicker = true
-                                    }
-                                }
-                                .background(
-                                    if (timeFilter == filter) MaterialTheme.colorScheme.primaryContainer
-                                    else Color.Transparent
-                                )
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = timeFilter == filter,
-                                onClick = null
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(label, style = MaterialTheme.typography.bodyMedium)
+        MoneyLupeChoiceDialog(
+            eyebrow = "Time range",
+            title = "Filter by time",
+            options = listOf(
+                TransactionTimeFilter.ALL to "All time",
+                TransactionTimeFilter.WEEK to "This week",
+                TransactionTimeFilter.MONTH to "This month",
+                TransactionTimeFilter.YEAR to "This year",
+                TransactionTimeFilter.CUSTOM to "Custom range"
+            ),
+            selected = timeFilter,
+            onSelect = { filter ->
+                if (filter != TransactionTimeFilter.CUSTOM) {
+                    timeFilter = filter
+                    val today = Clock.System.todayIn(tz)
+                    val (start, end) = when (filter) {
+                        TransactionTimeFilter.ALL -> null to null
+                        TransactionTimeFilter.WEEK -> {
+                            val s = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
+                            val e = today.atStartOfDayIn(tz).epochSeconds + 86399L
+                            s to e
                         }
+                        TransactionTimeFilter.MONTH -> {
+                            val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
+                            val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(today.year, today.monthNumber + 1, 1)
+                            val e = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
+                            s to e
+                        }
+                        TransactionTimeFilter.YEAR -> {
+                            val s = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
+                            val e = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
+                            s to e
+                        }
+                        TransactionTimeFilter.CUSTOM -> null to null
                     }
+                    onDateRangeChange?.invoke(start, end)
+                    showFilterDialog = false
+                } else {
+                    timeFilter = filter
+                    showFilterDialog = false
+                    showStartDatePicker = true
                 }
             },
-            confirmButton = {
-                TextButton(onClick = { showFilterDialog = false }) { Text("Close") }
-            },
-            dismissButton = {
-                if (timeFilter != TransactionTimeFilter.ALL) {
-                    TextButton(onClick = {
-                        timeFilter = TransactionTimeFilter.ALL
-                        onDateRangeChange?.invoke(null, null)
-                        showFilterDialog = false
-                    }) { Text("Clear") }
+            onDismiss = { showFilterDialog = false },
+            secondaryAction = if (timeFilter != TransactionTimeFilter.ALL) {
+                "Clear" to {
+                    timeFilter = TransactionTimeFilter.ALL
+                    onDateRangeChange?.invoke(null, null)
+                    showFilterDialog = false
                 }
-            }
+            } else null
         )
     }
 
@@ -508,100 +469,177 @@ fun TransactionListScreen(
 }
 
 @Composable
-fun TransactionItem(
+private fun ChromeIconButton(
+    active: Boolean,
+    onClick: () -> Unit,
+    iconRes: org.jetbrains.compose.resources.DrawableResource,
+    contentDescription: String
+) {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(AppRadii.md))
+            .background(
+                if (active) AppColors.Primary.copy(alpha = 0.12f)
+                else AppColors.CardBackground
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = contentDescription,
+            modifier = Modifier.size(20.dp),
+            colorFilter = ColorFilter.tint(
+                if (active) AppColors.Primary else AppColors.TextSecondary
+            )
+        )
+    }
+}
+
+@Composable
+private fun DayGroupCard(
+    date: String,
+    txs: List<TransactionDisplay>,
+    onClickTx: ((TransactionDisplay) -> Unit)?
+) {
+    val total = txs.sumOf { it.amount }
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            EyebrowLabel(text = date)
+            val sign = if (total >= 0) "+" else "−"
+            val color = if (total >= 0) AppColors.Income else AppColors.Expenses
+            Text(
+                text = "$sign€${formatMoneyAbs2dp(total)}",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Monospace,
+                color = color
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = AppElevations.xs,
+                    shape = RoundedCornerShape(AppRadii.lg),
+                    clip = false
+                )
+                .clip(RoundedCornerShape(AppRadii.lg))
+                .background(AppColors.CardBackground)
+        ) {
+            txs.forEachIndexed { index, tx ->
+                if (index > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 64.dp)
+                            .height(1.dp)
+                            .background(AppColors.SurfaceTint)
+                    )
+                }
+                TxRow(
+                    transaction = tx,
+                    onClick = if (onClickTx != null) {
+                        { onClickTx(tx) }
+                    } else null
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TxRow(
     transaction: TransactionDisplay,
     onClick: (() -> Unit)? = null
 ) {
     val strings = LocalStrings.current
-    Card(
+    val categoryName = if (transaction.hasCustomCategory) transaction.effectiveCategoryName
+    else transaction.category.getLocalizedName(strings)
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(
-                if (onClick != null) Modifier.clickable { onClick() }
-                else Modifier
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s3),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.s3)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Category indicator - supports custom categories
+        if (transaction.hasCustomCategory) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(parseColor(transaction.effectiveCategoryColor).copy(alpha = 0.2f)),
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(parseColor(transaction.effectiveCategoryColor).copy(alpha = 0.13f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (transaction.hasCustomCategory) transaction.effectiveCategoryIcon else getCategoryEmoji(transaction.category),
-                    style = MaterialTheme.typography.titleMedium
+                    text = transaction.effectiveCategoryIcon,
+                    fontSize = 18.sp
                 )
             }
+        } else {
+            CategoryAvatar(category = transaction.category, size = 36.dp)
+        }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Description and category
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                // Primary line: smart display name (PayPal handling, longer text for readable content)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            transaction.detailText?.let { detail ->
+                Spacer(Modifier.height(1.dp))
                 Text(
-                    text = TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
+                    text = detail,
+                    fontSize = 11.sp,
+                    color = AppColors.TextTertiary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                // Secondary line: detail text if available
-                transaction.detailText?.let { detail ->
-                    Text(
-                        text = detail,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                // Category and date - supports custom categories
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (transaction.hasCustomCategory) transaction.effectiveCategoryName else transaction.category.getLocalizedName(strings),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = parseColor(transaction.effectiveCategoryColor)
-                    )
-                    Text(
-                        text = " · ${transaction.date}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Amount
+            Spacer(Modifier.height(1.dp))
             Text(
-                text = formatAmount(transaction.amount, transaction.currency),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (transaction.amount >= 0) {
-                    AppColors.Income // Green for positive
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
+                text = "$categoryName · ${transaction.date}",
+                fontSize = 12.sp,
+                color = AppColors.TextTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
+
+        MoneyAmount(
+            value = transaction.amount,
+            size = 14,
+            weight = FontWeight.SemiBold,
+            currencySymbol = currencySymbol(transaction.currency)
+        )
     }
+}
+
+private fun currencySymbol(currency: String): String = when (currency) {
+    "EUR" -> "€"
+    "USD" -> "$"
+    "GBP" -> "£"
+    else -> currency
+}
+
+private fun formatMoneyAbs2dp(value: Double): String {
+    val cents = (kotlin.math.abs(value) * 100.0).roundToInt()
+    val whole = cents / 100
+    val frac = cents % 100
+    val wholeStr = whole.toString().reversed().chunked(3).joinToString(",").reversed()
+    return "$wholeStr.${frac.toString().padStart(2, '0')}"
 }
 
 private fun formatAmount(amount: Double, currency: String): String {

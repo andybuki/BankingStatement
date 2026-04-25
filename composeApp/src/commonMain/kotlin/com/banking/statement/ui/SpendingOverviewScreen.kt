@@ -6,12 +6,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -19,6 +22,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.theme.AppColors
@@ -168,9 +172,14 @@ fun SpendingOverviewScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(AppColors.SurfaceTint),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 12.dp,
+            bottom = 24.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
             // Summary Cards
             item {
@@ -196,35 +205,31 @@ fun SpendingOverviewScreen(
             // Net balance
             item {
                 val netAmount = displayIncome + displayExpenses
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (netAmount >= 0) {
-                            AppColors.Income.copy(alpha = 0.1f)
-                        } else {
-                            AppColors.Expenses.copy(alpha = 0.1f)
-                        }
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (netAmount >= 0) AppColors.IncomeTint
+                            else AppColors.ExpenseTint
+                        )
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = strings.netBalance,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = formatCurrency(netAmount),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
-                        )
-                    }
+                    Text(
+                        text = strings.netBalance,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary
+                    )
+                    Text(
+                        text = formatMoneyLupeAmount(netAmount),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = if (netAmount >= 0) AppColors.Income else AppColors.Expenses
+                    )
                 }
             }
 
@@ -270,11 +275,9 @@ fun SpendingOverviewScreen(
             } else {
                 // Category breakdown title
                 item {
-                    Text(
+                    com.banking.statement.ui.components.EyebrowLabel(
                         text = strings.spendingByCategory,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(start = 4.dp, top = 6.dp)
                     )
                 }
 
@@ -299,11 +302,9 @@ fun SpendingOverviewScreen(
                 // Monthly summary title with pagination
                 if (displayMonthlySummary.isNotEmpty()) {
                     item {
-                        Text(
+                        com.banking.statement.ui.components.EyebrowLabel(
                             text = strings.monthlySummary,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 16.dp)
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp)
                         )
                     }
 
@@ -365,125 +366,146 @@ private fun CategoryDetailsDialog(
     val strings = LocalStrings.current
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(8.dp, RoundedCornerShape(24.dp), clip = false)
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.CardBackground)
+                .padding(20.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
+            // Header — category avatar + name + eyebrow "Top transactions"
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Header
+                com.banking.statement.ui.components.CategoryAvatar(
+                    category = category,
+                    size = 40.dp
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    com.banking.statement.ui.components.EyebrowLabel(text = strings.topTransactions)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = category.getLocalizedName(strings),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (transactions.isEmpty()) {
+                Text(
+                    text = strings.noSpendingData,
+                    fontSize = 14.sp,
+                    color = AppColors.TextSecondary
+                )
+            } else {
+                // Transaction list
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    transactions.forEachIndexed { index, tx ->
+                        if (index > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 32.dp)
+                                    .height(1.dp)
+                                    .background(AppColors.SurfaceTint)
+                            )
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = (index + 1).toString(),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                color = AppColors.TextTertiary,
+                                modifier = Modifier.width(22.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.End
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = tx.counterparty ?: tx.description,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = AppColors.TextPrimary,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = tx.date,
+                                    fontSize = 11.sp,
+                                    color = AppColors.TextTertiary
+                                )
+                            }
+                            com.banking.statement.ui.components.MoneyAmount(
+                                value = tx.amount,
+                                size = 13,
+                                weight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
+                // Total
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(AppColors.Divider)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = getCategoryEmoji(category),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = category.getLocalizedName(strings),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = strings.topTransactions,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (transactions.isEmpty()) {
                     Text(
-                        text = strings.noSpendingData,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Total · ${transactions.size}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = AppColors.TextSecondary
                     )
-                } else {
-                    // Scrollable transaction list with max height
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(transactions.size) { index ->
-                            val tx = transactions[index]
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "${index + 1}. ${tx.counterparty ?: tx.description}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium,
-                                        maxLines = 1
-                                    )
-                                    Text(
-                                        text = tx.date,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Text(
-                                    text = formatCurrency(tx.amount),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.Expenses
-                                )
-                            }
-                        }
-                    }
-
-                    // Total
-                    Spacer(modifier = Modifier.height(12.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Total (${transactions.size} shown)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = formatCurrency(transactions.sumOf { it.amount }),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.Expenses
-                        )
-                    }
+                    com.banking.statement.ui.components.MoneyAmount(
+                        value = transactions.sumOf { it.amount },
+                        size = 14,
+                        weight = FontWeight.SemiBold
+                    )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                // Close button
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(strings.close)
-                }
+            // Close button
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.Primary,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = strings.close,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -701,6 +723,21 @@ internal fun formatCurrency(amount: Double): String {
     val rounded = kotlin.math.round(absAmount * 100) / 100
     val formatted = rounded.toString().replace(".", ",")
     return if (amount >= 0) "+$formatted €" else "-$formatted €"
+}
+
+/**
+ * MoneyLupe-style amount: sign prefix + € prefix + thousand separator with
+ * "." decimal (matches the hi-fi kit's Roboto Mono numerals).
+ */
+internal fun formatMoneyLupeAmount(amount: Double): String {
+    val abs = kotlin.math.abs(amount)
+    val cents = kotlin.math.round(abs * 100).toLong()
+    val whole = cents / 100
+    val frac = cents % 100
+    val wholeStr = whole.toString().reversed().chunked(3).joinToString(",").reversed()
+    val sign = if (amount >= 0) "+" else "−"
+    val fracStr = frac.toString().padStart(2, '0')
+    return "$sign€$wholeStr.$fracStr"
 }
 
 internal fun parseHexColor(hexColor: String): Color {

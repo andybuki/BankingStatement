@@ -2,6 +2,7 @@ package com.banking.statement.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,11 +10,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -21,16 +24,21 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.banking.statement.LocalStrings
 import com.banking.statement.pdf.PdfPageRenderer
+import com.banking.statement.ui.components.EyebrowLabel
+import com.banking.statement.ui.theme.AppColors
+import com.banking.statement.ui.theme.AppElevations
+import com.banking.statement.ui.theme.AppRadii
+import com.banking.statement.ui.theme.AppSpacing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
  * Candidate transaction for the "link to this page" manual-assignment flow.
- * A lightweight display record so the PDF viewer doesn't need to depend on
- * TransactionDisplay's category machinery.
+ * Lightweight so the viewer doesn't depend on TransactionDisplay.
  */
 data class LinkableTransaction(
     val id: Long,
@@ -44,14 +52,14 @@ data class LinkableTransaction(
 /**
  * Full-screen in-app PDF viewer used by the "receipt view" feature.
  *
- * Opens the statement PDF at [filePath] and scrolls to [initialPage]; if
- * [highlightSnippet] is non-null, a banner above that page shows what line
- * we believe the transaction came from.
- *
- * When [linkableTransactions] is non-empty the viewer shows a "Link a
- * transaction to this page" FAB that lets the user manually assign the
- * current page to a parsed transaction — this is the fallback when
- * auto-extraction couldn't figure out which page a transaction belongs to.
+ * Reliability notes:
+ *  - We render the target page first so it's available when we scroll, then
+ *    re-scroll once that bitmap arrives. Lazy heights of unrendered pages
+ *    use an A4-ish aspect ratio so the placeholder height closely matches
+ *    the real page height — this prevents the scroll position from "drifting"
+ *    once images load.
+ *  - The matched page gets a thick amber outline + amber-tinted card so
+ *    the user can find it at a glance.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,12 +81,17 @@ fun PdfViewerScreen(
     val listState = rememberLazyListState()
     val density = LocalDensity.current
 
-    // Simple page-image cache, capped to keep memory in check on long PDFs.
+    // Per-page bitmap cache. Capped implicitly by Compose's recomposition,
+    // but we also clear it on dispose to free large allocations.
     val pageCache = remember { mutableStateMapOf<Int, ImageBitmap>() }
     val scope = rememberCoroutineScope()
 
     var showLinkDialog by remember { mutableStateOf(false) }
     var currentPage by remember { mutableStateOf(initialPage) }
+    // True until we've successfully landed on `initialPage` after the
+    // target bitmap is loaded; used to perform a corrective re-scroll once
+    // real heights are known.
+    var targetPageLandedOn by remember(initialPage, filePath) { mutableStateOf(false) }
 
     DisposableEffect(filePath) {
         val ok = renderer.open(filePath)
@@ -91,54 +104,98 @@ fun PdfViewerScreen(
         }
     }
 
-    // Scroll to the initial page once pages are known.
-    LaunchedEffect(pageCount, initialPage) {
+    // Eagerly render the target page first so the highlight is available
+    // by the time we scroll, then keep neighbours warm.
+    LaunchedEffect(isOpen, pageCount, initialPage) {
+        if (isOpen && pageCount > 0) {
+            val widthPx = with(density) { 600.dp.toPx() }.toInt()
+            // Target page first.
+            val target = initialPage.coerceIn(0, pageCount - 1)
+            ensureRendered(target, widthPx, renderer, pageCache)
+            // Then a small neighbourhood for smooth scroll.
+            for (offset in 1..2) {
+                ensureRendered(target - offset, widthPx, renderer, pageCache)
+                ensureRendered(target + offset, widthPx, renderer, pageCache)
+            }
+        }
+    }
+
+    // Initial scroll attempt — happens when the LazyColumn knows page count.
+    LaunchedEffect(pageCount, initialPage, filePath) {
         if (pageCount > 0 && initialPage in 0 until pageCount) {
             listState.scrollToItem(initialPage)
         }
     }
 
-    // Track the currently visible page for the "link to this page" button.
+    // Corrective re-scroll: after the target page bitmap is loaded the real
+    // height is known, so the previous scrollToItem may have landed off by a
+    // page. Re-scroll once the target bitmap appears.
+    val targetBitmap = pageCache[initialPage]
+    LaunchedEffect(targetBitmap, filePath) {
+        if (!targetPageLandedOn && targetBitmap != null && pageCount > 0) {
+            listState.scrollToItem(initialPage.coerceIn(0, pageCount - 1))
+            targetPageLandedOn = true
+        }
+    }
+
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex }
             .collect { currentPage = it }
     }
 
     Scaffold(
+        containerColor = AppColors.SurfaceTint,
         topBar = {
             TopAppBar(
                 title = {
                     Column {
                         Text(
                             text = fileName,
-                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
+                            color = AppColors.HeaderText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         if (pageCount > 0) {
                             Text(
-                                text = "Page ${currentPage + 1} / $pageCount",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Page ${currentPage + 1} of $pageCount",
+                                fontSize = 11.sp,
+                                color = AppColors.HeaderSecondaryText
                             )
                         }
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
-                        Icon(Icons.Filled.Close, contentDescription = strings.close)
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = strings.close,
+                            tint = AppColors.HeaderIcons
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AppColors.HeaderBackground,
+                    titleContentColor = AppColors.HeaderText,
+                    navigationIconContentColor = AppColors.HeaderIcons
+                )
             )
         },
         floatingActionButton = {
             if (onLinkTransaction != null && linkableTransactions.isNotEmpty() && isOpen) {
                 ExtendedFloatingActionButton(
                     onClick = { showLinkDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    text = { Text("Link to this page") },
-                    icon = { Text("🔗") }
+                    containerColor = AppColors.Primary,
+                    contentColor = Color.White,
+                    text = {
+                        Text(
+                            text = "Link to this page",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    },
+                    icon = { Icon(Icons.Filled.Link, contentDescription = null) }
                 )
             }
         }
@@ -147,97 +204,56 @@ fun PdfViewerScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                .background(AppColors.SurfaceTint)
         ) {
             when {
                 openFailed -> PdfUnavailableState(
-                    reason = "This PDF could not be opened. The source file may have been deleted or PDF viewing is not supported on this platform.",
+                    reason = "This PDF could not be opened. The source file may have been deleted, or PDF viewing isn't supported on this platform yet.",
                     modifier = Modifier.align(Alignment.Center)
                 )
                 !isOpen -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                ) { CircularProgressIndicator(color = AppColors.Primary) }
                 pageCount == 0 -> PdfUnavailableState(
-                    reason = "This PDF is empty.",
+                    reason = "This PDF has no pages.",
                     modifier = Modifier.align(Alignment.Center)
                 )
                 else -> {
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(
+                            horizontal = AppSpacing.s3,
+                            vertical = AppSpacing.s3
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(AppSpacing.s3)
                     ) {
                         items(count = pageCount) { index ->
                             val bitmap = pageCache[index]
-                            val isHighlightPage = index == initialPage && highlightSnippet != null
+                            val isHighlightPage = index == initialPage && !highlightSnippet.isNullOrBlank()
 
+                            // Lazy-render any page that becomes visible.
                             if (bitmap == null) {
-                                // Kick off a render for this page, sized to the viewport.
-                                LaunchedEffect(index) {
-                                    scope.launch {
-                                        val widthPx = with(density) { 600.dp.toPx() }.toInt()
-                                        val rendered = withContext(Dispatchers.Default) {
-                                            renderer.renderPage(index, widthPx)
-                                        }
-                                        if (rendered != null) {
-                                            pageCache[index] = rendered
-                                        }
+                                LaunchedEffect(index, filePath) {
+                                    val widthPx = with(density) { 600.dp.toPx() }.toInt()
+                                    val rendered = withContext(Dispatchers.Default) {
+                                        renderer.renderPage(index, widthPx)
+                                    }
+                                    if (rendered != null) {
+                                        pageCache[index] = rendered
                                     }
                                 }
                             }
 
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp)
-                            ) {
-                                if (isHighlightPage && !highlightSnippet.isNullOrBlank()) {
-                                    HighlightBanner(
-                                        title = highlightTitle ?: "Matched transaction",
-                                        snippet = highlightSnippet
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                }
-
-                                Card(
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                                ) {
-                                    if (bitmap != null) {
-                                        Image(
-                                            bitmap = bitmap,
-                                            contentDescription = "Page ${index + 1}",
-                                            contentScale = ContentScale.FillWidth,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    } else {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(400.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(24.dp),
-                                                strokeWidth = 2.dp
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = "Page ${index + 1} / $pageCount",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                )
-                            }
+                            PageItem(
+                                pageIndex = index,
+                                pageCount = pageCount,
+                                bitmap = bitmap,
+                                isHighlight = isHighlightPage,
+                                highlightTitle = highlightTitle,
+                                highlightSnippet = highlightSnippet
+                            )
                         }
                     }
                 }
@@ -258,26 +274,126 @@ fun PdfViewerScreen(
     }
 }
 
+/** Render and cache the page if not already cached and within range. */
+private suspend fun ensureRendered(
+    pageIndex: Int,
+    widthPx: Int,
+    renderer: PdfPageRenderer,
+    cache: androidx.compose.runtime.snapshots.SnapshotStateMap<Int, ImageBitmap>
+) {
+    if (pageIndex < 0 || pageIndex >= renderer.pageCount()) return
+    if (cache.containsKey(pageIndex)) return
+    val rendered = withContext(Dispatchers.Default) {
+        renderer.renderPage(pageIndex, widthPx)
+    }
+    if (rendered != null) {
+        cache[pageIndex] = rendered
+    }
+}
+
+@Composable
+private fun PageItem(
+    pageIndex: Int,
+    pageCount: Int,
+    bitmap: ImageBitmap?,
+    isHighlight: Boolean,
+    highlightTitle: String?,
+    highlightSnippet: String?
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (isHighlight && !highlightSnippet.isNullOrBlank()) {
+            HighlightBanner(
+                title = highlightTitle ?: "Matched transaction",
+                snippet = highlightSnippet
+            )
+            Spacer(Modifier.height(AppSpacing.s2))
+        }
+
+        val cardShape = RoundedCornerShape(AppRadii.lg)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = if (isHighlight) AppElevations.md else AppElevations.xs,
+                    shape = cardShape,
+                    clip = false
+                )
+                .clip(cardShape)
+                .background(Color.White)
+                .then(
+                    if (isHighlight) Modifier.border(3.dp, HighlightAmber, cardShape)
+                    else Modifier.border(1.dp, AppColors.Divider, cardShape)
+                )
+        ) {
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Page ${pageIndex + 1}",
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                // Aspect ratio close to letter/A4 — keeps the lazy list's
+                // estimated heights stable so scroll positions don't shift
+                // when bitmaps eventually load.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f / 1.41f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = AppColors.Primary
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(AppSpacing.s1))
+        Text(
+            text = "Page ${pageIndex + 1} / $pageCount",
+            fontSize = 11.sp,
+            color = AppColors.TextTertiary,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+    }
+}
+
+private val HighlightAmber = Color(0xFFF59E0B)        // amber-500
+private val HighlightAmberTint = Color(0xFFFFF7ED)    // amber-50ish
+
 @Composable
 private fun HighlightBanner(title: String, snippet: String) {
-    Card(
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-        )
+    val shape = RoundedCornerShape(AppRadii.md)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(HighlightAmberTint)
+            .border(1.dp, HighlightAmber.copy(alpha = 0.6f), shape)
+            .padding(horizontal = AppSpacing.s3, vertical = AppSpacing.s3 - 2.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
+        Text(
+            text = "▸",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = HighlightAmber
+        )
+        Spacer(Modifier.width(AppSpacing.s2))
+        Column(modifier = Modifier.weight(1f)) {
+            EyebrowLabel(
                 text = title,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onTertiaryContainer
+                color = Color(0xFF92400E) // amber-800
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = snippet,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer
+                fontSize = 13.sp,
+                color = Color(0xFF78350F), // amber-900
+                fontWeight = FontWeight.Medium
             )
         }
     }
@@ -286,18 +402,15 @@ private fun HighlightBanner(title: String, snippet: String) {
 @Composable
 private fun PdfUnavailableState(reason: String, modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier.padding(AppSpacing.s8),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.s3)
     ) {
-        Text(
-            text = "📄",
-            style = MaterialTheme.typography.displayMedium
-        )
+        Text(text = "📄", fontSize = 44.sp)
         Text(
             text = reason,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontSize = 13.sp,
+            color = AppColors.TextSecondary
         )
     }
 }
@@ -310,90 +423,106 @@ private fun LinkTransactionDialog(
     onDismiss: () -> Unit
 ) {
     val strings = LocalStrings.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Column {
-                Text(
-                    text = "Link a transaction",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text(
-                    text = "Choose the parsed transaction that this page shows. The viewer will jump to page ${page + 1} next time you open it.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        text = {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(AppElevations.md, RoundedCornerShape(AppRadii.xl), clip = false)
+                .clip(RoundedCornerShape(AppRadii.xl))
+                .background(AppColors.CardBackground)
+                .padding(AppSpacing.s5)
+        ) {
+            EyebrowLabel(text = "Manual link")
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Link a transaction",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Pick the parsed transaction shown on page ${page + 1}. Next time you open this transaction the viewer will jump straight here.",
+                fontSize = 12.sp,
+                color = AppColors.TextSecondary
+            )
+
+            Spacer(Modifier.height(AppSpacing.s3))
+
             if (candidates.isEmpty()) {
                 Text(
                     text = "All transactions from this statement are already linked to a page.",
-                    style = MaterialTheme.typography.bodyMedium
+                    fontSize = 13.sp,
+                    color = AppColors.TextSecondary
                 )
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 360.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.s2)
                 ) {
                     items(count = candidates.size) { index ->
                         val tx = candidates[index]
-                        LinkCandidateRow(
-                            tx = tx,
-                            onClick = { onPick(tx) }
-                        )
+                        LinkCandidateRow(tx = tx, onClick = { onPick(tx) })
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(strings.close) }
+
+            Spacer(Modifier.height(AppSpacing.s3))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.Primary)
+                ) {
+                    Text(strings.close, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
-    )
+    }
 }
 
 @Composable
 private fun LinkCandidateRow(tx: LinkableTransaction, onClick: () -> Unit) {
-    Surface(
+    val shape = RoundedCornerShape(AppRadii.md)
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp
+            .clip(shape)
+            .background(AppColors.SurfaceTint)
+            .clickable(onClick = onClick)
+            .padding(horizontal = AppSpacing.s3, vertical = AppSpacing.s3 - 2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = tx.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                val status = when {
-                    tx.currentlyLinkedPage != null -> "${tx.date}  ·  linked to page ${tx.currentlyLinkedPage + 1}"
-                    else -> "${tx.date}  ·  not yet linked"
-                }
-                Text(
-                    text = status,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = formatLinkAmount(tx.amount, tx.currency),
-                style = MaterialTheme.typography.bodyMedium,
+                text = tx.description,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = if (tx.amount >= 0) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface
+                color = AppColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            val status = if (tx.currentlyLinkedPage != null)
+                "${tx.date}  ·  linked to page ${tx.currentlyLinkedPage + 1}"
+            else
+                "${tx.date}  ·  not yet linked"
+            Text(
+                text = status,
+                fontSize = 11.sp,
+                color = AppColors.TextSecondary
             )
         }
+        Spacer(Modifier.width(AppSpacing.s2))
+        Text(
+            text = formatLinkAmount(tx.amount, tx.currency),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (tx.amount >= 0) AppColors.Income else AppColors.Expenses
+        )
     }
 }
 

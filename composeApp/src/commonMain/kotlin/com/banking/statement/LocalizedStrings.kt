@@ -292,8 +292,8 @@ expect fun provideStrings(): AppStrings
  * Default English strings for fallback
  */
 fun defaultEnglishStrings() = AppStrings(
-    appName = "Bank++",
-    homeTitle = "Bank++",
+    appName = "MoneyLupe",
+    homeTitle = "MoneyLupe",
     homeSubtitle = "Import your bank statements to analyze",
     importButton = "Import Statement",
     processing = "Processing...",

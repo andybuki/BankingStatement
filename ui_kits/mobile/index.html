@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MoneyLupe — Mobile UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #E2E8F0; font-family: 'Roboto', system-ui, -apple-system, sans-serif; color: #0F172A; min-height: 100vh; }
+  .page { padding: 40px 32px 80px; }
+  .hdr { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .title { font-weight: 700; font-size: 28px; letter-spacing: -.01em; margin: 0; }
+  .sub { color: #475569; font-size: 14px; margin: 4px 0 0; max-width: 520px; line-height: 1.5; }
+  .legend { display: flex; gap: 14px; align-items: center; font-size: 12px; color: #64748B; }
+  .legend b { color: #0F172A; font-weight: 600; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+  .tab { padding: 8px 14px; border-radius: 10px; background: #fff; border: 1px solid #E5E7EB; font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; transition: all 180ms; }
+  .tab:hover { border-color: #CBD5E1; }
+  .tab.active { background: #0F2A44; color: #fff; border-color: #0F2A44; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(390px, 1fr)); gap: 32px 28px; max-width: 1680px; }
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .screen-label { font-size: 12px; font-weight: 600; color: #475569; letter-spacing: .02em; }
+  #root { min-height: 100vh; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="./Icons.jsx"></script>
+<script type="text/babel" src="./Primitives.jsx"></script>
+<script type="text/babel" src="./ScreensA.jsx"></script>
+<script type="text/babel" src="./ScreensB.jsx"></script>
+
+<script type="text/babel">
+const SCREENS = [
+  { id: "home",      label: "01 Home",      Comp: () => <MLHomeScreen     onTab={setActiveFromTab}/> },
+  { id: "activity",  label: "02 Activity",  Comp: () => <MLActivityScreen onTab={setActiveFromTab}/> },
+  { id: "spending",  label: "03 Spending",  Comp: () => <MLSpendingScreen onTab={setActiveFromTab}/> },
+  { id: "merchants", label: "04 Merchants", Comp: () => <MLMerchantsScreen onTab={setActiveFromTab}/> },
+  { id: "settings",  label: "05 Settings",  Comp: () => <MLSettingsScreen onTab={setActiveFromTab}/> },
+];
+let setActiveFromTab = () => {};
+
+function App() {
+  const [mode, setMode] = React.useState(() => localStorage.getItem("ml_kit_mode") || "all");
+  const [active, setActive] = React.useState(() => localStorage.getItem("ml_kit_active") || "home");
+  setActiveFromTab = (id) => { setMode("single"); setActive(id); };
+
+  React.useEffect(() => { localStorage.setItem("ml_kit_mode", mode); }, [mode]);
+  React.useEffect(() => { localStorage.setItem("ml_kit_active", active); }, [active]);
+
+  const shown = mode === "all" ? SCREENS : SCREENS.filter(s => s.id === active);
+
+  return (
+    <div className="page">
+      <div className="hdr">
+        <div>
+          <h1 className="title">MoneyLupe — Mobile UI Kit</h1>
+          <p className="sub">Hi-fi recreation of the MoneyLupe Android/iOS app. Five primary screens, built from the live Compose codebase's colors, typography, categories and copy. Click a tab bar in any screen to focus it.</p>
+        </div>
+        <div className="legend">
+          <span><b>5</b> screens</span>
+          <span><b>390 × 800</b> viewport</span>
+          <span><b>Roboto / Roboto Mono</b></span>
+        </div>
+      </div>
+
+      <div className="tabs">
+        <button className={"tab " + (mode === "all" ? "active" : "")} onClick={() => setMode("all")}>All screens</button>
+        {SCREENS.map(s => (
+          <button key={s.id} className={"tab " + (mode === "single" && active === s.id ? "active" : "")}
+            onClick={() => { setMode("single"); setActive(s.id); }}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid">
+        {shown.map(s => (
+          <div className="screen-wrap" key={s.id}>
+            <MLPhone label={s.label}>
+              <s.Comp/>
+            </MLPhone>
+            <div className="screen-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

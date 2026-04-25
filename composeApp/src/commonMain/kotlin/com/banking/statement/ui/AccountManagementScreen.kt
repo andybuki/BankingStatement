@@ -12,24 +12,38 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.IosShare
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.components.EyebrowLabel
+import com.banking.statement.ui.components.MLSetGroup
+import com.banking.statement.ui.components.MLSetRow
+import com.banking.statement.ui.components.MoneyLupeChoiceDialog
 import com.banking.statement.ui.theme.AppColors
+import com.banking.statement.ui.theme.AppElevations
+import com.banking.statement.ui.theme.AppRadii
+import com.banking.statement.ui.theme.AppSpacing
 import com.banking.statement.ui.theme.ThemeMode
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -96,46 +110,58 @@ fun AccountManagementScreen(
     var showDeleteDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
+    var showThemePicker by remember { mutableStateOf(false) }
 
-    // Content - no Scaffold, title is now in AppHeader
-    // Use LazyColumn for full scrollability of all content
+    // Settings tab: navy header is rendered by App.kt; this pane sits on
+    // SurfaceTint like every other tab, with eyebrow-grouped sections that
+    // mirror ui_kits/mobile/ScreensB.MLSettingsScreen.
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .background(AppColors.SurfaceTint)
+            .padding(horizontal = AppSpacing.s4),
+        verticalArrangement = Arrangement.spacedBy(AppSpacing.s3 + 2.dp)
     ) {
-        item { Spacer(modifier = Modifier.height(0.dp)) }
+        item { Spacer(modifier = Modifier.height(AppSpacing.s2)) }
 
         if (accounts.isEmpty()) {
-            // Empty state
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 48.dp),
+                        .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+                        .clip(RoundedCornerShape(AppRadii.lg))
+                        .background(AppColors.CardBackground)
+                        .padding(vertical = AppSpacing.s10, horizontal = AppSpacing.s4),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
                             text = strings.noAccounts,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.TextPrimary
                         )
                         Text(
                             text = strings.noAccountsHint,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            fontSize = 13.sp,
+                            color = AppColors.TextSecondary
                         )
                     }
                 }
             }
         } else {
-            // Account list
-            items(accounts) { account ->
+            // Accounts section
+            item(key = "accounts-eyebrow") {
+                AccountsSectionHeader(
+                    accountCount = accounts.size,
+                    totalStatements = accounts.sumOf { it.statementCount }
+                )
+            }
+            items(accounts, key = { "acc-${it.id}" }) { account ->
                 AccountManagementCard(
                     account = account,
                     onEdit = { showEditDialog = account },
@@ -149,87 +175,198 @@ fun AccountManagementScreen(
             }
         }
 
-        // Settings Section
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
-            ThemeSettingsCard(
-                currentThemeMode = currentThemeMode,
-                onThemeModeChange = onThemeModeChange
-            )
-        }
-
-        if (biometricAvailable) {
-            item {
-                SecuritySettingsCard(
-                    biometricLockEnabled = biometricLockEnabled,
-                    onBiometricLockChange = onBiometricLockChange
+        // Appearance section — Theme + Reminders as MLSetRows
+        item(key = "appearance") {
+            MLSetGroup(eyebrow = "Appearance") {
+                MLSetRow(
+                    icon = Icons.Filled.AutoAwesome,
+                    iconTint = Color(0xFFF59E0B),
+                    title = strings.theme,
+                    subtitle = when (currentThemeMode) {
+                        ThemeMode.LIGHT -> strings.themeLight
+                        ThemeMode.DARK -> strings.themeDark
+                        ThemeMode.SYSTEM -> strings.themeSystem
+                    },
+                    onClick = { showThemePicker = true },
+                    isFirst = true,
+                    trailing = {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(AppColors.SurfaceTint)
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = when (currentThemeMode) {
+                                    ThemeMode.LIGHT -> strings.themeLight
+                                    ThemeMode.DARK -> strings.themeDark
+                                    ThemeMode.SYSTEM -> strings.themeSystem
+                                },
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.TextSecondary
+                            )
+                        }
+                    }
+                )
+                MLSetRow(
+                    icon = Icons.Filled.NotificationsActive,
+                    iconTint = Color(0xFFEC4899),
+                    title = strings.reminders,
+                    subtitle = strings.remindersDescription.take(60),
+                    trailing = {
+                        Switch(
+                            checked = remindersEnabled,
+                            onCheckedChange = onRemindersEnabledChange,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AppColors.Primary,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = AppColors.Disabled
+                            )
+                        )
+                    }
                 )
             }
         }
 
-        item {
-            ReminderSettingsCard(
-                remindersEnabled = remindersEnabled,
-                onRemindersEnabledChange = onRemindersEnabledChange
-            )
-        }
-
-        item {
-            PdfAccessSettingsCard(
-                pdfAccessEnabled = pdfAccessEnabled,
-                onPdfAccessEnabledChange = onPdfAccessEnabledChange
-            )
-        }
-
-        item {
-            ShareAppCard(onShareApp = onShareApp)
-        }
-
-        // Danger Zone Section (only show if there's data)
-        if (accounts.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+        // Security section — biometric + PDF retention live here together
+        // since both control how sensitive statement data is kept on-device.
+        item(key = "security") {
+            MLSetGroup(eyebrow = strings.security) {
+                if (biometricAvailable) {
+                    MLSetRow(
+                        icon = Icons.Filled.Lock,
+                        iconTint = Color(0xFF6366F1),
+                        title = strings.biometricLock,
+                        subtitle = strings.biometricLockDescription,
+                        isFirst = true,
+                        trailing = {
+                            Switch(
+                                checked = biometricLockEnabled,
+                                onCheckedChange = onBiometricLockChange,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = AppColors.Primary,
+                                    uncheckedThumbColor = Color.White,
+                                    uncheckedTrackColor = AppColors.Disabled
+                                )
+                            )
+                        }
                     )
+                }
+                MLSetRow(
+                    icon = Icons.Filled.Description,
+                    iconTint = Color(0xFFEF4444),
+                    title = "Source PDF access",
+                    subtitle = if (pdfAccessEnabled)
+                        "Original statement PDFs are kept on-device so you can open them from a transaction."
+                    else
+                        "Imported PDFs are not retained. View source PDF is unavailable.",
+                    isFirst = !biometricAvailable,
+                    trailing = {
+                        Switch(
+                            checked = pdfAccessEnabled,
+                            onCheckedChange = onPdfAccessEnabledChange,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AppColors.Primary,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = AppColors.Disabled
+                            )
+                        )
+                    }
+                )
+            }
+        }
+
+        // About section
+        item(key = "about") {
+            MLSetGroup(eyebrow = strings.contactTitle) {
+                MLSetRow(
+                    icon = Icons.Filled.IosShare,
+                    iconTint = AppColors.Primary,
+                    title = strings.shareApp,
+                    subtitle = "Tell a friend",
+                    onClick = onShareApp,
+                    showChevron = true,
+                    isFirst = true
+                )
+                MLSetRow(
+                    icon = Icons.Filled.Description,
+                    iconTint = Color(0xFF64748B),
+                    title = strings.contactTitle,
+                    subtitle = strings.contactEmail,
+                    onClick = { onEmailClick(strings.contactEmail) },
+                    showChevron = true
+                )
+            }
+        }
+
+        // Danger Zone
+        if (accounts.isNotEmpty()) {
+            item(key = "danger-eyebrow") {
+                EyebrowLabel(
+                    text = strings.dangerZone,
+                    color = AppColors.Expenses,
+                    modifier = Modifier.padding(start = 4.dp, top = AppSpacing.s2)
+                )
+            }
+            item(key = "danger") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+                        .clip(RoundedCornerShape(AppRadii.lg))
+                        .background(AppColors.CardBackground)
+                        .padding(AppSpacing.s4)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                    Text(
+                        text = strings.clearAllDataConfirm,
+                        fontSize = 12.sp,
+                        color = AppColors.TextSecondary,
+                        modifier = Modifier.padding(bottom = AppSpacing.s3)
+                    )
+                    Button(
+                        onClick = { showClearAllDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppRadii.md),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.Expenses,
+                            contentColor = Color.White
+                        )
                     ) {
                         Text(
-                            text = strings.dangerZone,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
+                            text = strings.clearAllData,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Button(
-                            onClick = { showClearAllDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
-                            )
-                        ) {
-                            Text(strings.clearAllData)
-                        }
                     }
                 }
             }
         }
 
-        // Contact / Feedback Section
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
-            ContactSettingsCard(onEmailClick = onEmailClick)
+        // Version footer
+        item(key = "footer") {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = AppSpacing.s5),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = "${strings.appName} · v2.4.0",
+                    fontSize = 11.sp,
+                    color = AppColors.TextTertiary
+                )
+                Text(
+                    text = strings.contactEmail,
+                    fontSize = 11.sp,
+                    color = AppColors.TextTertiary
+                )
+            }
         }
-
-        item { Spacer(modifier = Modifier.height(16.dp)) }
     }
 
     // Delete account confirmation dialog
@@ -266,6 +403,44 @@ fun AccountManagementScreen(
             onDismiss = { showEditDialog = null }
         )
     }
+
+    // Theme picker dialog
+    if (showThemePicker) {
+        MoneyLupeChoiceDialog(
+            eyebrow = "Appearance",
+            title = strings.theme,
+            options = listOf(
+                ThemeMode.SYSTEM to strings.themeSystem,
+                ThemeMode.LIGHT to strings.themeLight,
+                ThemeMode.DARK to strings.themeDark
+            ),
+            selected = currentThemeMode,
+            onSelect = {
+                onThemeModeChange(it)
+                showThemePicker = false
+            },
+            onDismiss = { showThemePicker = false }
+        )
+    }
+}
+
+@Composable
+private fun AccountsSectionHeader(accountCount: Int, totalStatements: Long) {
+    val strings = LocalStrings.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 4.dp, top = AppSpacing.s2),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        EyebrowLabel(text = strings.manageAccounts)
+        Text(
+            text = "$accountCount · $totalStatements ${strings.statements.lowercase()}",
+            fontSize = 11.sp,
+            color = AppColors.TextTertiary
+        )
+    }
 }
 
 @Composable
@@ -291,18 +466,17 @@ private fun AccountManagementCard(
         }
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+            .clip(RoundedCornerShape(AppRadii.lg))
+            .background(AppColors.CardBackground)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(AppSpacing.s4)
         ) {
             // Top row: Icon, Name, and Action buttons
             Row(
@@ -386,7 +560,7 @@ private fun AccountManagementCard(
                     Text(
                         text = strings.transactions,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = AppColors.TextSecondary
                     )
                     Text(
                         text = account.transactionCount.toString(),
@@ -400,7 +574,7 @@ private fun AccountManagementCard(
                     Text(
                         text = strings.statements,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = AppColors.TextSecondary
                     )
                     Text(
                         text = account.statementCount.toString(),
@@ -414,7 +588,7 @@ private fun AccountManagementCard(
                     Text(
                         text = strings.netBalance,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = AppColors.TextSecondary
                     )
                     account.balance?.let { balance ->
                         Text(
@@ -426,7 +600,7 @@ private fun AccountManagementCard(
                     } ?: Text(
                         text = "—",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        color = AppColors.TextTertiary
                     )
                 }
             }
@@ -437,14 +611,14 @@ private fun AccountManagementCard(
                 Text(
                     text = formatIbanShort(iban),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    color = AppColors.TextTertiary
                 )
             }
 
             // Expand/collapse button for statements list
             if (account.statements.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = AppColors.Divider)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier
@@ -508,7 +682,7 @@ private fun AccountManagementCard(
                                 onDelete = { statementToDelete = statement }
                             )
                             HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                color = AppColors.SurfaceTint,
                                 modifier = Modifier.padding(vertical = 2.dp)
                             )
                         }
@@ -545,7 +719,7 @@ private fun StatementRow(
         Icon(
             imageVector = Icons.Default.Description,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            tint = AppColors.TextSecondary,
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(10.dp))
@@ -562,13 +736,13 @@ private fun StatementRow(
                     Text(
                         text = it,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = AppColors.TextSecondary
                     )
                 }
                 Text(
                     text = "${strings.importedOn} ${formatImportDate(statement.importDate)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    color = AppColors.TextTertiary
                 )
             }
         }

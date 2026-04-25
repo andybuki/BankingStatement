@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 /**
  * Theme mode options
@@ -57,6 +58,60 @@ object AppColors {
     val Primary = Color(0xFF2563EB)  // Blue
     val PrimaryLight = Color(0xFF3B82F6)  // Lighter blue
     val PrimaryDark = Color(0xFF1D4ED8)  // Darker blue
+    val PrimaryContainer = Color(0xFFDBEAFE)  // blue-50 tint
+
+    // Slate ramp
+    val TextPrimary = Color(0xFF0F172A)
+    val TextSecondary = Color(0xFF475569)
+    val TextTertiary = Color(0xFF94A3B8)
+    val Divider = Color(0xFFE5E7EB)
+    val SurfaceTint = Color(0xFFF1F5F9)
+    val SurfaceSubtle = Color(0xFFF8FAFC)
+    val Disabled = Color(0xFFCBD5E1)
+
+    // Semantic-tint variants (for trend pills, tip cards)
+    val IncomeTint = Color(0xFFDCFCE7)     // green-50
+    val ExpenseTint = Color(0xFFFEE2E2)    // red-50
+    val InfoTint = Color(0xFFF0F9FF)       // sky-50 (for insight cards)
+}
+
+/**
+ * 4-pt spacing scale, mirroring --s-* CSS variables.
+ */
+object AppSpacing {
+    val s1 = 4.dp
+    val s2 = 8.dp
+    val s3 = 12.dp
+    val s4 = 16.dp
+    val s5 = 20.dp
+    val s6 = 24.dp
+    val s8 = 32.dp
+    val s10 = 40.dp
+    val s12 = 48.dp
+    val s16 = 64.dp
+}
+
+/**
+ * Corner-radius tokens, mirroring --r-* CSS variables.
+ */
+object AppRadii {
+    val xs = 6.dp
+    val sm = 8.dp
+    val md = 12.dp    // buttons, inputs
+    val lg = 16.dp    // card default
+    val xl = 24.dp    // hero cards, sheets
+    val pill = 999.dp
+}
+
+/**
+ * Elevation tokens. Compose shadows are lossier than CSS box-shadows,
+ * so these are elevation dp values tuned to roughly match sh-xs/sm/md/lg.
+ */
+object AppElevations {
+    val xs = 1.dp    // resting card
+    val sm = 2.dp    // floating card above navy
+    val md = 8.dp    // header, dialogs, bottom sheets
+    val lg = 16.dp   // popovers / FAB
 }
 
 // Light theme colors - with new color scheme
