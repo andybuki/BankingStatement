@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.banking.statement.LocalStrings
 import com.banking.statement.ui.CategorySpending
 import com.banking.statement.ui.theme.AppColors
@@ -59,37 +60,23 @@ fun CategorySpendingDonutChart(
         }
     }
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp)
+    com.banking.statement.ui.components.ChartCard(
+        title = strings.spendingByCategory,
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = strings.spendingByCategory,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Actual Donut Chart
             Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .padding(8.dp),
+                modifier = Modifier.size(180.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 40.dp.toPx()
+                    val strokeWidth = 28.dp.toPx()
                     var startAngle = -90f
-
                     arcData.forEach { (color, sweepAngle, _) ->
                         drawArc(
                             color = color,
@@ -107,60 +94,89 @@ fun CategorySpendingDonutChart(
                     }
                 }
 
-                // Center text
+                // Center text — eyebrow + mono total
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = strings.expenses,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = strings.expenses.uppercase(),
+                        fontSize = 10.sp,
+                        letterSpacing = 0.6.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextTertiary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "€${formatChartAmount(totalExpenses)}",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = AppColors.TextPrimary
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Legend
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            legendItems.forEach { spending ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(parseColor(spending.category.color))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = spending.category.getLocalizedName(strings),
+                        fontSize = 13.sp,
+                        color = AppColors.TextPrimary,
+                        modifier = Modifier.weight(1f)
                     )
                     Text(
-                        text = formatCurrencyChart(totalExpenses),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.Expenses
+                        text = "${spending.percentage.toInt()}%",
+                        fontSize = 12.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = AppColors.TextTertiary
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "€${formatChartAmount(spending.totalAmount.absoluteValue)}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = AppColors.TextPrimary
                     )
                 }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Legend with percentages
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                legendItems.forEach { spending ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(parseColor(spending.category.color))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = spending.category.getLocalizedName(strings),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "${spending.percentage.toInt()}%",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = formatCurrencyChart(spending.totalAmount.absoluteValue),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
+private fun formatChartAmount(value: Double): String {
+    val abs = kotlin.math.abs(value)
+    return when {
+        abs >= 1_000_000 -> {
+            val v = (abs / 100_000).toLong() / 10.0
+            "${v}M"
+        }
+        abs >= 10_000 -> {
+            val v = (abs / 100).toLong() / 10.0
+            "${v}K"
+        }
+        else -> {
+            val cents = kotlin.math.round(abs * 100).toLong()
+            val whole = cents / 100
+            val frac = cents % 100
+            val wholeStr = whole.toString().reversed().chunked(3).joinToString(",").reversed()
+            "$wholeStr.${frac.toString().padStart(2, '0')}"
         }
     }
 }
@@ -334,27 +350,12 @@ fun CategoryStackedAreaChart(
         stackedData.maxOfOrNull { it.lastOrNull() ?: 0.0 } ?: 0.0
     }
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp)
+    com.banking.statement.ui.components.ChartCard(
+        title = strings.categoryTrends,
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = strings.categoryTrends,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (maxValue > 0) {
-                val gridColor = MaterialTheme.colorScheme.outlineVariant
+        if (maxValue > 0) {
+            val gridColor = AppColors.Divider
 
                 Canvas(
                     modifier = Modifier
@@ -440,8 +441,8 @@ fun CategoryStackedAreaChart(
                     monthlyBreakdown.forEach { month ->
                         Text(
                             text = month.month.takeLast(3),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 11.sp,
+                            color = AppColors.TextTertiary
                         )
                     }
                 }
@@ -471,9 +472,9 @@ fun CategoryStackedAreaChart(
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = category.getLocalizedName(strings),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 11.sp,
                                     maxLines = 1,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = AppColors.TextSecondary
                                 )
                             }
                         }
@@ -483,13 +484,12 @@ fun CategoryStackedAreaChart(
                         }
                     }
                 }
-            } else {
-                Text(
-                    text = "No data available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        } else {
+            Text(
+                text = "No data available",
+                fontSize = 13.sp,
+                color = AppColors.TextSecondary
+            )
         }
     }
 }

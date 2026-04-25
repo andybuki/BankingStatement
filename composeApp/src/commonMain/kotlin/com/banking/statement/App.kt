@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.ic_calendar
 import bankingstatement.composeapp.generated.resources.share
@@ -342,13 +343,14 @@ fun App(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(AppColors.HeaderBackground)
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 12.dp, bottom = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = strings.spendingTitle,
-                                    style = MaterialTheme.typography.titleMedium,
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.HeaderText
                                 )

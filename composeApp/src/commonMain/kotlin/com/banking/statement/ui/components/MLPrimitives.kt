@@ -434,6 +434,45 @@ fun SectionTitle(
 }
 
 // ============================================================
+// ChartCard — shared MoneyLupe shell for chart components.
+// Replaces Material Card + titleMedium Bold pattern.
+// ============================================================
+
+@Composable
+fun ChartCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    rightSlot: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val shape = RoundedCornerShape(AppRadii.lg)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(AppElevations.xs, shape, clip = false)
+            .clip(shape)
+            .background(AppColors.CardBackground)
+            .padding(AppSpacing.s4)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary
+            )
+            rightSlot?.invoke()
+        }
+        Spacer(modifier = Modifier.height(AppSpacing.s3))
+        content()
+    }
+}
+
+// ============================================================
 // MoneyLupeChoiceDialog — a single-select list dialog styled to
 // match the MoneyLupe kit. Replaces Material's AlertDialog with
 // RadioButton rows across the app's Sort / Filter menus.
