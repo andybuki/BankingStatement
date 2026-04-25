@@ -214,7 +214,8 @@ fun App(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
+                    contentColor = AppColors.TextPrimary
                 ) {
                     when (currentTab) {
                         NavigationTab.HOME -> HomeScreen(

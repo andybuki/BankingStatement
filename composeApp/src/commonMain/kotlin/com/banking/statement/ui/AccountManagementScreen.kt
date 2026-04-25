@@ -535,7 +535,7 @@ private fun AccountManagementCard(
                     Text(
                         text = strings.transactions,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = AppColors.TextSecondary
                     )
                     Text(
                         text = account.transactionCount.toString(),
@@ -549,7 +549,7 @@ private fun AccountManagementCard(
                     Text(
                         text = strings.statements,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = AppColors.TextSecondary
                     )
                     Text(
                         text = account.statementCount.toString(),
@@ -563,7 +563,7 @@ private fun AccountManagementCard(
                     Text(
                         text = strings.netBalance,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = AppColors.TextSecondary
                     )
                     account.balance?.let { balance ->
                         Text(
@@ -575,7 +575,7 @@ private fun AccountManagementCard(
                     } ?: Text(
                         text = "—",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        color = AppColors.TextTertiary
                     )
                 }
             }
@@ -586,14 +586,14 @@ private fun AccountManagementCard(
                 Text(
                     text = formatIbanShort(iban),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    color = AppColors.TextTertiary
                 )
             }
 
             // Expand/collapse button for statements list
             if (account.statements.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = AppColors.Divider)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier
@@ -657,7 +657,7 @@ private fun AccountManagementCard(
                                 onDelete = { statementToDelete = statement }
                             )
                             HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                color = AppColors.SurfaceTint,
                                 modifier = Modifier.padding(vertical = 2.dp)
                             )
                         }
@@ -694,7 +694,7 @@ private fun StatementRow(
         Icon(
             imageVector = Icons.Default.Description,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            tint = AppColors.TextSecondary,
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(10.dp))
@@ -711,13 +711,13 @@ private fun StatementRow(
                     Text(
                         text = it,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = AppColors.TextSecondary
                     )
                 }
                 Text(
                     text = "${strings.importedOn} ${formatImportDate(statement.importDate)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    color = AppColors.TextTertiary
                 )
             }
         }
