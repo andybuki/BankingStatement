@@ -40,36 +40,21 @@ fun MonthlySpendingLineChart(
 ) {
     val strings = LocalStrings.current
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp)
+    com.banking.statement.ui.components.ChartCard(
+        title = "Monthly Trend",
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Monthly Trend",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        if (monthlySummary.isNotEmpty()) {
+            val reversed = remember(monthlySummary) { monthlySummary.reversed() }
+            val incomeData = remember(reversed) { reversed.map { it.income } }
+            val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
+            val maxValue = remember(incomeData, expensesData) {
+                maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (monthlySummary.isNotEmpty()) {
-                val reversed = remember(monthlySummary) { monthlySummary.reversed() }
-                val incomeData = remember(reversed) { reversed.map { it.income } }
-                val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
-                val maxValue = remember(incomeData, expensesData) {
-                    maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
-                }
-
-                val incomeColor = AppColors.Income
-                val expensesColor = AppColors.Expenses
-                val gridColor = MaterialTheme.colorScheme.outlineVariant
+            val incomeColor = AppColors.Income
+            val expensesColor = AppColors.Expenses
+            val gridColor = AppColors.Divider
 
                 Canvas(
                     modifier = Modifier
@@ -190,13 +175,12 @@ fun MonthlySpendingLineChart(
                         }
                     }
                 }
-            } else {
-                Text(
-                    text = "No data available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        } else {
+            Text(
+                text = "No data available",
+                fontSize = 13.sp,
+                color = AppColors.TextSecondary
+            )
         }
     }
 }
@@ -211,36 +195,21 @@ fun IncomeVsExpensesBarChart(
 ) {
     val strings = LocalStrings.current
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp)
+    com.banking.statement.ui.components.ChartCard(
+        title = "Income vs Expenses",
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Income vs Expenses",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        if (monthlySummary.isNotEmpty()) {
+            val reversed = remember(monthlySummary) { monthlySummary.reversed() }
+            val incomeData = remember(reversed) { reversed.map { it.income } }
+            val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
+            val maxValue = remember(incomeData, expensesData) {
+                maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (monthlySummary.isNotEmpty()) {
-                val reversed = remember(monthlySummary) { monthlySummary.reversed() }
-                val incomeData = remember(reversed) { reversed.map { it.income } }
-                val expensesData = remember(reversed) { reversed.map { abs(it.expenses) } }
-                val maxValue = remember(incomeData, expensesData) {
-                    maxOf(incomeData.maxOrNull() ?: 0.0, expensesData.maxOrNull() ?: 0.0)
-                }
-
-                val incomeColor = AppColors.Income
-                val expensesColor = AppColors.Expenses
-                val gridColor = MaterialTheme.colorScheme.outlineVariant
+            val incomeColor = AppColors.Income
+            val expensesColor = AppColors.Expenses
+            val gridColor = AppColors.Divider
 
                 Canvas(
                     modifier = Modifier
@@ -372,13 +341,12 @@ fun IncomeVsExpensesBarChart(
                         }
                     }
                 }
-            } else {
-                Text(
-                    text = "No data available",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        } else {
+            Text(
+                text = "No data available",
+                fontSize = 13.sp,
+                color = AppColors.TextSecondary
+            )
         }
     }
 }

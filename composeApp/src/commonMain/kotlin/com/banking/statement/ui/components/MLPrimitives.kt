@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Home
@@ -430,6 +431,152 @@ fun SectionTitle(
                 modifier = if (onAction != null) Modifier.clickable(onClick = onAction) else Modifier
             )
         }
+    }
+}
+
+// ============================================================
+// MLSetRow — settings row with colored-icon square + title +
+// subtitle + optional trailing slot or chevron. Matches
+// ui_kits/mobile/ScreensB.MLSetRow exactly.
+// ============================================================
+
+@Composable
+fun MLSetRow(
+    icon: ImageVector,
+    iconTint: Color,
+    title: String,
+    subtitle: String? = null,
+    onClick: (() -> Unit)? = null,
+    showChevron: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
+    isFirst: Boolean = false
+) {
+    Column {
+        if (!isFirst) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 64.dp)
+                    .height(1.dp)
+                    .background(AppColors.SurfaceTint)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s3 + 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.s3)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(iconTint.copy(alpha = 0.13f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.TextPrimary
+                )
+                if (subtitle != null) {
+                    Spacer(modifier = Modifier.height(1.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        color = AppColors.TextTertiary
+                    )
+                }
+            }
+            trailing?.invoke()
+            if (showChevron) {
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = AppColors.Disabled,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+// ============================================================
+// MLSetGroup — eyebrow label + white MLCard with no padding,
+// designed to host a stack of MLSetRow children. Matches the
+// kit's grouped settings card.
+// ============================================================
+
+@Composable
+fun MLSetGroup(
+    eyebrow: String? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.s2)) {
+        if (eyebrow != null) {
+            EyebrowLabel(
+                text = eyebrow,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.lg), clip = false)
+                .clip(RoundedCornerShape(AppRadii.lg))
+                .background(AppColors.CardBackground),
+            content = content
+        )
+    }
+}
+
+// ============================================================
+// ChartCard — shared MoneyLupe shell for chart components.
+// Replaces Material Card + titleMedium Bold pattern.
+// ============================================================
+
+@Composable
+fun ChartCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    rightSlot: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val shape = RoundedCornerShape(AppRadii.lg)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(AppElevations.xs, shape, clip = false)
+            .clip(shape)
+            .background(AppColors.CardBackground)
+            .padding(AppSpacing.s4)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary
+            )
+            rightSlot?.invoke()
+        }
+        Spacer(modifier = Modifier.height(AppSpacing.s3))
+        content()
     }
 }
 

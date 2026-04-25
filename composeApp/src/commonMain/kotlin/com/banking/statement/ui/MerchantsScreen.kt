@@ -1,10 +1,13 @@
 package com.banking.statement.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +25,7 @@ import com.banking.statement.ui.charts.MerchantSpendingData
 import com.banking.statement.ui.charts.TopMerchantsBarChart
 import com.banking.statement.ui.components.CategoryAvatar
 import com.banking.statement.ui.components.EyebrowLabel
+import com.banking.statement.ui.components.MoneyLupeChoiceDialog
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.AppElevations
 import com.banking.statement.ui.theme.AppRadii
@@ -43,9 +47,24 @@ fun MerchantsScreen(
 ) {
     val strings = LocalStrings.current
 
-    val filteredTransactions = remember(transactions, selectedAccountId) {
-        if (selectedAccountId == null) transactions
+    // Local time-period filter — same options Activity exposes via the
+    // calendar dialog. Filtering happens in-memory off the date strings,
+    // identical to the Spending tab path.
+    var timePeriod by remember { mutableStateOf(TimePeriod.ALL) }
+    var showPeriodPicker by remember { mutableStateOf(false) }
+
+    val periodLabel = when (timePeriod) {
+        TimePeriod.WEEK -> strings.periodWeek
+        TimePeriod.MONTH -> strings.periodMonth
+        TimePeriod.YEAR -> strings.periodYear
+        TimePeriod.CUSTOM -> strings.periodCustom
+        TimePeriod.ALL -> strings.periodAll
+    }
+
+    val filteredTransactions = remember(transactions, selectedAccountId, timePeriod) {
+        val byAccount = if (selectedAccountId == null) transactions
         else transactions.filter { it.accountId == selectedAccountId }
+        filterByTimePeriod(byAccount, timePeriod)
     }
 
     val merchantHistory = remember(filteredTransactions) {
@@ -94,6 +113,16 @@ fun MerchantsScreen(
             .fillMaxSize()
             .background(AppColors.SurfaceTint)
     ) {
+        // Period chrome — always rendered so the filter is reachable even
+        // when the current period yields zero merchants.
+        Box(modifier = Modifier.padding(AppSpacing.s4).padding(top = AppSpacing.s3, bottom = 0.dp)) {
+            PeriodChromeRow(
+                periodLabel = periodLabel,
+                active = timePeriod != TimePeriod.ALL,
+                onClick = { showPeriodPicker = true }
+            )
+        }
+
         if (merchantHistory.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(AppSpacing.s8),
@@ -185,6 +214,89 @@ fun MerchantsScreen(
                 }
             }
         }
+    }
+
+    if (showPeriodPicker) {
+        MoneyLupeChoiceDialog(
+            eyebrow = "Time range",
+            title = "Filter by time",
+            options = listOf(
+                TimePeriod.ALL to strings.periodAll,
+                TimePeriod.WEEK to strings.periodWeek,
+                TimePeriod.MONTH to strings.periodMonth,
+                TimePeriod.YEAR to strings.periodYear
+            ),
+            selected = timePeriod,
+            onSelect = {
+                timePeriod = it
+                showPeriodPicker = false
+            },
+            onDismiss = { showPeriodPicker = false },
+            secondaryAction = if (timePeriod != TimePeriod.ALL) {
+                strings.clear to {
+                    timePeriod = TimePeriod.ALL
+                    showPeriodPicker = false
+                }
+            } else null
+        )
+    }
+}
+
+@Composable
+private fun PeriodChromeRow(
+    periodLabel: String,
+    active: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(AppRadii.md))
+            .background(AppColors.CardBackground)
+            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.md), clip = false)
+            .clickable(onClick = onClick)
+            .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s3),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(
+                    (if (active) AppColors.Primary else AppColors.TextTertiary).copy(alpha = 0.13f)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.CalendarToday,
+                contentDescription = null,
+                tint = if (active) AppColors.Primary else AppColors.TextSecondary,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(AppSpacing.s2 + 2.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Time range".uppercase(),
+                fontSize = 10.sp,
+                letterSpacing = 0.6.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextTertiary
+            )
+            Spacer(modifier = Modifier.height(1.dp))
+            Text(
+                text = periodLabel,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary
+            )
+        }
+        Text(
+            text = "Change",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.Primary
+        )
     }
 }
 
