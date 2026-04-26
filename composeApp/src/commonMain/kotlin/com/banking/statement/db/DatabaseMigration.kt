@@ -13,6 +13,11 @@ import app.cash.sqldelight.db.AfterVersion
  * Migration versioning (each .sqm file increments the version by 1):
  *   1.sqm (v0 -> v1): Initial schema — all tables and indexes
  *   2.sqm (v1 -> v2): Added transactions.notes, accounts.updated_at columns
+ *   3.sqm (v2 -> v3): Added transactions.source_page, transactions.source_line_snippet
+ *                      for linking transactions back to their source PDF page/line
+ *   4.sqm (v3 -> v4): Added transactions.source_bbox (fractional "x,y,w,h")
+ *                      so the PDF viewer can draw a highlight rectangle on the
+ *                      exact line in the source PDF
  */
 object DatabaseMigration {
 

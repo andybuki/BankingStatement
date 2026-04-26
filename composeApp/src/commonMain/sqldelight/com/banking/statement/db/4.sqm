@@ -1,0 +1,8 @@
+-- Version 4: Add source-line bounding box for per-line PDF highlighting
+-- Stores the matched line's bounding box as fractional page coordinates
+-- "x,y,w,h" with each value in [0..1] relative to page width/height. The
+-- in-app PDF viewer uses this to draw a highlight rectangle directly on
+-- top of the rendered page image so the user sees exactly which line on
+-- the original statement a transaction came from.
+
+ALTER TABLE transactions ADD COLUMN source_bbox TEXT;

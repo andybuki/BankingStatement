@@ -60,6 +60,16 @@ actual class AppPreferences {
         defaults.setBool(dismissed, KEY_RATING_PROMPT_DISMISSED)
     }
 
+    actual fun isPdfAccessEnabled(): Boolean {
+        return if (defaults.objectForKey(KEY_PDF_ACCESS_ENABLED) != null) {
+            defaults.boolForKey(KEY_PDF_ACCESS_ENABLED)
+        } else true
+    }
+
+    actual fun setPdfAccessEnabled(enabled: Boolean) {
+        defaults.setBool(enabled, KEY_PDF_ACCESS_ENABLED)
+    }
+
     companion object {
         private const val KEY_TUTORIAL_DISMISSED = "tutorial_dismissed"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
@@ -67,5 +77,6 @@ actual class AppPreferences {
         private const val KEY_LAST_APP_OPEN = "last_app_open_time"
         private const val KEY_SUCCESSFUL_IMPORT_COUNT = "successful_import_count"
         private const val KEY_RATING_PROMPT_DISMISSED = "rating_prompt_dismissed"
+        private const val KEY_PDF_ACCESS_ENABLED = "pdf_access_enabled"
     }
 }

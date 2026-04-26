@@ -81,6 +81,14 @@ actual class AppPreferences(private val context: Context) {
         prefs.edit().putBoolean(KEY_RATING_PROMPT_DISMISSED, dismissed).apply()
     }
 
+    actual fun isPdfAccessEnabled(): Boolean {
+        return prefs.getBoolean(KEY_PDF_ACCESS_ENABLED, true)
+    }
+
+    actual fun setPdfAccessEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_PDF_ACCESS_ENABLED, enabled).apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "bankwise_secure_prefs"
         private const val KEY_TUTORIAL_DISMISSED = "tutorial_dismissed"
@@ -90,5 +98,6 @@ actual class AppPreferences(private val context: Context) {
         private const val KEY_LAST_APP_OPEN = "last_app_open_time"
         private const val KEY_SUCCESSFUL_IMPORT_COUNT = "successful_import_count"
         private const val KEY_RATING_PROMPT_DISMISSED = "rating_prompt_dismissed"
+        private const val KEY_PDF_ACCESS_ENABLED = "pdf_access_enabled"
     }
 }

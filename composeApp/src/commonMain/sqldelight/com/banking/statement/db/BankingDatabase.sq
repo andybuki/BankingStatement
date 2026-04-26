@@ -148,6 +148,9 @@ UPDATE transactions SET category_id = ?, auto_category = ? WHERE id = ?;
 updateTransactionNotes:
 UPDATE transactions SET notes = ? WHERE id = ?;
 
+updateTransactionSourceLink:
+UPDATE transactions SET source_page = ?, source_line_snippet = ?, source_bbox = ? WHERE id = ?;
+
 markAsDuplicate:
 UPDATE transactions SET is_duplicate = 1 WHERE id = ?;
 

@@ -27,7 +27,9 @@ data class PendingImport(
     val fileName: String,
     val filePath: String?,
     val fileType: ImportFileType,
-    val matchResult: AccountMatchResult
+    val matchResult: AccountMatchResult,
+    /** Original PDF bytes, kept in-memory so we can backfill source_page after the user picks an account. */
+    val pdfBytes: ByteArray? = null
 )
 
 /**

@@ -62,6 +62,7 @@ class MainActivity : FragmentActivity() {
             val selectedDateRange by viewModel.selectedDateRange.collectAsState()
             val selectedSortOrder by viewModel.selectedSortOrder.collectAsState()
             val totalTransactionCount by viewModel.totalTransactionCount.collectAsState()
+            val pdfViewerState by viewModel.pdfViewerState.collectAsState()
 
             // Biometric lock state
             var isAuthenticated by remember { mutableStateOf(!viewModel.isBiometricLockEnabled()) }
@@ -186,7 +187,19 @@ class MainActivity : FragmentActivity() {
                         selectedDateRange = selectedDateRange,
                         onDateRangeChange = { start, end -> viewModel.setDateRange(start, end) },
                         selectedSortOrder = selectedSortOrder,
-                        onSortOrderChange = { order -> viewModel.setSortOrder(order) }
+                        onSortOrderChange = { order -> viewModel.setSortOrder(order) },
+                        pdfViewerState = pdfViewerState,
+                        onOpenTransactionSourcePdf = { transaction ->
+                            viewModel.openTransactionSourcePdf(transaction)
+                        },
+                        onOpenStatementPdf = { statementId ->
+                            viewModel.openStatementPdf(statementId)
+                        },
+                        onClosePdfViewer = { viewModel.closePdfViewer() },
+                        pdfAccessEnabled = appSettings.pdfAccessEnabled,
+                        onPdfAccessEnabledChange = { enabled ->
+                            viewModel.setPdfAccessEnabled(enabled)
+                        }
                     )
                 }
             }

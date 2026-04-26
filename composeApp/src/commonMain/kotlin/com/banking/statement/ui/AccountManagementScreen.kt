@@ -102,6 +102,8 @@ fun AccountManagementScreen(
     onEmailClick: (String) -> Unit = {},
     remindersEnabled: Boolean = true,
     onRemindersEnabledChange: (Boolean) -> Unit = {},
+    pdfAccessEnabled: Boolean = true,
+    onPdfAccessEnabledChange: (Boolean) -> Unit = {},
     onShareApp: () -> Unit = {}
 ) {
     val strings = LocalStrings.current
@@ -228,10 +230,11 @@ fun AccountManagementScreen(
             }
         }
 
-        // Security section
-        if (biometricAvailable) {
-            item(key = "security") {
-                MLSetGroup(eyebrow = strings.security) {
+        // Security section — biometric + PDF retention live here together
+        // since both control how sensitive statement data is kept on-device.
+        item(key = "security") {
+            MLSetGroup(eyebrow = strings.security) {
+                if (biometricAvailable) {
                     MLSetRow(
                         icon = Icons.Filled.Lock,
                         iconTint = Color(0xFF6366F1),
@@ -252,6 +255,28 @@ fun AccountManagementScreen(
                         }
                     )
                 }
+                MLSetRow(
+                    icon = Icons.Filled.Description,
+                    iconTint = Color(0xFFEF4444),
+                    title = "Source PDF access",
+                    subtitle = if (pdfAccessEnabled)
+                        "Original statement PDFs are kept on-device so you can open them from a transaction."
+                    else
+                        "Imported PDFs are not retained. View source PDF is unavailable.",
+                    isFirst = !biometricAvailable,
+                    trailing = {
+                        Switch(
+                            checked = pdfAccessEnabled,
+                            onCheckedChange = onPdfAccessEnabledChange,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AppColors.Primary,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = AppColors.Disabled
+                            )
+                        )
+                    }
+                )
             }
         }
 

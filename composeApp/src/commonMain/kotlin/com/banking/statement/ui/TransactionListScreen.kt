@@ -66,6 +66,7 @@ fun TransactionListScreen(
     onCategoryChange: ((TransactionDisplay, TransactionCategory) -> Unit)? = null,
     onCustomCategoryChange: ((TransactionDisplay, Long) -> Unit)? = null,
     onManageCategories: (() -> Unit)? = null,
+    onViewSourcePdf: ((TransactionDisplay) -> Unit)? = null,
     hasMoreTransactions: Boolean = false,
     isLoadingMore: Boolean = false,
     onLoadMore: (() -> Unit)? = null
@@ -74,6 +75,7 @@ fun TransactionListScreen(
     var shareMenuExpanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showCategoryPicker by remember { mutableStateOf<TransactionDisplay?>(null) }
+    var showActionsFor by remember { mutableStateOf<TransactionDisplay?>(null) }
 
     // Sort state is hoisted (DB-level sorting). timeFilter stays local for UI.
     val sortOrder = selectedSortOrder
@@ -271,7 +273,12 @@ fun TransactionListScreen(
                         date = date,
                         txs = txs,
                         onClickTx = if (onCategoryChange != null) {
-                            { tx -> showCategoryPicker = tx }
+                            // Single tap opens the actions sheet with
+                            // "Change category" + "View source PDF" (if
+                            // available). The user taps the row once and
+                            // picks their action instead of jumping
+                            // straight into the category picker.
+                            { tx -> showActionsFor = tx }
                         } else null
                     )
                 }
@@ -293,6 +300,23 @@ fun TransactionListScreen(
                 }
             }
         }
+    }
+
+    // Tap-a-row actions sheet: Change category / View source PDF.
+    showActionsFor?.let { transaction ->
+        TransactionActionsDialog(
+            transaction = transaction,
+            canViewSourcePdf = onViewSourcePdf != null && transaction.hasSourcePdf,
+            onChangeCategory = {
+                showActionsFor = null
+                showCategoryPicker = transaction
+            },
+            onViewSourcePdf = {
+                showActionsFor = null
+                onViewSourcePdf?.invoke(transaction)
+            },
+            onDismiss = { showActionsFor = null }
+        )
     }
 
     // Category picker dialog

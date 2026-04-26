@@ -29,5 +29,12 @@ data class AppSettingsState(
     val customCategories: List<CustomCategory> = emptyList(),
     val biometricLockEnabled: Boolean = false,
     val biometricAvailable: Boolean = false,
-    val remindersEnabled: Boolean = true
+    val remindersEnabled: Boolean = true,
+    val pdfAccessEnabled: Boolean = true
 )
+
+/**
+ * Android alias for the common PDF viewer screen state so the ViewModel
+ * can emit a StateFlow<PdfViewerUiState> that App.kt can consume.
+ */
+typealias PdfViewerUiState = PdfViewerScreenState

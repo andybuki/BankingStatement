@@ -416,6 +416,73 @@ class TransactionRepository(
         queries.updateTransactionCategory(categoryId, categoryName, transactionId)
     }
 
+    /**
+     * Record which PDF page (and optionally which line + bbox) a transaction
+     * was extracted from, so the user can open the source PDF and see the
+     * specific line highlighted.
+     */
+    fun updateTransactionSourceLink(
+        transactionId: Long,
+        page: Int?,
+        lineSnippet: String?,
+        bbox: String? = null
+    ) {
+        queries.updateTransactionSourceLink(
+            source_page = page?.toLong(),
+            source_line_snippet = lineSnippet,
+            source_bbox = bbox,
+            id = transactionId
+        )
+    }
+
+    fun getStatementById(statementId: Long): Statements? {
+        return queries.getStatementById(statementId).executeAsOneOrNull()
+    }
+
+    /**
+     * Populate transactions.source_page / source_line_snippet / source_bbox
+     * for every transaction of [statementId] by matching their
+     * description/amount against [pageLines] (per-page list of
+     * `PdfLineBox` entries). When [pageLines] is empty falls back to the
+     * page-text-only matcher with [pageTexts].
+     */
+    fun backfillSourcePagesForStatement(
+        statementId: Long,
+        pageLines: List<List<com.banking.statement.pdf.PdfLineBox>>,
+        pageTexts: List<String>
+    ): Int {
+        if (pageLines.isEmpty() && pageTexts.isEmpty()) return 0
+        val transactions = queries.getTransactionsByStatement(statementId).executeAsList()
+        var matched = 0
+        transactions.forEach { tx ->
+            val match = if (pageLines.isNotEmpty()) {
+                com.banking.statement.pdf.TransactionPageMatcher.matchWithBoxes(
+                    pageLines = pageLines,
+                    description = tx.description,
+                    counterparty = tx.counterparty_name,
+                    amount = tx.amount
+                )
+            } else {
+                com.banking.statement.pdf.TransactionPageMatcher.match(
+                    pageTexts = pageTexts,
+                    description = tx.description,
+                    counterparty = tx.counterparty_name,
+                    amount = tx.amount
+                )
+            }
+            if (match != null) {
+                queries.updateTransactionSourceLink(
+                    source_page = match.pageIndex.toLong(),
+                    source_line_snippet = match.lineSnippet,
+                    source_bbox = match.bbox,
+                    id = tx.id
+                )
+                matched++
+            }
+        }
+        return matched
+    }
+
     // ==================== Category Operations ====================
 
     fun getAllCategories(): List<Categories> {
