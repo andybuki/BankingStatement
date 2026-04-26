@@ -385,15 +385,25 @@ class MainViewModel(
     }
 
     /**
-     * After importing a PDF statement, extract per-page text and record which
-     * page each transaction came from. Best-effort: failures are silent.
+     * After importing a PDF statement, extract per-page lines (with bboxes)
+     * and record which page + line each transaction came from. Used by the
+     * in-app PDF viewer to draw a highlight rectangle directly on the line.
+     * Best-effort: failures are silent.
      */
     private suspend fun backfillSourcePagesIfPdf(pdfBytes: ByteArray?, statementId: Long) {
         if (pdfBytes == null) return
         withContext(Dispatchers.IO) {
             val pdfProcessor = com.banking.statement.pdf.PdfProcessor()
-            val pages = pdfProcessor.extractPages(pdfBytes) ?: return@withContext
-            repository.backfillSourcePagesForStatement(statementId, pages)
+            val pageLines = pdfProcessor.extractPageLines(pdfBytes) ?: emptyList()
+            val pageTexts = if (pageLines.isEmpty()) {
+                pdfProcessor.extractPages(pdfBytes) ?: emptyList()
+            } else emptyList()
+            if (pageLines.isEmpty() && pageTexts.isEmpty()) return@withContext
+            repository.backfillSourcePagesForStatement(
+                statementId = statementId,
+                pageLines = pageLines,
+                pageTexts = pageTexts
+            )
         }
     }
 
@@ -840,7 +850,8 @@ class MainViewModel(
                 sourcePdfPath = sourceStatement?.file_path
                     ?.takeIf { sourceStatement.source_type == "PDF" },
                 sourcePage = tx.source_page?.toInt(),
-                sourceLineSnippet = tx.source_line_snippet
+                sourceLineSnippet = tx.source_line_snippet,
+                sourceBbox = tx.source_bbox
             )
         }
     }
@@ -1241,6 +1252,7 @@ class MainViewModel(
                 highlightSnippet = transaction.sourceLineSnippet
                     ?: TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description),
                 highlightTitle = "Transaction · ${transaction.date}",
+                highlightBbox = transaction.sourceBbox,
                 linkableTransactions = candidates
             )
         }
@@ -1281,7 +1293,8 @@ class MainViewModel(
                 repository.updateTransactionSourceLink(
                     transactionId = transactionId,
                     page = page,
-                    lineSnippet = null
+                    lineSnippet = null,
+                    bbox = null
                 )
             }
             // Refresh candidates so the "currentlyLinkedPage" status updates.

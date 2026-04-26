@@ -149,7 +149,7 @@ updateTransactionNotes:
 UPDATE transactions SET notes = ? WHERE id = ?;
 
 updateTransactionSourceLink:
-UPDATE transactions SET source_page = ?, source_line_snippet = ? WHERE id = ?;
+UPDATE transactions SET source_page = ?, source_line_snippet = ?, source_bbox = ? WHERE id = ?;
 
 getTransactionsMissingSourcePageByStatement:
 SELECT * FROM transactions WHERE statement_id = ? AND source_page IS NULL;

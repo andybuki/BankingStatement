@@ -1,7 +1,9 @@
 package com.banking.statement.pdf
 
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.text.PDFTextStripper
+import com.tom_roush.pdfbox.text.TextPosition
 import java.io.ByteArrayInputStream
 
 actual class PdfProcessor {
@@ -59,6 +61,31 @@ actual class PdfProcessor {
      * Returns null when PDFBox cannot open the document.
      */
     actual fun extractPages(pdfBytes: ByteArray): List<String>? = extractTextByPage(pdfBytes)
+
+    /**
+     * Extract per-line text + bounding box per page. Used to highlight
+     * the exact line a transaction came from in the in-app PDF viewer.
+     */
+    actual fun extractPageLines(pdfBytes: ByteArray): List<List<PdfLineBox>>? {
+        return try {
+            val inputStream = ByteArrayInputStream(pdfBytes)
+            val document = PDDocument.load(inputStream)
+            val stripper = LineBoxStripper().apply {
+                sortByPosition = true
+                spacingTolerance = 0.5f
+            }
+            // Triggers stripper.processPages → per-page line collection.
+            stripper.getText(document)
+            val result = stripper.pages.map { page ->
+                page.toList()
+            }
+            document.close()
+            result
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     /**
      * Alternative extraction mode optimized for tabular data.
@@ -145,5 +172,83 @@ actual class PdfProcessor {
                bytes[2] == 0x44.toByte() && // D
                bytes[3] == 0x46.toByte() && // F
                bytes[4] == 0x2D.toByte()    // -
+    }
+}
+
+/**
+ * Custom PDFTextStripper that captures per-line bounding boxes alongside
+ * the line text. Coordinates are converted to fractional values in the
+ * top-left coordinate system used by the rendered page image.
+ */
+private class LineBoxStripper : PDFTextStripper() {
+    val pages: MutableList<MutableList<PdfLineBox>> = mutableListOf()
+    private var pageWidthPts: Float = 0f
+    private var pageHeightPts: Float = 0f
+    private val pendingPositions: MutableList<TextPosition> = mutableListOf()
+
+    override fun startPage(page: PDPage) {
+        pages.add(mutableListOf())
+        val box = page.mediaBox
+        pageWidthPts = box.width
+        pageHeightPts = box.height
+        pendingPositions.clear()
+        super.startPage(page)
+    }
+
+    override fun writeString(text: String, textPositions: List<TextPosition>) {
+        if (textPositions.isNotEmpty()) {
+            pendingPositions.addAll(textPositions)
+        }
+        super.writeString(text, textPositions)
+    }
+
+    override fun writeLineSeparator() {
+        flushPendingLine()
+        super.writeLineSeparator()
+    }
+
+    override fun endPage(page: PDPage) {
+        flushPendingLine()
+        super.endPage(page)
+    }
+
+    private fun flushPendingLine() {
+        if (pendingPositions.isEmpty()) return
+        if (pageWidthPts <= 0f || pageHeightPts <= 0f) {
+            pendingPositions.clear()
+            return
+        }
+        val text = pendingPositions.joinToString("") { it.unicode ?: "" }.trim()
+        if (text.isBlank()) {
+            pendingPositions.clear()
+            return
+        }
+        // PDFBox with sortByPosition=true reports y in the upper-left
+        // coordinate system: y is the BASELINE of the glyph from the page
+        // top, height is glyph height. So line top = y - height.
+        var minX = Float.POSITIVE_INFINITY
+        var maxX = Float.NEGATIVE_INFINITY
+        var minTop = Float.POSITIVE_INFINITY
+        var maxBottom = Float.NEGATIVE_INFINITY
+        pendingPositions.forEach { tp ->
+            val x = tp.x
+            val endX = tp.x + tp.width
+            val baseline = tp.y
+            val height = tp.height.takeIf { it > 0f } ?: tp.fontSizeInPt
+            val top = baseline - height
+            if (x < minX) minX = x
+            if (endX > maxX) maxX = endX
+            if (top < minTop) minTop = top
+            if (baseline > maxBottom) maxBottom = baseline
+        }
+        // Pad vertically a touch so the highlight is comfortably bigger
+        // than the glyphs themselves.
+        val padY = (maxBottom - minTop).coerceAtLeast(1f) * 0.20f
+        val xFrac = (minX / pageWidthPts).coerceIn(0f, 1f)
+        val wFrac = ((maxX - minX) / pageWidthPts).coerceIn(0.001f, 1f)
+        val yFrac = ((minTop - padY) / pageHeightPts).coerceIn(0f, 1f)
+        val hFrac = ((maxBottom - minTop + 2 * padY) / pageHeightPts).coerceIn(0.001f, 1f)
+        pages.last().add(PdfLineBox(text, xFrac, yFrac, wFrac, hFrac))
+        pendingPositions.clear()
     }
 }

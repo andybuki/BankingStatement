@@ -15,5 +15,8 @@ data class PdfViewerScreenState(
     val initialPage: Int = 0,
     val highlightSnippet: String? = null,
     val highlightTitle: String? = null,
+    /** "x,y,w,h" fractional page coords for the matched line, drawn as an
+     *  amber rectangle over the rendered page. Null hides the overlay. */
+    val highlightBbox: String? = null,
     val linkableTransactions: List<LinkableTransaction> = emptyList()
 )

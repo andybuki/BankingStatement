@@ -13,6 +13,11 @@ actual class PdfProcessor {
         return null
     }
 
+    actual fun extractPageLines(pdfBytes: ByteArray): List<List<PdfLineBox>>? {
+        // TODO: Implement using PDFKit on iOS.
+        return null
+    }
+
     actual fun isPdfFile(bytes: ByteArray): Boolean {
         // Check for PDF magic bytes: %PDF-
         if (bytes.size < 5) return false

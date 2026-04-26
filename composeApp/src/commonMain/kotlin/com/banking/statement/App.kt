@@ -800,6 +800,7 @@ fun App(
                             initialPage = pdfViewerState.initialPage,
                             highlightSnippet = pdfViewerState.highlightSnippet,
                             highlightTitle = pdfViewerState.highlightTitle,
+                            highlightBbox = pdfViewerState.highlightBbox,
                             linkableTransactions = pdfViewerState.linkableTransactions,
                             onLinkTransaction = onLinkTransactionToPage,
                             onClose = { onClosePdfViewer?.invoke() }

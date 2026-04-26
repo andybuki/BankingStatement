@@ -1,5 +1,6 @@
 package com.banking.statement.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,8 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +73,8 @@ fun PdfViewerScreen(
     initialPage: Int = 0,
     highlightSnippet: String? = null,
     highlightTitle: String? = null,
+    /** "x,y,w,h" fractional page coords (0..1) for the line overlay. */
+    highlightBbox: String? = null,
     linkableTransactions: List<LinkableTransaction> = emptyList(),
     onLinkTransaction: ((transactionId: Long, page: Int) -> Unit)? = null,
     onClose: () -> Unit
@@ -252,7 +258,8 @@ fun PdfViewerScreen(
                                 bitmap = bitmap,
                                 isHighlight = isHighlightPage,
                                 highlightTitle = highlightTitle,
-                                highlightSnippet = highlightSnippet
+                                highlightSnippet = highlightSnippet,
+                                highlightBbox = if (isHighlightPage) highlightBbox else null
                             )
                         }
                     }
@@ -298,7 +305,8 @@ private fun PageItem(
     bitmap: ImageBitmap?,
     isHighlight: Boolean,
     highlightTitle: String?,
-    highlightSnippet: String?
+    highlightSnippet: String?,
+    highlightBbox: String?
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         if (isHighlight && !highlightSnippet.isNullOrBlank()) {
@@ -332,6 +340,18 @@ private fun PageItem(
                     contentScale = ContentScale.FillWidth,
                     modifier = Modifier.fillMaxWidth()
                 )
+                // Draw the per-line highlight overlay on top of the page
+                // image. Bbox values are fractions of the page; we map
+                // them onto the rendered image's content size below.
+                val parsed = remember(highlightBbox) { parseBbox(highlightBbox) }
+                if (isHighlight && parsed != null) {
+                    HighlightOverlay(
+                        bitmap = bitmap,
+                        bbox = parsed,
+                        modifier = Modifier
+                            .matchParentSize()
+                    )
+                }
             } else {
                 // Aspect ratio close to letter/A4 — keeps the lazy list's
                 // estimated heights stable so scroll positions don't shift
@@ -358,6 +378,66 @@ private fun PageItem(
             color = AppColors.TextTertiary,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
+    }
+}
+
+/**
+ * Translucent amber rectangle drawn over the rendered page image at the
+ * coordinates of the matched line.
+ *
+ * Implementation note: the page image is drawn with [ContentScale.FillWidth],
+ * which means the image fills the box's width and its height is
+ * proportional to the bitmap's aspect ratio. Both the rendered image and
+ * the bbox use fractional coords, so we scale the bbox by the box's
+ * width and by `width * (bitmap.height / bitmap.width)` for the height
+ * — that lines the rectangle up exactly with the line on the page.
+ */
+@Composable
+private fun HighlightOverlay(
+    bitmap: ImageBitmap,
+    bbox: BboxFrac,
+    modifier: Modifier = Modifier
+) {
+    val ratio = bitmap.height.toFloat() / bitmap.width.toFloat().coerceAtLeast(1f)
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val imageDrawnHeight = w * ratio
+        val rectLeft = bbox.x * w
+        val rectTop = bbox.y * imageDrawnHeight
+        val rectWidth = bbox.w * w
+        val rectHeight = bbox.h * imageDrawnHeight
+
+        // Translucent fill so the underlying text remains readable.
+        drawRect(
+            color = HighlightAmber.copy(alpha = 0.30f),
+            topLeft = Offset(rectLeft, rectTop),
+            size = Size(rectWidth, rectHeight)
+        )
+        // Solid amber border for prominence.
+        drawRect(
+            color = HighlightAmber,
+            topLeft = Offset(rectLeft, rectTop),
+            size = Size(rectWidth, rectHeight),
+            style = Stroke(width = 2.5f)
+        )
+    }
+}
+
+/** Parsed "x,y,w,h" fractional bbox. */
+private data class BboxFrac(val x: Float, val y: Float, val w: Float, val h: Float)
+
+private fun parseBbox(raw: String?): BboxFrac? {
+    if (raw.isNullOrBlank()) return null
+    val parts = raw.split(',')
+    if (parts.size != 4) return null
+    return try {
+        val x = parts[0].toFloat().coerceIn(0f, 1f)
+        val y = parts[1].toFloat().coerceIn(0f, 1f)
+        val w = parts[2].toFloat().coerceIn(0f, 1f)
+        val h = parts[3].toFloat().coerceIn(0f, 1f)
+        if (w <= 0f || h <= 0f) null else BboxFrac(x, y, w, h)
+    } catch (e: NumberFormatException) {
+        null
     }
 }
 

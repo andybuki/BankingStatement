@@ -33,7 +33,9 @@ data class TransactionDisplay(
     val sourceStatementId: Long? = null,
     val sourcePdfPath: String? = null,
     val sourcePage: Int? = null,
-    val sourceLineSnippet: String? = null
+    val sourceLineSnippet: String? = null,
+    /** "x,y,w,h" fractional page coords (0..1) of the matched line, or null. */
+    val sourceBbox: String? = null
 ) {
     /** Returns true if the transaction has a linked source PDF that can be opened. */
     val hasSourcePdf: Boolean get() = !sourcePdfPath.isNullOrBlank()
