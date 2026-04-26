@@ -196,9 +196,6 @@ class MainActivity : FragmentActivity() {
                             viewModel.openStatementPdf(statementId)
                         },
                         onClosePdfViewer = { viewModel.closePdfViewer() },
-                        onLinkTransactionToPage = { txId, page ->
-                            viewModel.linkTransactionToPage(txId, page)
-                        },
                         pdfAccessEnabled = appSettings.pdfAccessEnabled,
                         onPdfAccessEnabledChange = { enabled ->
                             viewModel.setPdfAccessEnabled(enabled)

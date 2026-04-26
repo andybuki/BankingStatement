@@ -439,10 +439,6 @@ class TransactionRepository(
         return queries.getStatementById(statementId).executeAsOneOrNull()
     }
 
-    fun getTransactionsMissingSourcePageByStatement(statementId: Long): List<Transactions> {
-        return queries.getTransactionsMissingSourcePageByStatement(statementId).executeAsList()
-    }
-
     /**
      * Populate transactions.source_page / source_line_snippet / source_bbox
      * for every transaction of [statementId] by matching their

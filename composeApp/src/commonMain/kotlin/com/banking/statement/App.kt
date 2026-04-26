@@ -134,7 +134,6 @@ fun App(
     onOpenTransactionSourcePdf: ((TransactionDisplay) -> Unit)? = null,
     onOpenStatementPdf: ((Long) -> Unit)? = null,
     onClosePdfViewer: (() -> Unit)? = null,
-    onLinkTransactionToPage: ((transactionId: Long, page: Int) -> Unit)? = null,
     // PDF access setting
     pdfAccessEnabled: Boolean = true,
     onPdfAccessEnabledChange: ((Boolean) -> Unit)? = null
@@ -801,8 +800,6 @@ fun App(
                             highlightSnippet = pdfViewerState.highlightSnippet,
                             highlightTitle = pdfViewerState.highlightTitle,
                             highlightBbox = pdfViewerState.highlightBbox,
-                            linkableTransactions = pdfViewerState.linkableTransactions,
-                            onLinkTransaction = onLinkTransactionToPage,
                             onClose = { onClosePdfViewer?.invoke() }
                         )
                     }

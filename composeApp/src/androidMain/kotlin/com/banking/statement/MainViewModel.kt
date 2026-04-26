@@ -1239,7 +1239,6 @@ class MainViewModel(
         if (!appPreferences.isPdfAccessEnabled()) return
         val statementId = transaction.sourceStatementId
         coroutineScope.launch {
-            val candidates = if (statementId != null) loadLinkableTransactions(statementId) else emptyList()
             val fileName = statementId?.let { id ->
                 withContext(Dispatchers.IO) { repository.getStatementById(id)?.file_name }
             } ?: path.substringAfterLast('/')
@@ -1252,8 +1251,7 @@ class MainViewModel(
                 highlightSnippet = transaction.sourceLineSnippet
                     ?: TransactionDisplay.extractDisplayName(transaction.counterparty, transaction.description),
                 highlightTitle = "Transaction · ${transaction.date}",
-                highlightBbox = transaction.sourceBbox,
-                linkableTransactions = candidates
+                highlightBbox = transaction.sourceBbox
             )
         }
     }
@@ -1264,7 +1262,6 @@ class MainViewModel(
         coroutineScope.launch {
             val statement = withContext(Dispatchers.IO) { repository.getStatementById(statementId) }
             val filePath = statement?.file_path ?: return@launch
-            val candidates = loadLinkableTransactions(statementId)
             _pdfViewerState.value = PdfViewerUiState(
                 isOpen = true,
                 statementId = statementId,
@@ -1273,57 +1270,13 @@ class MainViewModel(
                 initialPage = 0,
                 highlightSnippet = null,
                 highlightTitle = null,
-                linkableTransactions = candidates
+                highlightBbox = null
             )
         }
     }
 
     fun closePdfViewer() {
         _pdfViewerState.value = PdfViewerUiState()
-    }
-
-    /**
-     * Manual assignment: user tapped "link this page to transaction X" in
-     * the PDF viewer. Writes `source_page` on the chosen transaction so
-     * future opens jump to this page.
-     */
-    fun linkTransactionToPage(transactionId: Long, page: Int) {
-        coroutineScope.launch {
-            withContext(Dispatchers.IO) {
-                repository.updateTransactionSourceLink(
-                    transactionId = transactionId,
-                    page = page,
-                    lineSnippet = null,
-                    bbox = null
-                )
-            }
-            // Refresh candidates so the "currentlyLinkedPage" status updates.
-            val current = _pdfViewerState.value
-            if (current.isOpen && current.statementId != null) {
-                val refreshed = loadLinkableTransactions(current.statementId)
-                _pdfViewerState.update { it.copy(linkableTransactions = refreshed) }
-            }
-            loadTransactionData()
-            Toast.makeText(context, "Linked to page ${page + 1}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private suspend fun loadLinkableTransactions(statementId: Long): List<com.banking.statement.ui.LinkableTransaction> {
-        return withContext(Dispatchers.IO) {
-            repository.getTransactionsByStatement(statementId).map { tx ->
-                val date = Instant.fromEpochSeconds(tx.booking_date)
-                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
-                val dateStr = "${date.dayOfMonth.toString().padStart(2, '0')}.${date.monthNumber.toString().padStart(2, '0')}.${date.year}"
-                com.banking.statement.ui.LinkableTransaction(
-                    id = tx.id,
-                    date = dateStr,
-                    description = tx.counterparty_name?.takeIf { it.isNotBlank() } ?: tx.description,
-                    amount = tx.amount,
-                    currency = tx.currency,
-                    currentlyLinkedPage = tx.source_page?.toInt()
-                )
-            }
-        }
     }
 
     fun getBiometricLockManager(): BiometricLockManager = biometricLockManager
