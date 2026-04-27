@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.IosShare
@@ -483,17 +483,18 @@ private fun AccountManagementCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Color indicator with initials
+                // Brand-style avatar — squircle (10.dp radius) tinted with the
+                // account color, mirroring MLSetRow icons in the kit.
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(parseAccountColor(account.color)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = account.name.take(2).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 13.sp,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -501,50 +502,42 @@ private fun AccountManagementCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Account name and bank
+                // Account name + IBAN preview as supporting line.
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = account.bankName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.TextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    account.iban?.let { iban ->
+                        Spacer(modifier = Modifier.height(1.dp))
+                        Text(
+                            text = formatIbanShort(iban),
+                            fontSize = 11.sp,
+                            color = AppColors.TextTertiary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
 
-                // Action buttons
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilledTonalButton(
-                        onClick = onEdit,
-                        modifier = Modifier.height(32.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Text(
-                            text = strings.edit,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    FilledTonalButton(
-                        onClick = onDelete,
-                        modifier = Modifier.height(32.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Text(
-                            text = strings.delete,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
+                // Compact icon actions instead of bulky tonal buttons
+                AccountActionIcon(
+                    icon = Icons.Filled.Edit,
+                    contentDescription = strings.edit,
+                    tint = AppColors.Primary,
+                    onClick = onEdit
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                AccountActionIcon(
+                    icon = Icons.Filled.Delete,
+                    contentDescription = strings.delete,
+                    tint = AppColors.Expenses,
+                    onClick = onDelete
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -603,16 +596,6 @@ private fun AccountManagementCard(
                         color = AppColors.TextTertiary
                     )
                 }
-            }
-
-            // IBAN if available
-            account.iban?.let { iban ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = formatIbanShort(iban),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.TextTertiary
-                )
             }
 
             // Expand/collapse button for statements list
@@ -700,6 +683,30 @@ private fun AccountManagementCard(
                 statementToDelete = null
             },
             onDismiss = { statementToDelete = null }
+        )
+    }
+}
+
+@Composable
+private fun AccountActionIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    tint: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(tint.copy(alpha = 0.12f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = tint,
+            modifier = Modifier.size(16.dp)
         )
     }
 }
