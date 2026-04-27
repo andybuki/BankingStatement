@@ -80,8 +80,8 @@ android {
         applicationId = "com.banking.statement"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 13
-        versionName = "2.1.4"
+        versionCode = 14
+        versionName = "2.1.5"
     }
     packaging {
         resources {

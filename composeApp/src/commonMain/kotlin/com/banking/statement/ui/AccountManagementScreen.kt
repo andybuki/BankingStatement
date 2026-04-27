@@ -356,7 +356,7 @@ fun AccountManagementScreen(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "${strings.appName} · v2.4.0",
+                    text = "${strings.appName} · v2.1.5",
                     fontSize = 11.sp,
                     color = AppColors.TextTertiary
                 )
