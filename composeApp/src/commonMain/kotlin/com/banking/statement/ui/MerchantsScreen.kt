@@ -25,11 +25,11 @@ import com.banking.statement.ui.charts.MerchantSpendingData
 import com.banking.statement.ui.charts.TopMerchantsBarChart
 import com.banking.statement.ui.components.CategoryAvatar
 import com.banking.statement.ui.components.EyebrowLabel
-import com.banking.statement.ui.components.MoneyLupeChoiceDialog
 import com.banking.statement.ui.theme.AppColors
 import com.banking.statement.ui.theme.AppElevations
 import com.banking.statement.ui.theme.AppRadii
 import com.banking.statement.ui.theme.AppSpacing
+import kotlinx.datetime.toLocalDateTime
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -43,28 +43,19 @@ fun MerchantsScreen(
     transactions: List<TransactionDisplay>,
     accounts: List<AccountFilterOption> = emptyList(),
     selectedAccountId: Long? = null,
+    timePeriod: TimePeriod = TimePeriod.ALL,
+    onTimePeriodChange: (TimePeriod) -> Unit = {},
+    customStartEpoch: Long? = null,
+    customEndEpoch: Long? = null,
+    onRequestCustomRange: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
 
-    // Local time-period filter — same options Activity exposes via the
-    // calendar dialog. Filtering happens in-memory off the date strings,
-    // identical to the Spending tab path.
-    var timePeriod by remember { mutableStateOf(TimePeriod.ALL) }
-    var showPeriodPicker by remember { mutableStateOf(false) }
-
-    val periodLabel = when (timePeriod) {
-        TimePeriod.WEEK -> strings.periodWeek
-        TimePeriod.MONTH -> strings.periodMonth
-        TimePeriod.YEAR -> strings.periodYear
-        TimePeriod.CUSTOM -> strings.periodCustom
-        TimePeriod.ALL -> strings.periodAll
-    }
-
-    val filteredTransactions = remember(transactions, selectedAccountId, timePeriod) {
+    val filteredTransactions = remember(transactions, selectedAccountId, timePeriod, customStartEpoch, customEndEpoch) {
         val byAccount = if (selectedAccountId == null) transactions
         else transactions.filter { it.accountId == selectedAccountId }
-        filterByTimePeriod(byAccount, timePeriod)
+        filterByTimePeriod(byAccount, timePeriod, customStartEpoch, customEndEpoch)
     }
 
     val merchantHistory = remember(filteredTransactions) {
@@ -113,15 +104,26 @@ fun MerchantsScreen(
             .fillMaxSize()
             .background(AppColors.SurfaceTint)
     ) {
-        // Period chrome — always rendered so the filter is reachable even
-        // when the current period yields zero merchants.
-        Box(modifier = Modifier.padding(AppSpacing.s4).padding(top = AppSpacing.s3, bottom = 0.dp)) {
-            PeriodChromeRow(
-                periodLabel = periodLabel,
-                active = timePeriod != TimePeriod.ALL,
-                onClick = { showPeriodPicker = true }
+        // Period pills — flat chips that match the brand design (ui_kits/mobile
+        // MLPeriodPills) instead of a framed card row.
+        PeriodPillsRow(
+            selected = timePeriod,
+            customStartEpoch = customStartEpoch,
+            customEndEpoch = customEndEpoch,
+            onSelect = { period ->
+                if (period == TimePeriod.CUSTOM) {
+                    onRequestCustomRange()
+                } else {
+                    onTimePeriodChange(period)
+                }
+            },
+            onCalendarClick = { onRequestCustomRange() },
+            modifier = Modifier.padding(
+                start = AppSpacing.s4,
+                end = AppSpacing.s4,
+                top = AppSpacing.s3
             )
-        }
+        )
 
         if (merchantHistory.isEmpty()) {
             Box(
@@ -216,87 +218,103 @@ fun MerchantsScreen(
         }
     }
 
-    if (showPeriodPicker) {
-        MoneyLupeChoiceDialog(
-            eyebrow = "Time range",
-            title = "Filter by time",
-            options = listOf(
-                TimePeriod.ALL to strings.periodAll,
-                TimePeriod.WEEK to strings.periodWeek,
-                TimePeriod.MONTH to strings.periodMonth,
-                TimePeriod.YEAR to strings.periodYear
-            ),
-            selected = timePeriod,
-            onSelect = {
-                timePeriod = it
-                showPeriodPicker = false
-            },
-            onDismiss = { showPeriodPicker = false },
-            secondaryAction = if (timePeriod != TimePeriod.ALL) {
-                strings.clear to {
-                    timePeriod = TimePeriod.ALL
-                    showPeriodPicker = false
-                }
-            } else null
-        )
+}
+
+@Composable
+private fun PeriodPillsRow(
+    selected: TimePeriod,
+    customStartEpoch: Long?,
+    customEndEpoch: Long?,
+    onSelect: (TimePeriod) -> Unit,
+    onCalendarClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val strings = LocalStrings.current
+    val options = listOf(
+        TimePeriod.ALL to strings.periodAll,
+        TimePeriod.WEEK to strings.periodWeek,
+        TimePeriod.MONTH to strings.periodMonth,
+        TimePeriod.YEAR to strings.periodYear
+    )
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            options.forEach { (period, label) ->
+                PeriodPill(
+                    label = label,
+                    selected = selected == period,
+                    onClick = { onSelect(period) }
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            val customActive = selected == TimePeriod.CUSTOM
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(
+                        if (customActive) AppColors.Primary
+                        else AppColors.CardBackground
+                    )
+                    .clickable(onClick = onCalendarClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CalendarToday,
+                    contentDescription = strings.periodCustom,
+                    tint = if (customActive) AppColors.HeaderText else AppColors.TextSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+        if (selected == TimePeriod.CUSTOM && customStartEpoch != null && customEndEpoch != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "${formatEpochDate(customStartEpoch)} – ${formatEpochDate(customEndEpoch)}",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.Primary,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
     }
 }
 
 @Composable
-private fun PeriodChromeRow(
-    periodLabel: String,
-    active: Boolean,
+private fun PeriodPill(
+    label: String,
+    selected: Boolean,
     onClick: () -> Unit
 ) {
-    Row(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(AppRadii.md))
-            .background(AppColors.CardBackground)
-            .shadow(AppElevations.xs, RoundedCornerShape(AppRadii.md), clip = false)
+            .clip(RoundedCornerShape(999.dp))
+            .background(if (selected) AppColors.Primary else AppColors.CardBackground)
             .clickable(onClick = onClick)
-            .padding(horizontal = AppSpacing.s4, vertical = AppSpacing.s3),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 14.dp, vertical = 6.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(
-                    (if (active) AppColors.Primary else AppColors.TextTertiary).copy(alpha = 0.13f)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.CalendarToday,
-                contentDescription = null,
-                tint = if (active) AppColors.Primary else AppColors.TextSecondary,
-                modifier = Modifier.size(14.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(AppSpacing.s2 + 2.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Time range".uppercase(),
-                fontSize = 10.sp,
-                letterSpacing = 0.6.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = AppColors.TextTertiary
-            )
-            Spacer(modifier = Modifier.height(1.dp))
-            Text(
-                text = periodLabel,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = AppColors.TextPrimary
-            )
-        }
         Text(
-            text = "Change",
+            text = label,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            color = AppColors.Primary
+            color = if (selected) AppColors.HeaderText else AppColors.TextSecondary
         )
+    }
+}
+
+private fun formatEpochDate(epochSeconds: Long): String {
+    return try {
+        val tz = kotlinx.datetime.TimeZone.currentSystemDefault()
+        val ldt = kotlinx.datetime.Instant.fromEpochSeconds(epochSeconds)
+            .toLocalDateTime(tz)
+        val dd = ldt.dayOfMonth.toString().padStart(2, '0')
+        val mm = ldt.monthNumber.toString().padStart(2, '0')
+        "$dd.$mm.${ldt.year}"
+    } catch (_: Exception) {
+        ""
     }
 }
 

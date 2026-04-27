@@ -162,6 +162,17 @@ fun App(
     var spendingEpochStart by remember { mutableStateOf<Long?>(null) }
     var spendingEpochEnd by remember { mutableStateOf<Long?>(null) }
 
+    // Merchants tab time period state (lifted so the navy header summary
+    // reflects the same filter that's applied inside the screen).
+    var merchantsTimePeriod by remember { mutableStateOf(TimePeriod.ALL) }
+    var merchantsEpochStart by remember { mutableStateOf<Long?>(null) }
+    var merchantsEpochEnd by remember { mutableStateOf<Long?>(null) }
+    var showMerchantsStartDatePicker by remember { mutableStateOf(false) }
+    var showMerchantsEndDatePicker by remember { mutableStateOf(false) }
+    var pendingMerchantsStartMillis by remember { mutableStateOf<Long?>(null) }
+    val merchantsStartDateState = rememberDatePickerState()
+    val merchantsEndDateState = rememberDatePickerState()
+
     // Calculate filtered income/expenses based on selected account
     val filteredIncome = remember(transactions, selectedAccountId) {
         val filtered = if (selectedAccountId == null) {
@@ -179,6 +190,20 @@ fun App(
             transactions.filter { it.accountId == selectedAccountId }
         }
         filtered.filter { it.amount < 0 }.sumOf { it.amount }
+    }
+
+    // Income/expenses for the Merchants tab also honour the time-period filter
+    // so the navy header totals match the rows below.
+    val merchantsScopedTx = remember(transactions, selectedAccountId, merchantsTimePeriod, merchantsEpochStart, merchantsEpochEnd) {
+        val byAccount = if (selectedAccountId == null) transactions
+        else transactions.filter { it.accountId == selectedAccountId }
+        filterByTimePeriod(byAccount, merchantsTimePeriod, merchantsEpochStart, merchantsEpochEnd)
+    }
+    val merchantsFilteredIncome = remember(merchantsScopedTx) {
+        merchantsScopedTx.filter { it.amount > 0 }.sumOf { it.amount }
+    }
+    val merchantsFilteredExpenses = remember(merchantsScopedTx) {
+        merchantsScopedTx.filter { it.amount < 0 }.sumOf { it.amount }
     }
 
     // Track success card visibility at App level to persist across tab switches
@@ -259,7 +284,7 @@ fun App(
                                                         text = selectedAccountId?.let { id ->
                                                             accounts.find { it.id == id }?.name ?: strings.allAccounts
                                                         } ?: strings.allAccounts,
-                                                        style = MaterialTheme.typography.labelMedium,
+                                                        style = MaterialTheme.typography.labelSmall,
                                                         color = Color.White
                                                     )
                                                 },
@@ -294,11 +319,14 @@ fun App(
                                     // Share button
                                     if (onShareTransactions != null && transactions.isNotEmpty()) {
                                         Box {
-                                            IconButton(onClick = { transactionsShareMenuExpanded = true }) {
+                                            IconButton(
+                                                onClick = { transactionsShareMenuExpanded = true },
+                                                modifier = Modifier.size(32.dp)
+                                            ) {
                                                 Image(
                                                     painter = painterResource(Res.drawable.share),
                                                     contentDescription = strings.share,
-                                                    modifier = Modifier.size(24.dp),
+                                                    modifier = Modifier.size(20.dp),
                                                     colorFilter = ColorFilter.tint(Color.White)
                                                 )
                                             }
@@ -546,8 +574,8 @@ fun App(
                         NavigationTab.MERCHANTS -> Column(modifier = Modifier.fillMaxSize()) {
                             AppHeader(
                                 title = strings.merchantsTitle,
-                                totalIncome = filteredIncome,
-                                totalExpenses = filteredExpenses,
+                                totalIncome = merchantsFilteredIncome,
+                                totalExpenses = merchantsFilteredExpenses,
                                 actions = {
                                     if (accounts.size > 1) {
                                         Box {
@@ -596,7 +624,20 @@ fun App(
                             MerchantsScreen(
                                 transactions = transactions,
                                 accounts = accounts,
-                                selectedAccountId = selectedAccountId
+                                selectedAccountId = selectedAccountId,
+                                timePeriod = merchantsTimePeriod,
+                                onTimePeriodChange = { period ->
+                                    merchantsTimePeriod = period
+                                    if (period != TimePeriod.CUSTOM) {
+                                        merchantsEpochStart = null
+                                        merchantsEpochEnd = null
+                                    }
+                                },
+                                customStartEpoch = merchantsEpochStart,
+                                customEndEpoch = merchantsEpochEnd,
+                                onRequestCustomRange = {
+                                    showMerchantsStartDatePicker = true
+                                }
                             )
                         }
                         NavigationTab.SETTINGS -> Column(modifier = Modifier.fillMaxSize()) {
@@ -756,6 +797,58 @@ fun App(
                         ) {
                             DatePicker(
                                 state = spendingEndDateState,
+                                title = { Text("Select end date", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) }
+                            )
+                        }
+                    }
+
+                    // Merchants tab — start date picker (custom range step 1)
+                    if (showMerchantsStartDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showMerchantsStartDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val millis = merchantsStartDateState.selectedDateMillis
+                                    if (millis != null) {
+                                        pendingMerchantsStartMillis = millis
+                                        showMerchantsStartDatePicker = false
+                                        showMerchantsEndDatePicker = true
+                                    }
+                                }) { Text("Next") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showMerchantsStartDatePicker = false }) { Text(strings.cancel) }
+                            }
+                        ) {
+                            DatePicker(
+                                state = merchantsStartDateState,
+                                title = { Text("Select start date", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) }
+                            )
+                        }
+                    }
+
+                    // Merchants tab — end date picker (custom range step 2)
+                    if (showMerchantsEndDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showMerchantsEndDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val startMillis = pendingMerchantsStartMillis
+                                    val endMillis = merchantsEndDateState.selectedDateMillis
+                                    if (startMillis != null && endMillis != null) {
+                                        merchantsEpochStart = startMillis / 1000L
+                                        merchantsEpochEnd = endMillis / 1000L + 86399L
+                                        merchantsTimePeriod = TimePeriod.CUSTOM
+                                    }
+                                    showMerchantsEndDatePicker = false
+                                }) { Text(strings.apply) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showMerchantsEndDatePicker = false }) { Text(strings.cancel) }
+                            }
+                        ) {
+                            DatePicker(
+                                state = merchantsEndDateState,
                                 title = { Text("Select end date", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) }
                             )
                         }
