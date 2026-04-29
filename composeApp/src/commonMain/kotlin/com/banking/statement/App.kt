@@ -671,83 +671,61 @@ fun App(
                         }
                     }
 
-                    // Spending filter period dialog
+                    // Spending filter period dialog — brand-styled choice
+                    // dialog. CUSTOM is a regular option that opens the
+                    // start/end date pickers like the Merchants tab.
                     if (showSpendingFilterDialog) {
                         val tz = TimeZone.currentSystemDefault()
-                        AlertDialog(
-                            onDismissRequest = { showSpendingFilterDialog = false },
-                            title = { Text("Time Period", fontWeight = FontWeight.Bold) },
-                            text = {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    listOf(
-                                        "all" to strings.periodAll,
-                                        "week" to strings.periodWeek,
-                                        "month" to strings.periodMonth,
-                                        "year" to strings.periodYear,
-                                        "custom" to strings.periodCustom
-                                    ).forEach { (period, label) ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable {
-                                                    if (period != "custom") {
-                                                        selectedSpendingTimePeriod = period
-                                                        val today = Clock.System.todayIn(tz)
-                                                        when (period) {
-                                                            "all" -> {
-                                                                spendingEpochStart = null
-                                                                spendingEpochEnd = null
-                                                            }
-                                                            "week" -> {
-                                                                spendingEpochStart = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
-                                                                spendingEpochEnd = today.atStartOfDayIn(tz).epochSeconds + 86399L
-                                                            }
-                                                            "month" -> {
-                                                                val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
-                                                                val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(today.year, today.monthNumber + 1, 1)
-                                                                spendingEpochStart = s
-                                                                spendingEpochEnd = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
-                                                            }
-                                                            "year" -> {
-                                                                spendingEpochStart = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
-                                                                spendingEpochEnd = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
-                                                            }
-                                                        }
-                                                        showSpendingFilterDialog = false
-                                                    } else {
-                                                        selectedSpendingTimePeriod = "custom"
-                                                        showSpendingFilterDialog = false
-                                                        showSpendingStartDatePicker = true
-                                                    }
-                                                }
-                                                .background(
-                                                    if (selectedSpendingTimePeriod == period) MaterialTheme.colorScheme.primaryContainer
-                                                    else Color.Transparent
-                                                )
-                                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            RadioButton(selected = selectedSpendingTimePeriod == period, onClick = null)
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                        com.banking.statement.ui.components.MoneyLupeChoiceDialog(
+                            eyebrow = "Time range",
+                            title = "Filter by time",
+                            options = listOf(
+                                "all" to strings.periodAll,
+                                "week" to strings.periodWeek,
+                                "month" to strings.periodMonth,
+                                "year" to strings.periodYear,
+                                "custom" to strings.periodCustom
+                            ),
+                            selected = selectedSpendingTimePeriod,
+                            onSelect = { period ->
+                                showSpendingFilterDialog = false
+                                if (period == "custom") {
+                                    selectedSpendingTimePeriod = "custom"
+                                    showSpendingStartDatePicker = true
+                                } else {
+                                    selectedSpendingTimePeriod = period
+                                    val today = Clock.System.todayIn(tz)
+                                    when (period) {
+                                        "all" -> {
+                                            spendingEpochStart = null
+                                            spendingEpochEnd = null
+                                        }
+                                        "week" -> {
+                                            spendingEpochStart = LocalDate.fromEpochDays(today.toEpochDays() - 6).atStartOfDayIn(tz).epochSeconds
+                                            spendingEpochEnd = today.atStartOfDayIn(tz).epochSeconds + 86399L
+                                        }
+                                        "month" -> {
+                                            val s = LocalDate(today.year, today.monthNumber, 1).atStartOfDayIn(tz).epochSeconds
+                                            val nextMonth = if (today.monthNumber == 12) LocalDate(today.year + 1, 1, 1) else LocalDate(today.year, today.monthNumber + 1, 1)
+                                            spendingEpochStart = s
+                                            spendingEpochEnd = nextMonth.atStartOfDayIn(tz).epochSeconds - 1L
+                                        }
+                                        "year" -> {
+                                            spendingEpochStart = LocalDate(today.year, 1, 1).atStartOfDayIn(tz).epochSeconds
+                                            spendingEpochEnd = LocalDate(today.year + 1, 1, 1).atStartOfDayIn(tz).epochSeconds - 1L
                                         }
                                     }
                                 }
                             },
-                            confirmButton = {
-                                TextButton(onClick = { showSpendingFilterDialog = false }) { Text("Close") }
-                            },
-                            dismissButton = {
-                                if (selectedSpendingTimePeriod != "all") {
-                                    TextButton(onClick = {
-                                        selectedSpendingTimePeriod = "all"
-                                        spendingEpochStart = null
-                                        spendingEpochEnd = null
-                                        showSpendingFilterDialog = false
-                                    }) { Text("Clear") }
+                            onDismiss = { showSpendingFilterDialog = false },
+                            secondaryAction = if (selectedSpendingTimePeriod != "all") {
+                                strings.clear to {
+                                    selectedSpendingTimePeriod = "all"
+                                    spendingEpochStart = null
+                                    spendingEpochEnd = null
+                                    showSpendingFilterDialog = false
                                 }
-                            }
+                            } else null
                         )
                     }
 
