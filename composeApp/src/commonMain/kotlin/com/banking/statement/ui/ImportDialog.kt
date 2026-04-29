@@ -8,18 +8,29 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.banking.statement.LocalStrings
+import com.banking.statement.ui.components.EyebrowLabel
 import com.banking.statement.ui.theme.AppColors
+import com.banking.statement.ui.theme.AppElevations
+import com.banking.statement.ui.theme.AppRadii
+import com.banking.statement.ui.theme.AppSpacing
 
 /**
  * Represents an existing account for selection
@@ -44,7 +55,9 @@ sealed class ImportChoice {
 }
 
 /**
- * Dialog shown when a new bank statement is detected
+ * Dialog shown when a new bank statement is detected. Brand-styled to match
+ * MoneyLupeChoiceDialog (eyebrow, rounded card, brand colors) instead of the
+ * stock Material Card.
  */
 @Composable
 fun ImportAccountDialog(
@@ -62,193 +75,99 @@ fun ImportAccountDialog(
     var newAccountName by remember { mutableStateOf(suggestedAccountName) }
 
     Dialog(onDismissRequest = { onChoice(ImportChoice.Cancel) }) {
-        Card(
+        Column(
             modifier = Modifier
-                .fillMaxWidth(0.95f)  // Use more screen width
-                .padding(8.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+                .fillMaxWidth()
+                .shadow(AppElevations.md, RoundedCornerShape(AppRadii.xl), clip = false)
+                .clip(RoundedCornerShape(AppRadii.xl))
+                .background(AppColors.CardBackground)
+                .padding(AppSpacing.s5)
         ) {
+            EyebrowLabel(text = strings.transactions)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = strings.newBankStatement,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(AppSpacing.s4))
+
+            // Statement summary card — flat tinted block, no nested Material Card
             Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(AppRadii.md))
+                    .background(AppColors.SurfaceTint)
+                    .padding(AppSpacing.s3),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Title
-                Text(
-                    text = strings.newBankStatement,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
+                ImportInfoRow(label = strings.bankLabel, value = bankName)
+                if (statementPeriod != null) {
+                    ImportInfoRow(label = strings.periodLabel, value = statementPeriod)
+                }
+                ImportInfoRow(label = strings.transactions, value = transactionCount.toString(), mono = true)
+                if (iban != null) {
+                    ImportInfoRow(label = strings.ibanLabel, value = formatIban(iban), mono = true)
+                }
+            }
 
-                // Statement info
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = strings.bankLabel,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
-                            Text(
-                                text = bankName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        if (statementPeriod != null) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
+            Spacer(modifier = Modifier.height(AppSpacing.s4))
+
+            EyebrowLabel(text = strings.whereToGo)
+            Spacer(modifier = Modifier.height(AppSpacing.s2))
+
+            // Option 1: Create new account
+            ImportOptionCard(
+                selected = selectedOption == "new",
+                onClick = { selectedOption = "new" },
+                icon = Icons.Filled.AddCircle,
+                title = strings.createNewAccount,
+                content = {
+                    if (selectedOption == "new") {
+                        Spacer(modifier = Modifier.height(AppSpacing.s2))
+                        OutlinedTextField(
+                            value = newAccountName,
+                            onValueChange = { newAccountName = it },
+                            label = {
                                 Text(
-                                    text = strings.periodLabel,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                    text = strings.accountName,
+                                    fontSize = 12.sp,
+                                    color = AppColors.TextSecondary
                                 )
-                                Text(
-                                    text = statementPeriod,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = strings.transactions,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
-                            Text(
-                                text = "$transactionCount",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        if (iban != null) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = strings.ibanLabel,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                )
-                                Text(
-                                    text = formatIban(iban),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(AppRadii.md),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.Primary,
+                                unfocusedBorderColor = AppColors.Divider,
+                                focusedTextColor = AppColors.TextPrimary,
+                                unfocusedTextColor = AppColors.TextPrimary,
+                                cursorColor = AppColors.Primary
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
+            )
 
-                HorizontalDivider()
-
-                // Options
-                Text(
-                    text = strings.whereToGo,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-
-                // Option 1: Create new account
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { selectedOption = "new" }
-                        .background(
-                            if (selectedOption == "new")
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                            else
-                                Color.Transparent
-                        )
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = selectedOption == "new",
-                        onClick = { selectedOption = "new" }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = strings.createNewAccount,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        if (selectedOption == "new") {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = newAccountName,
-                                onValueChange = { newAccountName = it },
-                                label = { Text(strings.accountName) },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                }
-
-                // Option 2: Add to existing account (if accounts exist)
-                if (existingAccounts.isNotEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (selectedOption == "existing")
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                else
-                                    Color.Transparent
-                            )
-                            .padding(12.dp)
-                    ) {
-                        // Radio button row
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedOption = "existing" },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedOption == "existing",
-                                onClick = { selectedOption = "existing" }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = strings.addToExisting,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
-                        // Account list - full width, outside of row
+            // Option 2: Add to existing account
+            if (existingAccounts.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(AppSpacing.s2))
+                ImportOptionCard(
+                    selected = selectedOption == "existing",
+                    onClick = { selectedOption = "existing" },
+                    icon = Icons.Filled.AccountBalanceWallet,
+                    title = strings.addToExisting,
+                    content = {
                         if (selectedOption == "existing") {
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(AppSpacing.s2))
                             LazyColumn(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(max = 200.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 items(existingAccounts) { account ->
                                     AccountSelectionItem(
@@ -260,39 +179,139 @@ fun ImportAccountDialog(
                             }
                         }
                     }
-                }
+                )
+            }
 
-                HorizontalDivider()
+            Spacer(modifier = Modifier.height(AppSpacing.s4))
 
-                // Action buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = { onChoice(ImportChoice.Cancel) },
+                    colors = ButtonDefaults.textButtonColors(contentColor = AppColors.TextSecondary)
                 ) {
-                    TextButton(onClick = { onChoice(ImportChoice.Cancel) }) {
-                        Text(strings.cancel)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            when (selectedOption) {
-                                "new" -> onChoice(ImportChoice.CreateNew(newAccountName))
-                                "existing" -> selectedAccountId?.let {
-                                    onChoice(ImportChoice.AddToExisting(it))
-                                }
+                    Text(
+                        text = strings.cancel,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Spacer(modifier = Modifier.width(AppSpacing.s1))
+                Button(
+                    onClick = {
+                        when (selectedOption) {
+                            "new" -> onChoice(ImportChoice.CreateNew(newAccountName))
+                            "existing" -> selectedAccountId?.let {
+                                onChoice(ImportChoice.AddToExisting(it))
                             }
-                        },
-                        enabled = when (selectedOption) {
-                            "new" -> newAccountName.isNotBlank()
-                            "existing" -> selectedAccountId != null
-                            else -> false
                         }
-                    ) {
-                        Text(strings.importAction)
-                    }
+                    },
+                    enabled = when (selectedOption) {
+                        "new" -> newAccountName.isNotBlank()
+                        "existing" -> selectedAccountId != null
+                        else -> false
+                    },
+                    shape = RoundedCornerShape(AppRadii.md),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppColors.Primary,
+                        contentColor = AppColors.HeaderText,
+                        disabledContainerColor = AppColors.Disabled,
+                        disabledContentColor = AppColors.TextTertiary
+                    )
+                ) {
+                    Text(
+                        text = strings.importAction,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ImportInfoRow(label: String, value: String, mono: Boolean = false) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = AppColors.TextSecondary
+        )
+        Text(
+            text = value,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
+            color = AppColors.TextPrimary
+        )
+    }
+}
+
+@Composable
+private fun ImportOptionCard(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(AppRadii.md))
+            .border(
+                width = if (selected) 1.5.dp else 1.dp,
+                color = if (selected) AppColors.Primary else AppColors.Divider,
+                shape = RoundedCornerShape(AppRadii.md)
+            )
+            .background(
+                if (selected) AppColors.PrimaryContainer.copy(alpha = 0.4f)
+                else AppColors.CardBackground
+            )
+            .clickable(onClick = onClick)
+            .padding(AppSpacing.s3)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(AppColors.Primary.copy(alpha = 0.13f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = AppColors.Primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(AppSpacing.s2 + 2.dp))
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.weight(1f)
+            )
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = AppColors.Primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+        content()
     }
 }
 
@@ -302,79 +321,66 @@ private fun AccountSelectionItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(AppRadii.md))
+            .border(
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = if (isSelected) AppColors.Primary else AppColors.Divider,
+                shape = RoundedCornerShape(AppRadii.md)
+            )
+            .background(
+                if (isSelected) AppColors.PrimaryContainer.copy(alpha = 0.4f)
+                else AppColors.CardBackground
+            )
             .clickable(onClick = onClick)
-            .then(
-                if (isSelected) Modifier.border(
-                    2.dp,
-                    MaterialTheme.colorScheme.primary,
-                    RoundedCornerShape(8.dp)
-                ) else Modifier
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        shape = RoundedCornerShape(8.dp)
+            .padding(horizontal = AppSpacing.s3, vertical = AppSpacing.s2 + 2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
+        // Squircle color avatar with initials, mirroring the manage-accounts list
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
+                .size(32.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(parseAccountColor(account.color)),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Color indicator
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(parseAccountColor(account.color))
-                ) {
-                    Text(
-                        text = account.name.take(2).uppercase(),
-                        modifier = Modifier.align(Alignment.Center),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Account name - takes remaining space
-                Text(
-                    text = account.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Balance on the right
-                if (account.balance != null) {
-                    Text(
-                        text = formatAmount(account.balance, "EUR"),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = if (account.balance >= 0) AppColors.Income else AppColors.Expenses
-                    )
-                }
-            }
-
-            // Bank info on second line - full width
             Text(
-                text = "${account.bankName} • ${account.transactionCount} transactions",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.padding(start = 48.dp, top = 4.dp)
+                text = account.name.take(2).uppercase(),
+                fontSize = 11.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.width(AppSpacing.s2 + 2.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = account.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${account.bankName} · ${account.transactionCount} tx",
+                fontSize = 11.sp,
+                color = AppColors.TextTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        if (account.balance != null) {
+            Text(
+                text = formatAmount(account.balance, "EUR"),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Monospace,
+                color = if (account.balance >= 0) AppColors.Income else AppColors.Expenses
             )
         }
     }
@@ -424,7 +430,7 @@ fun ImportConfirmationDialog(
 }
 
 /**
- * Dialog shown after successful import
+ * Brand-styled success dialog shown after a successful import.
  */
 @Composable
 fun ImportSuccessDialog(
@@ -436,43 +442,135 @@ fun ImportSuccessDialog(
     onDismiss: () -> Unit
 ) {
     val strings = LocalStrings.current
+    val title = when {
+        isDuplicateStatement -> strings.duplicateStatement
+        isNewAccount -> strings.accountCreated
+        else -> strings.importComplete
+    }
+    val accentColor = if (isDuplicateStatement) AppColors.TextTertiary else AppColors.Income
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(AppElevations.md, RoundedCornerShape(AppRadii.xl), clip = false)
+                .clip(RoundedCornerShape(AppRadii.xl))
+                .background(AppColors.CardBackground)
+                .padding(AppSpacing.s5),
+            horizontalAlignment = Alignment.Start
+        ) {
+            // Big circular check / accent
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(AppSpacing.s3))
+
             Text(
-                text = when {
-                    isDuplicateStatement -> strings.duplicateStatement
-                    isNewAccount -> strings.accountCreated
-                    else -> strings.importComplete
-                },
-                fontWeight = FontWeight.Bold
+                text = title,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.TextPrimary
             )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (isDuplicateStatement) {
-                    Text(strings.duplicateStatementMessage)
-                } else {
-                    if (isNewAccount) {
-                        Text("New account \"$accountName\" has been created.")
-                    }
-                    Text("✓ $transactionsImported ${strings.transactions.lowercase()}")
+
+            Spacer(modifier = Modifier.height(AppSpacing.s2))
+
+            if (isDuplicateStatement) {
+                Text(
+                    text = strings.duplicateStatementMessage,
+                    fontSize = 13.sp,
+                    color = AppColors.TextSecondary
+                )
+            } else {
+                if (isNewAccount) {
+                    Text(
+                        text = "${strings.accountCreated}: \"$accountName\"",
+                        fontSize = 13.sp,
+                        color = AppColors.TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(AppSpacing.s3))
+                }
+
+                // Stats card — flat tinted block
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(AppRadii.md))
+                        .background(AppColors.SurfaceTint)
+                        .padding(AppSpacing.s3),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SuccessStatRow(
+                        label = strings.transactions,
+                        value = transactionsImported.toString(),
+                        valueColor = AppColors.Income
+                    )
                     if (duplicatesSkipped > 0) {
-                        Text(
-                            "○ $duplicatesSkipped duplicates skipped",
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        SuccessStatRow(
+                            label = "Duplicates skipped",
+                            value = duplicatesSkipped.toString(),
+                            valueColor = AppColors.TextTertiary
                         )
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text(strings.done)
+
+            Spacer(modifier = Modifier.height(AppSpacing.s4))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(AppRadii.md),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppColors.Primary,
+                        contentColor = AppColors.HeaderText
+                    )
+                ) {
+                    Text(
+                        text = strings.done,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
-    )
+    }
+}
+
+@Composable
+private fun SuccessStatRow(label: String, value: String, valueColor: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = AppColors.TextSecondary
+        )
+        Text(
+            text = value,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = FontFamily.Monospace,
+            color = valueColor
+        )
+    }
 }
 
 // Helper functions
