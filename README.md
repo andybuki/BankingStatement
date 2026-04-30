@@ -103,7 +103,7 @@ The product was originally named **"Bank++"** and has been rebranded to **MoneyL
 - `xs`: `0 1px 2px rgba(15,23,42,0.04)` — resting card on white.
 - `sm`: `0 2px 8px rgba(15,23,42,0.06)` — card on navy (floats above header).
 - `md`: `0 8px 24px rgba(15,23,42,0.10)` — bottom sheets, dialogs, popover.
-  No inner shadows. No colored shadows.
+No inner shadows. No colored shadows.
 
 **Animation:** Material-standard: 200ms for state changes, 300ms for screen transitions, **standard ease-in-out** (`cubic-bezier(0.4, 0.0, 0.2, 1)`). Fades + small 8px vertical slides. No bounces. No parallax. Chart bars animate-in with a 400ms `ease-out` sweep left-to-right.
 
