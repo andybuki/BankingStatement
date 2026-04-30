@@ -192,18 +192,24 @@ fun App(
         filtered.filter { it.amount < 0 }.sumOf { it.amount }
     }
 
-    // Income/expenses for the Merchants tab also honour the time-period filter
-    // so the navy header totals match the rows below.
+    // Income/expenses for the Merchants tab. When there's no filter active
+    // (no account, period=ALL) we fall back to the DB-level `totalIncome` /
+    // `totalExpenses` so the header matches the Home / Spending tabs — the
+    // in-memory `transactions` list is paginated and would otherwise sum only
+    // the rows that have already been loaded.
+    val merchantsHasFilter = selectedAccountId != null || merchantsTimePeriod != TimePeriod.ALL
     val merchantsScopedTx = remember(transactions, selectedAccountId, merchantsTimePeriod, merchantsEpochStart, merchantsEpochEnd) {
         val byAccount = if (selectedAccountId == null) transactions
         else transactions.filter { it.accountId == selectedAccountId }
         filterByTimePeriod(byAccount, merchantsTimePeriod, merchantsEpochStart, merchantsEpochEnd)
     }
-    val merchantsFilteredIncome = remember(merchantsScopedTx) {
-        merchantsScopedTx.filter { it.amount > 0 }.sumOf { it.amount }
+    val merchantsFilteredIncome = remember(merchantsHasFilter, merchantsScopedTx, totalIncome) {
+        if (merchantsHasFilter) merchantsScopedTx.filter { it.amount > 0 }.sumOf { it.amount }
+        else totalIncome
     }
-    val merchantsFilteredExpenses = remember(merchantsScopedTx) {
-        merchantsScopedTx.filter { it.amount < 0 }.sumOf { it.amount }
+    val merchantsFilteredExpenses = remember(merchantsHasFilter, merchantsScopedTx, totalExpenses) {
+        if (merchantsHasFilter) merchantsScopedTx.filter { it.amount < 0 }.sumOf { it.amount }
+        else totalExpenses
     }
 
     // Track success card visibility at App level to persist across tab switches
