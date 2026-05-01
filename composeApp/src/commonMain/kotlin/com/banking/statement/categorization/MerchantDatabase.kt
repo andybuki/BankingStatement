@@ -42,6 +42,16 @@ class MerchantDatabase(
     // Each list is sorted by phrase length descending (longer matches first)
     private var multiWordIndex: HashMap<String, MutableList<Pair<String, String>>>? = null
 
+    // First-character bucket of single-word merchants for fuzzy fallback.
+    // We keep these separate to bound the cost of Levenshtein scans — a query
+    // word only fuzzy-matches against merchants in nearby letter buckets.
+    private var fuzzyBuckets: HashMap<Char, MutableList<String>>? = null
+
+    // Curated aliases (alias -> canonical name) loaded from MerchantAliases.
+    // Resolved against the loaded merchant index at cache-build time so an
+    // alias matches whatever category the canonical merchant maps to.
+    private val aliasOverrides = HashMap<String, String>()
+
     // Track whether cache has been initialized
     private var cacheInitialized = false
 
@@ -86,6 +96,7 @@ class MerchantDatabase(
         // Build indexed caches while loading
         val singleWords = HashMap<String, String>(totalLines)
         val multiWords = HashMap<String, MutableList<Pair<String, String>>>()
+        val fuzzy = HashMap<Char, MutableList<String>>()
 
         database.bankingDatabaseQueries.transaction {
             // Clear existing data
@@ -111,7 +122,7 @@ class MerchantDatabase(
                         )
 
                         // Index into appropriate structure
-                        indexMerchant(nameNormalized, categoryCode, singleWords, multiWords)
+                        indexMerchant(nameNormalized, categoryCode, singleWords, multiWords, fuzzy)
                         count++
 
                         // Report progress every 10000 entries
@@ -129,8 +140,13 @@ class MerchantDatabase(
             list.sortByDescending { it.first.length }
         }
 
+        // Apply curated aliases — each alias inherits the canonical merchant's
+        // category, so e.g. "rewe" → "rewe markt" both resolve to SUPERMARKET.
+        applyAliases(singleWords, multiWords, fuzzy)
+
         singleWordIndex = singleWords
         multiWordIndex = multiWords
+        fuzzyBuckets = fuzzy
         cacheInitialized = true
     }
 
@@ -141,18 +157,85 @@ class MerchantDatabase(
         nameNormalized: String,
         categoryCode: String,
         singleWords: HashMap<String, String>,
-        multiWords: HashMap<String, MutableList<Pair<String, String>>>
+        multiWords: HashMap<String, MutableList<Pair<String, String>>>,
+        fuzzy: HashMap<Char, MutableList<String>>
     ) {
         val words = nameNormalized.split(" ").filter { it.isNotBlank() }
         if (words.size == 1) {
             // Single word: direct HashMap lookup
             // Keep the first category code if duplicate (longer name would have been multi-word)
             singleWords.putIfAbsent(nameNormalized, categoryCode)
+            // Bucket by first character for fuzzy fallback (only longer names
+            // are worth fuzzy matching — short brands have too many neighbors)
+            if (nameNormalized.length >= 4) {
+                fuzzy.getOrPut(nameNormalized[0]) { mutableListOf() }
+                    .add(nameNormalized)
+            }
         } else if (words.size > 1) {
             // Multi-word: index by first word
             val firstWord = words[0]
             multiWords.getOrPut(firstWord) { mutableListOf() }
                 .add(nameNormalized to categoryCode)
+        }
+    }
+
+    /**
+     * Resolve curated aliases against the loaded merchant index. Each alias
+     * is added to the single-word index (and fuzzy bucket) pointing to the
+     * canonical merchant's category — so OCR'd or shortened forms still
+     * categorize correctly even when they aren't in the merchant CSV.
+     */
+    private fun applyAliases(
+        singleWords: HashMap<String, String>,
+        multiWords: HashMap<String, MutableList<Pair<String, String>>>,
+        fuzzy: HashMap<Char, MutableList<String>>
+    ) {
+        for ((alias, canonical) in MerchantAliases.aliases + aliasOverrides) {
+            val aliasNorm = normalizeName(alias)
+            val canonicalNorm = normalizeName(canonical)
+            if (aliasNorm.isBlank() || canonicalNorm.isBlank()) continue
+            if (singleWords.containsKey(aliasNorm)) continue
+
+            // Resolve canonical to a category code
+            val code = singleWords[canonicalNorm]
+                ?: multiWords[canonicalNorm.split(" ").first()]
+                    ?.firstOrNull { it.first == canonicalNorm }?.second
+                ?: continue
+
+            val aliasWords = aliasNorm.split(" ").filter { it.isNotBlank() }
+            if (aliasWords.size == 1) {
+                singleWords[aliasNorm] = code
+                if (aliasNorm.length >= 4) {
+                    fuzzy.getOrPut(aliasNorm[0]) { mutableListOf() }
+                        .add(aliasNorm)
+                }
+            } else if (aliasWords.size > 1) {
+                multiWords.getOrPut(aliasWords[0]) { mutableListOf() }
+                    .add(aliasNorm to code)
+            }
+        }
+        // Re-sort any multi-word buckets we touched
+        for ((_, list) in multiWords) {
+            list.sortByDescending { it.first.length }
+        }
+    }
+
+    /**
+     * Register an alias at runtime (e.g. from user-corrected merchant names).
+     * Takes effect on the next [ensureCacheLoaded] / [loadFromCsv] cycle, or
+     * immediately for the in-memory caches.
+     */
+    fun registerAlias(alias: String, canonical: String) {
+        val aliasNorm = normalizeName(alias)
+        val canonicalNorm = normalizeName(canonical)
+        if (aliasNorm.isBlank() || canonicalNorm.isBlank()) return
+        aliasOverrides[aliasNorm] = canonicalNorm
+
+        val singles = singleWordIndex
+        val multis = multiWordIndex
+        val fuzzy = fuzzyBuckets
+        if (singles != null && multis != null && fuzzy != null) {
+            applyAliases(singles, multis, fuzzy)
         }
     }
 
@@ -171,9 +254,10 @@ class MerchantDatabase(
 
             val singleWords = HashMap<String, String>(merchants.size)
             val multiWords = HashMap<String, MutableList<Pair<String, String>>>()
+            val fuzzy = HashMap<Char, MutableList<String>>()
 
             for (merchant in merchants) {
-                indexMerchant(merchant.name_normalized, merchant.category_code, singleWords, multiWords)
+                indexMerchant(merchant.name_normalized, merchant.category_code, singleWords, multiWords, fuzzy)
             }
 
             // Sort multi-word lists by phrase length descending
@@ -181,8 +265,11 @@ class MerchantDatabase(
                 list.sortByDescending { it.first.length }
             }
 
+            applyAliases(singleWords, multiWords, fuzzy)
+
             singleWordIndex = singleWords
             multiWordIndex = multiWords
+            fuzzyBuckets = fuzzy
             cacheInitialized = true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -203,11 +290,19 @@ class MerchantDatabase(
         // Lazy-load cache on first call
         ensureCacheLoaded()
 
-        val searchText = normalizeName("$description ${counterparty ?: ""}")
+        val rawCombined = "$description ${counterparty ?: ""}"
+        val searchText = normalizeName(rawCombined)
         if (searchText.isBlank()) return null
 
+        // Build a noise-free search text by stripping store numbers, city
+        // suffixes and processor prefixes. Fuzzy matching runs against this
+        // tokenized form so OCR'd "REWE BERLIN 047" → "rewe" before scoring.
+        val cleanedText = MerchantNormalizer.normalize(rawCombined)
         val searchWords = searchText.split(" ").filter { it.isNotBlank() }
         val searchWordsSet = searchWords.toSet()
+        val cleanedWords = cleanedText.split(" ")
+            .filter { it.isNotBlank() }
+            .toSet()
 
         // Track best match (longest phrase wins)
         var bestCategoryCode: String? = null
@@ -245,7 +340,52 @@ class MerchantDatabase(
             }
         }
 
-        return bestCategoryCode?.let { categoryCodeMap[it] }
+        if (bestCategoryCode != null) {
+            return categoryCodeMap[bestCategoryCode]
+        }
+
+        // 3) Fuzzy fallback — only kicks in when no exact match was found.
+        // Searches single-word merchants in the same first-letter bucket(s)
+        // as each cleaned query token, using combined trigram + Levenshtein
+        // similarity. Threshold is conservative to avoid false positives.
+        return fuzzyFindCategory(cleanedWords)
+    }
+
+    /**
+     * Fuzzy fallback: for each cleaned query word ≥4 chars, scan single-word
+     * merchants in the same first-letter bucket and return the best match
+     * above the similarity threshold. Bucket lookup keeps this cheap even
+     * for 100K+ merchant databases.
+     */
+    private fun fuzzyFindCategory(queryWords: Set<String>): TransactionCategory? {
+        val buckets = fuzzyBuckets ?: return null
+        val singles = singleWordIndex ?: return null
+        if (queryWords.isEmpty()) return null
+
+        var bestCode: String? = null
+        var bestScore = FuzzyMatcher.DEFAULT_SIMILARITY_THRESHOLD
+
+        for (word in queryWords) {
+            if (word.length < 4) continue
+
+            // Check the same-letter bucket and (cheaply) the adjacent ones,
+            // since OCR errors occasionally swap the first character.
+            val candidates = buckets[word[0]] ?: continue
+            val match = FuzzyMatcher.bestMatch(
+                query = word,
+                candidates = candidates,
+                threshold = bestScore,
+                keyOf = { it }
+            ) ?: continue
+
+            if (match.score > bestScore) {
+                val code = singles[match.candidate] ?: continue
+                bestCode = code
+                bestScore = match.score
+            }
+        }
+
+        return bestCode?.let { categoryCodeMap[it] }
     }
 
     /**
