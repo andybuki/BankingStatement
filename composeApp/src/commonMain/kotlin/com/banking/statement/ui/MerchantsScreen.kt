@@ -67,9 +67,8 @@ fun MerchantsScreen(
     }
 
     val merchantSpending = remember(filteredTransactions) {
-        filteredTransactions
-            .filter { it.amount < 0 && !it.counterparty.isNullOrBlank() }
-            .groupBy { it.counterparty!! }
+        val expenses = filteredTransactions.filter { it.amount < 0 }
+        MerchantGrouping.groupByMerchant(expenses)
             .map { (name, txs) ->
                 MerchantSpendingData(
                     name = name,
