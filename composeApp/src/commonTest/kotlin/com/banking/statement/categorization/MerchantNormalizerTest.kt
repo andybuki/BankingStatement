@@ -47,10 +47,29 @@ class MerchantNormalizerTest {
     }
 
     @Test
-    fun extractMerchantTokenPicksLongestWord() {
+    fun extractMerchantTokenPicksFirstWord() {
+        // The brand sits at the front of real merchant strings; trailing
+        // descriptors and locations should not become the canonical key.
         assertEquals("rewe", MerchantNormalizer.extractMerchantToken("Kartenzahlung REWE 047"))
         assertEquals("starbucks", MerchantNormalizer.extractMerchantToken("STARBUCKS Berlin 1234"))
-        assertEquals("amazon", MerchantNormalizer.extractMerchantToken("AMZN Mktp DE Amazon"))
+        assertEquals("alnatura", MerchantNormalizer.extractMerchantToken("ALNATURA Produktgenossenschaft Berlin"))
+        assertEquals("alnatura", MerchantNormalizer.extractMerchantToken("ALNATURA Filiale 3"))
+        assertEquals("amzn", MerchantNormalizer.extractMerchantToken("AMZN Mktp DE Amazon"))
+    }
+
+    @Test
+    fun extractMerchantTokenSkipsLeadingDates() {
+        // Date prefix in description should not become the merchant token.
+        assertEquals("rewe", MerchantNormalizer.extractMerchantToken("05.01.24 REWE Berlin"))
+        assertEquals("rewe", MerchantNormalizer.extractMerchantToken("2024 01 05 REWE"))
+    }
+
+    @Test
+    fun extractMerchantTokenStripsApplePay() {
+        // Multi-word processor prefixes (Apple Pay, Google Pay) shouldn't
+        // make "apple"/"google" the canonical brand.
+        assertEquals("starbucks", MerchantNormalizer.extractMerchantToken("Apple Pay STARBUCKS COFFEE"))
+        assertEquals("starbucks", MerchantNormalizer.extractMerchantToken("Google Pay Starbucks Berlin"))
     }
 
     @Test

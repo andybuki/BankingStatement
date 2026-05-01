@@ -112,6 +112,53 @@ class MerchantGroupingTest {
     }
 
     @Test
+    fun fragmentationRegression_AlnaturaProductgenossenschaft() {
+        // Regression for user-reported bug: a brand whose descriptors are
+        // longer than the brand itself ("ALNATURA Produktgenossenschaft")
+        // used to fragment from other transactions of the same brand
+        // ("ALNATURA Filiale 3"), because the picker chose the longest word.
+        val transactions = listOf(
+            tx(1, "05.01.2024", -10.0, "ALNATURA Produktgenossenschaft Berlin"),
+            tx(2, "05.02.2024", -20.0, "ALNATURA Filiale 3"),
+            tx(3, "05.03.2024", -30.0, "Alnatura Bio Markt 12345")
+        )
+        val grouped = MerchantGrouping.groupByMerchant(transactions)
+        assertEquals(1, grouped.size, "All ALNATURA variants should collapse to one merchant, got ${grouped.keys}")
+        val history = calculateMerchantHistoryFromTransactions(transactions)
+        assertEquals(1, history.size)
+        assertEquals(3, history.first().totalTransactions)
+    }
+
+    @Test
+    fun fragmentationRegression_MultiMonthRecurringMerchants() {
+        // User's reported scenario: import January, then February — both
+        // months contain Lidl, Alnatura and REWE, but counterparty strings
+        // drift slightly across months (different store numbers, different
+        // descriptors). All variants must collapse so each brand shows up
+        // as a single merchant with the combined transaction count.
+        val january = listOf(
+            tx(1, "05.01.2024", -25.0, "LIDL DIENSTLEISTUNG GMBH 4711"),
+            tx(2, "12.01.2024", -30.0, "ALNATURA PRODUKTGENOSSENSCHAFT BERLIN"),
+            tx(3, "20.01.2024", -45.0, "REWE Markt 0231")
+        )
+        val february = listOf(
+            tx(4, "03.02.2024", -28.0, "LIDL Sagt Danke 4711"),
+            tx(5, "11.02.2024", -32.0, "Alnatura Bio Markt Berlin"),
+            tx(6, "21.02.2024", -47.0, "REWE BERLIN 0231")
+        )
+        val all = january + february
+
+        val history = calculateMerchantHistoryFromTransactions(all)
+        assertEquals(3, history.size, "Expected exactly 3 merchants, got ${history.map { it.merchantName }}")
+        for (merchant in history) {
+            assertEquals(
+                2, merchant.totalTransactions,
+                "Each recurring merchant should have 2 transactions across the two months: $merchant"
+            )
+        }
+    }
+
+    @Test
     fun historyCalculationRespectsCanonicalGrouping() {
         val transactions = listOf(
             tx(1, "05.01.2024", -50.0, "Lidl Sagt Danke"),
