@@ -118,6 +118,7 @@ class MainActivity : FragmentActivity() {
                         importState = importState,
                         stats = stats,
                         transactions = financialState.transactions,
+                        merchantTransactions = financialState.allMerchantTransactions,
                         categorySpending = financialState.categorySpending,
                         monthlySummary = financialState.monthlySummary,
                         totalIncome = financialState.totalIncome,

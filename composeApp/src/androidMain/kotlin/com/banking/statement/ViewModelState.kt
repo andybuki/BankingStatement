@@ -11,6 +11,14 @@ import com.banking.statement.ui.theme.ThemeMode
  */
 data class FinancialUiState(
     val transactions: List<TransactionDisplay> = emptyList(),
+    /**
+     * Full list of expense transactions across every imported statement,
+     * used by the Merchants tab so its aggregation is independent of the
+     * pagination that drives the Activity tab. Without this, the merchants
+     * list only sees the first page (most-recent ~100 rows) and recurring
+     * brands fragment / under-count after additional months are imported.
+     */
+    val allMerchantTransactions: List<TransactionDisplay> = emptyList(),
     val categorySpending: List<CategorySpending> = emptyList(),
     val monthlySummary: List<MonthlySummary> = emptyList(),
     val totalIncome: Double = 0.0,

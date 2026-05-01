@@ -670,6 +670,20 @@ class MainViewModel(
 
                 val mappedFirstPage = mapTransactions(firstPage, accountNames, customCategoriesMap)
 
+                // Load every transaction across all imported statements for
+                // the Merchants tab. Keeping this independent of the paginated
+                // `transactions` list ensures recurring brands accumulate
+                // correctly when the user adds more months — the paginated
+                // list only contains the most recent PAGE_SIZE rows, which
+                // would otherwise hide older months from merchant aggregation.
+                // getAllTransactions() already filters out duplicates.
+                val allTxRows = repository.getAllTransactions()
+                val mappedAllForMerchants = mapTransactions(
+                    allTxRows,
+                    accountNames,
+                    customCategoriesMap
+                )
+
                 // Load aggregates from DB directly (not from in-memory list)
                 val monthlyCategoryData = if (accountId != null) {
                     repository.getCategorySpendingByMonthAndAccount(accountId).map { row ->
@@ -731,6 +745,7 @@ class MainViewModel(
                 // Atomic update of all financial state
                 _financialState.value = FinancialUiState(
                     transactions = mappedFirstPage,
+                    allMerchantTransactions = mappedAllForMerchants,
                     categorySpending = computedCategorySpending,
                     monthlySummary = computedMonthlySummary,
                     totalIncome = computedIncome,
