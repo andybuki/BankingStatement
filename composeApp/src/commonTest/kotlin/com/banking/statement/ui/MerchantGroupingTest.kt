@@ -112,6 +112,52 @@ class MerchantGroupingTest {
     }
 
     @Test
+    fun fragmentationRegression_VisaCardCommerzbankPattern() {
+        // Reproduces the user's reported screenshot: Commerzbank VISA card
+        // transactions where the counterparty looks like "VISA LIDL SAGT DANKE"
+        // appear in both January (11 tx) and February (13 tx). The "All"
+        // view must show a single Lidl entry with 24 transactions, not 11.
+        val january = (1..11).map { i ->
+            tx(
+                id = i.toLong(),
+                date = "${(i + 4).toString().padStart(2, '0')}.01.2024",
+                amount = -10.0 - i,
+                counterparty = "VISA LIDL SAGT DANKE",
+                description = "VISA LIDL SAGT DANKE //BERLIN/DE"
+            )
+        }
+        val february = (1..13).map { i ->
+            tx(
+                id = (100 + i).toLong(),
+                date = "${(i + 2).toString().padStart(2, '0')}.02.2024",
+                amount = -12.0 - i,
+                counterparty = "VISA LIDL SAGT DANKE",
+                description = "VISA LIDL SAGT DANKE //BERLIN/DE"
+            )
+        }
+
+        val history = calculateMerchantHistoryFromTransactions(january + february)
+        assertEquals(1, history.size, "Expected single Lidl merchant, got ${history.map { it.merchantName }}")
+        assertEquals(24, history.first().totalTransactions, "Expected 11 + 13 = 24 transactions")
+    }
+
+    @Test
+    fun fragmentationRegression_MixedLidlVariants() {
+        // Verifies that LIDL DIENSTLEISTUNG (the case the longest-word
+        // heuristic broke) merges with VISA LIDL SAGT DANKE when both
+        // appear across the user's imports.
+        val transactions = listOf(
+            tx(1, "05.01.2024", -10.0, "VISA LIDL SAGT DANKE"),
+            tx(2, "10.01.2024", -20.0, "LIDL DIENSTLEISTUNG GMBH BERLIN"),
+            tx(3, "05.02.2024", -30.0, "Kartenzahlung LIDL FILIALE 4711"),
+            tx(4, "10.02.2024", -40.0, "Lidl Berlin 04711 DE")
+        )
+        val history = calculateMerchantHistoryFromTransactions(transactions)
+        assertEquals(1, history.size, "All Lidl variants should merge, got ${history.map { it.merchantName }}")
+        assertEquals(4, history.first().totalTransactions)
+    }
+
+    @Test
     fun fragmentationRegression_AlnaturaProductgenossenschaft() {
         // Regression for user-reported bug: a brand whose descriptors are
         // longer than the brand itself ("ALNATURA Produktgenossenschaft")
