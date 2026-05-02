@@ -61,6 +61,14 @@ fun App(
     importState: ImportState = ImportState(),
     stats: DatabaseStats = DatabaseStats(),
     transactions: List<TransactionDisplay> = emptyList(),
+    /**
+     * Full list of expense transactions across every imported statement,
+     * used by the Merchants tab and merchants header so its aggregation
+     * is independent of pagination. Defaults to [transactions] for callers
+     * that haven't been updated; pass the unpaginated list from the
+     * ViewModel for correct multi-month merchant grouping.
+     */
+    merchantTransactions: List<TransactionDisplay> = transactions,
     categorySpending: List<CategorySpending> = emptyList(),
     monthlySummary: List<MonthlySummary> = emptyList(),
     totalIncome: Double = 0.0,
@@ -198,9 +206,9 @@ fun App(
     // in-memory `transactions` list is paginated and would otherwise sum only
     // the rows that have already been loaded.
     val merchantsHasFilter = selectedAccountId != null || merchantsTimePeriod != TimePeriod.ALL
-    val merchantsScopedTx = remember(transactions, selectedAccountId, merchantsTimePeriod, merchantsEpochStart, merchantsEpochEnd) {
-        val byAccount = if (selectedAccountId == null) transactions
-        else transactions.filter { it.accountId == selectedAccountId }
+    val merchantsScopedTx = remember(merchantTransactions, selectedAccountId, merchantsTimePeriod, merchantsEpochStart, merchantsEpochEnd) {
+        val byAccount = if (selectedAccountId == null) merchantTransactions
+        else merchantTransactions.filter { it.accountId == selectedAccountId }
         filterByTimePeriod(byAccount, merchantsTimePeriod, merchantsEpochStart, merchantsEpochEnd)
     }
     val merchantsFilteredIncome = remember(merchantsHasFilter, merchantsScopedTx, totalIncome) {
@@ -628,7 +636,7 @@ fun App(
                                 }
                             )
                             MerchantsScreen(
-                                transactions = transactions,
+                                transactions = merchantTransactions,
                                 accounts = accounts,
                                 selectedAccountId = selectedAccountId,
                                 timePeriod = merchantsTimePeriod,

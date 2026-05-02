@@ -66,8 +66,32 @@ class CategoryOverrideManager(
     }
 
     /**
+     * Extract a generalized merchant-token pattern that strips store numbers,
+     * city suffixes and noise words. Saving this alongside the primary pattern
+     * lets a single user correction apply to all branches/variants of the
+     * same merchant ("REWE BERLIN 047" → "REWE MUNCHEN 042" both match "rewe").
+     *
+     * Returns null if no meaningful merchant token can be extracted.
+     */
+    private fun extractTokenPattern(description: String, counterparty: String?): String? {
+        // Prefer counterparty for token extraction (more stable than description)
+        val source = when {
+            !counterparty.isNullOrBlank() -> counterparty
+            description.isNotBlank() -> description
+            else -> return null
+        }
+        val token = MerchantNormalizer.extractMerchantToken(source) ?: return null
+        // Require at least 4 chars to avoid generic short tokens (e.g. "ag", "co")
+        return if (token.length >= 4) token else null
+    }
+
+    /**
      * Save a user override for a pattern.
      * Prioritizes counterparty-only pattern for better matching across imports.
+     *
+     * Also saves a generalized merchant-token pattern (e.g. "rewe") so a
+     * single correction applies to every branch/variant of the same merchant
+     * in future imports — see [extractTokenPattern].
      */
     fun saveOverride(description: String, counterparty: String?, category: TransactionCategory) {
         // Try to save counterparty-only pattern first (more stable)
@@ -91,6 +115,10 @@ class CategoryOverrideManager(
                 customOverrideCache?.remove(fullPattern)
             }
         }
+
+        // Always save a generalized merchant-token rule alongside the precise
+        // pattern, so corrections generalize to other branches automatically.
+        saveTokenPattern(description, counterparty, category.name)
     }
 
     /**
@@ -118,6 +146,46 @@ class CategoryOverrideManager(
                 customOverrideCache = cache
                 // Remove from regular cache if exists
                 overrideCache?.remove(fullPattern)
+            }
+        }
+
+        // Save the generalized token rule so the correction applies to all
+        // future branches/variants of this merchant.
+        saveTokenPattern(description, counterparty, categoryValue, customCategoryId = customCategoryId)
+    }
+
+    /**
+     * Persist a generalized merchant-token rule. Called from both the
+     * predefined and custom override saves so a single user correction
+     * applies to all variants of a merchant.
+     */
+    private fun saveTokenPattern(
+        description: String,
+        counterparty: String?,
+        categoryValue: String,
+        customCategoryId: Long? = null
+    ) {
+        val tokenPattern = extractTokenPattern(description, counterparty) ?: return
+        // Don't overwrite a more-specific override that already covers this token
+        val existing = database.bankingDatabaseQueries
+            .getCategoryOverrideByPattern(tokenPattern)
+            .executeAsOneOrNull()
+        if (existing != null && existing == categoryValue) return
+
+        database.bankingDatabaseQueries.insertCategoryOverride(tokenPattern, categoryValue)
+
+        if (customCategoryId != null) {
+            val cache = customOverrideCache ?: mutableMapOf()
+            cache[tokenPattern] = customCategoryId
+            customOverrideCache = cache
+            overrideCache?.remove(tokenPattern)
+        } else {
+            val category = TransactionCategory.entries.find { it.name == categoryValue }
+            if (category != null) {
+                val cache = overrideCache ?: mutableMapOf()
+                cache[tokenPattern] = category
+                overrideCache = cache
+                customOverrideCache?.remove(tokenPattern)
             }
         }
     }
@@ -212,6 +280,43 @@ class CategoryOverrideManager(
             }
         }
 
+        // Final fallback — generalized merchant token. Lets a single user
+        // correction on one transaction apply to every other variant of the
+        // same merchant in subsequent imports (e.g. different store numbers,
+        // cities or branch suffixes).
+        val tokenPattern = extractTokenPattern(description, counterparty)
+        if (!tokenPattern.isNullOrBlank()) {
+            customOverrideCache?.get(tokenPattern)?.let {
+                return CategoryOverrideResult.Custom(it)
+            }
+            overrideCache?.get(tokenPattern)?.let {
+                return CategoryOverrideResult.Predefined(it)
+            }
+
+            val tokenCategoryName = database.bankingDatabaseQueries
+                .getCategoryOverrideByPattern(tokenPattern)
+                .executeAsOneOrNull()
+            if (tokenCategoryName != null) {
+                if (tokenCategoryName.startsWith(CUSTOM_PREFIX)) {
+                    val customId = tokenCategoryName.removePrefix(CUSTOM_PREFIX).toLongOrNull()
+                    if (customId != null) {
+                        val cache = customOverrideCache ?: mutableMapOf()
+                        cache[tokenPattern] = customId
+                        customOverrideCache = cache
+                        return CategoryOverrideResult.Custom(customId)
+                    }
+                } else {
+                    val category = TransactionCategory.entries.find { it.name == tokenCategoryName }
+                    if (category != null) {
+                        val cache = overrideCache ?: mutableMapOf()
+                        cache[tokenPattern] = category
+                        overrideCache = cache
+                        return CategoryOverrideResult.Predefined(category)
+                    }
+                }
+            }
+        }
+
         return null
     }
 
@@ -250,17 +355,26 @@ class CategoryOverrideManager(
      * Delete an override
      */
     fun deleteOverride(description: String, counterparty: String?) {
-        // Try to delete both patterns
+        // Try to delete all three patterns (primary, full, token)
         val primaryPattern = extractPrimaryPattern(description, counterparty)
         if (!primaryPattern.isNullOrBlank()) {
             database.bankingDatabaseQueries.deleteCategoryOverride(primaryPattern)
             overrideCache?.remove(primaryPattern)
+            customOverrideCache?.remove(primaryPattern)
         }
 
         val fullPattern = extractFullPattern(description, counterparty)
         if (fullPattern.isNotBlank()) {
             database.bankingDatabaseQueries.deleteCategoryOverride(fullPattern)
             overrideCache?.remove(fullPattern)
+            customOverrideCache?.remove(fullPattern)
+        }
+
+        val tokenPattern = extractTokenPattern(description, counterparty)
+        if (!tokenPattern.isNullOrBlank()) {
+            database.bankingDatabaseQueries.deleteCategoryOverride(tokenPattern)
+            overrideCache?.remove(tokenPattern)
+            customOverrideCache?.remove(tokenPattern)
         }
     }
 
