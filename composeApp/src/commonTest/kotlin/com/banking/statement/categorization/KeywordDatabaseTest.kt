@@ -317,6 +317,86 @@ class KeywordDatabaseTest {
         assertTrue(restaurantKeywords.isEmpty())
     }
 
+    // ===== Regression tests for reported category bugs =====
+
+    @Test
+    fun testEdeka_NotMisclassifiedAsRestaurant() {
+        // Edeka descriptions that contain bakery/naturkost sub-labels should stay SUPERMARKET
+        val db = createDatabase("""
+            category,keyword
+            SUPERMARKET,edeka
+            SUPERMARKET,bäckerei
+            SUPERMARKET,backstube
+            SUPERMARKET,naturkost
+            RESTAURANT,restaurant
+        """.trimIndent())
+
+        assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("EDEKA MARKT"))
+        assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("EDEKA BÄCKEREI BERLIN"))
+        assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("EDEKA BACKSTUBE MÜNCHEN"))
+        assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("EDEKA NATURKOST CENTER"))
+    }
+
+    @Test
+    fun testBaeckerei_ClassifiedAsSupermarket() {
+        // Bäckerei (bakery) is a retail food shop, not a restaurant
+        val db = createDatabase("""
+            category,keyword
+            SUPERMARKET,bäckerei
+            SUPERMARKET,backhaus
+            SUPERMARKET,backstube
+            RESTAURANT,restaurant
+            RESTAURANT,bistro
+        """.trimIndent())
+
+        assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("Stadtbäckerei Müller"))
+        assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("Backhaus Schmidt"))
+        assertEquals(TransactionCategory.SUPERMARKET, db.findCategory("Backstube Frisch GmbH"))
+    }
+
+    @Test
+    fun testRente_NotMisclassifiedAsRestaurant_PriorityTiebreak() {
+        // SALARY must beat RESTAURANT when keyword lengths are equal,
+        // e.g. "rente"(5) vs "pizza"(5) or "stube"(5)
+        val db = createDatabase("""
+            category,keyword
+            SALARY,rente
+            RESTAURANT,pizza
+            RESTAURANT,stube
+        """.trimIndent())
+
+        // "rente" alone
+        assertEquals(TransactionCategory.SALARY, db.findCategory("Rente Oktober"))
+        // Same-length RESTAURANT keyword in description must not override SALARY
+        assertEquals(TransactionCategory.SALARY, db.findCategory("Rente Pizza"))
+        assertEquals(TransactionCategory.SALARY, db.findCategory("Rente Stube"))
+    }
+
+    @Test
+    fun testCategoryPriority_SalaryBeatsRestaurantOnTie() {
+        val db = createDatabase("""
+            category,keyword
+            SALARY,lohn
+            RESTAURANT,wok
+        """.trimIndent())
+
+        // Both keywords are 4 chars; SALARY should win
+        assertEquals(TransactionCategory.SALARY, db.findCategory("Lohn Wok November"))
+    }
+
+    @Test
+    fun testCategoryPriority_LongerKeywordStillWins() {
+        // A longer RESTAURANT keyword beats a shorter SALARY keyword as before
+        val db = createDatabase("""
+            category,keyword
+            SALARY,rente
+            RESTAURANT,restaurant
+        """.trimIndent())
+
+        // "restaurant" (10) > "rente" (5) — longer keyword wins regardless of priority
+        assertEquals(TransactionCategory.RESTAURANT, db.findCategory("Rente Restaurant Am Markt"))
+    }
+
     // ===== Country code helper methods =====
 
     @Test

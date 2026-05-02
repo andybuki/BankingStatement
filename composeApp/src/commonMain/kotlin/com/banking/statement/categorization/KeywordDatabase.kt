@@ -72,7 +72,7 @@ class KeywordDatabase : KeywordLookup {
      * Matching strategy:
      * 1. Use word-boundary matching to avoid false positives (e.g., "miete" should not match "vermieter")
      * 2. Prioritize longer/more specific keywords
-     * 3. Return the category with the longest matching keyword (not highest count)
+     * 3. Break ties by category priority (e.g., SALARY beats RESTAURANT for equal-length keywords)
      */
     override fun findCategory(description: String, counterparty: String?): TransactionCategory? {
         if (keywordMap.isEmpty()) return null
@@ -91,8 +91,10 @@ class KeywordDatabase : KeywordLookup {
 
         var bestMatch: TransactionCategory? = null
         var bestKeywordLength = 0
+        var bestPriority = -1
 
         for ((category, keywords) in keywordMap) {
+            val categoryPriority = priorityOf(category)
             for (keyword in keywords) {
                 // Normalize keyword the same way
                 val normalizedKeyword = keyword
@@ -117,10 +119,12 @@ class KeywordDatabase : KeywordLookup {
                 }
 
                 if (matches) {
-                    // Use keyword length as priority - longer/more specific keywords win
                     val keywordLength = normalizedKeyword.length
-                    if (keywordLength > bestKeywordLength) {
+                    // Longer keyword wins; ties broken by category priority
+                    if (keywordLength > bestKeywordLength ||
+                        (keywordLength == bestKeywordLength && categoryPriority > bestPriority)) {
                         bestKeywordLength = keywordLength
+                        bestPriority = categoryPriority
                         bestMatch = category
                     }
                 }
@@ -153,6 +157,32 @@ class KeywordDatabase : KeywordLookup {
     }
 
     companion object {
+        /**
+         * Category priority for tie-breaking when two keywords have equal length.
+         * Higher value = higher priority. Income/fixed-cost categories rank above
+         * discretionary spend categories so e.g. "rente" (SALARY) beats a same-length
+         * restaurant keyword when both appear in the same transaction text.
+         */
+        fun priorityOf(category: TransactionCategory): Int = when (category) {
+            TransactionCategory.SALARY        -> 100
+            TransactionCategory.RENT          -> 90
+            TransactionCategory.TAXES         -> 85
+            TransactionCategory.INSURANCE     -> 80
+            TransactionCategory.REFUND        -> 75
+            TransactionCategory.INVESTMENT    -> 70
+            TransactionCategory.TRANSPORT     -> 65
+            TransactionCategory.HEALTH        -> 60
+            TransactionCategory.EDUCATION     -> 55
+            TransactionCategory.TRAVEL        -> 50
+            TransactionCategory.SUBSCRIPTIONS -> 45
+            TransactionCategory.SUPERMARKET   -> 40
+            TransactionCategory.RESTAURANT    -> 35
+            TransactionCategory.SHOPPING      -> 30
+            TransactionCategory.ENTERTAINMENT -> 25
+            TransactionCategory.TRANSFER      -> 20
+            TransactionCategory.OTHER         -> 0
+        }
+
         /**
          * Extract country code from IBAN (first 2 characters)
          */

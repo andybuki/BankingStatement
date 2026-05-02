@@ -91,8 +91,9 @@ class KeywordDatabaseOptimized : KeywordLookup {
     /**
      * Find category with optimizations:
      * - Uses pre-normalized keywords
-     * - Early termination on first long match
+     * - Early termination when remaining keywords cannot improve the result
      * - Simple cache for repeated descriptions
+     * - Ties broken by category priority (e.g., SALARY beats RESTAURANT)
      */
     override fun findCategory(description: String, counterparty: String?): TransactionCategory? {
         if (normalizedKeywordMap.isEmpty()) return null
@@ -108,13 +109,17 @@ class KeywordDatabaseOptimized : KeywordLookup {
 
         var bestMatch: TransactionCategory? = null
         var bestKeywordLength = 0
+        var bestPriority = -1
 
         // Iterate through categories
         for ((category, keywords) in normalizedKeywordMap) {
+            val categoryPriority = KeywordDatabase.priorityOf(category)
             // Keywords are sorted by length descending
             for (keyword in keywords) {
-                // Early exit if this keyword is shorter than current best
-                if (keyword.length <= bestKeywordLength) break
+                // Early exit: keyword is strictly shorter than best — can never win
+                // For equal-length keywords, still check if this category has higher priority
+                if (keyword.length < bestKeywordLength) break
+                if (keyword.length == bestKeywordLength && categoryPriority <= bestPriority) break
 
                 // Skip single-word keywords that are too short (< 3 chars) to avoid
                 // false positives from generic abbreviations like "ag", "kg", etc.
@@ -131,9 +136,13 @@ class KeywordDatabaseOptimized : KeywordLookup {
                 }
 
                 if (matches) {
-                    bestKeywordLength = keyword.length
-                    bestMatch = category
-                    // Don't break - check other categories for potentially longer matches
+                    // Longer keyword wins; ties broken by category priority
+                    if (keyword.length > bestKeywordLength ||
+                        (keyword.length == bestKeywordLength && categoryPriority > bestPriority)) {
+                        bestKeywordLength = keyword.length
+                        bestPriority = categoryPriority
+                        bestMatch = category
+                    }
                 }
             }
         }
