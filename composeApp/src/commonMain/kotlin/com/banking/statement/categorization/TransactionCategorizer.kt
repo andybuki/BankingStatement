@@ -3,12 +3,35 @@ package com.banking.statement.categorization
 import com.banking.statement.parser.ParsedTransaction
 
 /**
+ * Explains where an automatic categorization came from.
+ */
+enum class CategorizationSource {
+    USER_OVERRIDE,
+    AMOUNT_RULE,
+    MERCHANT,
+    KEYWORD,
+    UNKNOWN
+}
+
+/**
+ * Categorization result with confidence and optional diagnostics.
+ */
+data class CategorizationResult(
+    val category: TransactionCategory,
+    val confidence: Double,
+    val source: CategorizationSource,
+    val matchedValue: String? = null
+)
+
+/**
  * Service for automatically categorizing transactions.
+ *
  * Priority order:
  * 1) User overrides (manual corrections)
- * 2) Keyword matching from TransactionCategory (rent, salary, utilities, etc.)
- * 3) Amount-based rules for income (positive amounts)
- * 4) Merchant database (only for unknowns - shops/restaurants not in keywords)
+ * 2) Amount-based rules for positive amounts (salary/refund)
+ * 3) Merchant database (specific shops/restaurants/services)
+ * 4) Keyword matching from TransactionCategory
+ * 5) OTHER fallback
  */
 class TransactionCategorizer(
     private val merchantDatabase: MerchantDatabase? = null,
@@ -21,10 +44,16 @@ class TransactionCategorizer(
     }
 
     /**
-     * Categorize a single transaction.
-     * Priority: 1) User overrides, 2) Keywords, 3) Income amount rules, 4) Merchant DB
+     * Backward-compatible API for callers that only need the category.
      */
     fun categorize(transaction: ParsedTransaction): TransactionCategory {
+        return categorizeWithDetails(transaction).category
+    }
+
+    /**
+     * Categorize a single transaction with confidence and source metadata.
+     */
+    fun categorizeWithDetails(transaction: ParsedTransaction): CategorizationResult {
         // 1) Check user overrides first (highest priority)
         categoryOverrideManager?.let { manager ->
             val override = manager.findOverride(
@@ -32,31 +61,38 @@ class TransactionCategorizer(
                 counterparty = transaction.counterpartyName
             )
             if (override != null) {
-                return override
+                return CategorizationResult(
+                    category = override,
+                    confidence = 1.0,
+                    source = CategorizationSource.USER_OVERRIDE
+                )
             }
         }
 
-        // 2) Try keyword matching from TransactionCategory
-        val keywordCategory = TransactionCategory.categorize(
-            description = transaction.description,
-            counterparty = transaction.counterpartyName
-        )
-
-        // If keywords found a category, use it
-        if (keywordCategory != TransactionCategory.OTHER) {
-            return keywordCategory
-        }
-
-        // 3) For positive amounts (income), apply amount-based rules
+        // 2) For positive amounts (income), apply amount-based rules before
+        // merchant/keyword matching. This prevents words like "miete" in an
+        // incoming transfer from overriding refund/salary logic.
         if (transaction.amount > 0) {
             return if (transaction.amount > SALARY_THRESHOLD) {
-                TransactionCategory.SALARY
+                CategorizationResult(
+                    category = TransactionCategory.SALARY,
+                    confidence = 0.90,
+                    source = CategorizationSource.AMOUNT_RULE,
+                    matchedValue = "> $SALARY_THRESHOLD"
+                )
             } else {
-                TransactionCategory.REFUND
+                CategorizationResult(
+                    category = TransactionCategory.REFUND,
+                    confidence = 0.80,
+                    source = CategorizationSource.AMOUNT_RULE,
+                    matchedValue = "<= $SALARY_THRESHOLD"
+                )
             }
         }
 
-        // 4) For expenses, try merchant database
+        // 3) For expenses, prefer merchant database over generic keywords.
+        // Merchant names are more specific than keyword hits such as "cafe",
+        // "miete" or "paypal".
         if (transaction.amount < 0) {
             merchantDatabase?.let { db ->
                 val merchantCategory = db.findCategory(
@@ -64,12 +100,34 @@ class TransactionCategorizer(
                     counterparty = transaction.counterpartyName
                 )
                 if (merchantCategory != null) {
-                    return merchantCategory
+                    return CategorizationResult(
+                        category = merchantCategory,
+                        confidence = 0.95,
+                        source = CategorizationSource.MERCHANT
+                    )
                 }
             }
         }
 
-        return TransactionCategory.OTHER
+        // 4) Keyword fallback for categories not covered by merchant data.
+        val keywordCategory = TransactionCategory.categorize(
+            description = transaction.description,
+            counterparty = transaction.counterpartyName
+        )
+
+        if (keywordCategory != TransactionCategory.OTHER) {
+            return CategorizationResult(
+                category = keywordCategory,
+                confidence = 0.75,
+                source = CategorizationSource.KEYWORD
+            )
+        }
+
+        return CategorizationResult(
+            category = TransactionCategory.OTHER,
+            confidence = 0.0,
+            source = CategorizationSource.UNKNOWN
+        )
     }
 
     /**
@@ -77,6 +135,13 @@ class TransactionCategorizer(
      */
     fun categorizeAll(transactions: List<ParsedTransaction>): List<Pair<ParsedTransaction, TransactionCategory>> {
         return transactions.map { it to categorize(it) }
+    }
+
+    /**
+     * Categorize multiple transactions with source/confidence metadata.
+     */
+    fun categorizeAllWithDetails(transactions: List<ParsedTransaction>): List<Pair<ParsedTransaction, CategorizationResult>> {
+        return transactions.map { it to categorizeWithDetails(it) }
     }
 
     /**
