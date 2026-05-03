@@ -28,11 +28,12 @@ data class CategorizationResult(
  *
  * Priority order:
  * 1) User overrides (manual corrections)
- * 2) Strong transaction signals (salary, transfers, cash withdrawal)
- * 3) Merchant database / keywords against extracted effective merchant
- * 4) Bank-provided category hint, if available
- * 5) Keyword matching against normalized transaction text
- * 6) OTHER fallback
+ * 2) Strong explicit overrides for known non-restaurant merchants/patterns
+ * 3) Strong transaction signals (salary, transfers, cash withdrawal)
+ * 4) Merchant database / keywords against extracted effective merchant
+ * 5) Bank-provided category hint, if available
+ * 6) Keyword matching against normalized transaction text
+ * 7) OTHER fallback
  */
 class TransactionCategorizer(
     private val merchantDatabase: MerchantDatabase? = null,
@@ -42,6 +43,28 @@ class TransactionCategorizer(
     companion object {
         /** Threshold for categorizing income as SALARY vs REFUND fallback */
         const val SALARY_THRESHOLD = 300.0
+
+        private val STRONG_TEXT_RULES: List<Pair<TransactionCategory, List<String>>> = listOf(
+            TransactionCategory.SHOPPING to listOf(
+                "bauhaus", "obi", "hornbach", "toom", "hobbyshop", "hobby shop",
+                "dm drogerie", "dm-drogerie", "dm drogerie markt", "drogerie markt",
+                "google youtube", "youtube", "google play", "google payment", "google one",
+                "paypal payment", "paypal *", "paypalzahlung"
+            ),
+            TransactionCategory.TRANSFER to listOf(
+                "money transfer", "paypal payment", "paypal transfer", "db verti eb",
+                "ueberweisung", "überweisung", "umbuchung", "transfer"
+            ),
+            TransactionCategory.SUBSCRIPTIONS to listOf(
+                "youtube premium", "google youtube", "google one", "netflix", "spotify"
+            ),
+            TransactionCategory.HEALTH to listOf(
+                "apotheke", "krankenversicherung", "krankenkasse", "bkk", "aok", "tk ", "barmer"
+            ),
+            TransactionCategory.INSURANCE to listOf(
+                "versicherung", "verti", "allianz", "debeka", "generali", "huk", "axa"
+            )
+        )
     }
 
     /**
@@ -72,11 +95,17 @@ class TransactionCategorizer(
 
         val signals = TransactionSignalExtractor.extract(transaction)
 
-        // 2) Strong signal rules. These are based on transaction type, not on
+        // 2) Strong explicit category rules for repeatedly observed false
+        // positives. These run before generic merchant/keyword matching to
+        // prevent weak restaurant matches from winning for merchants like
+        // Bauhaus, DM Drogerie, YouTube/Google or generic PayPal transfers.
+        strongTextRule(transaction, signals)?.let { return it }
+
+        // 3) Strong signal rules. These are based on transaction type, not on
         // generic amount-only assumptions.
         strongSignalRule(transaction, signals)?.let { return it }
 
-        // 3) Merchant/keyword lookup against the extracted effective merchant.
+        // 4) Merchant/keyword lookup against the extracted effective merchant.
         // This is the critical improvement for PayPal, VISA, girocard and
         // bank-app rows: classify "Wolt", "Booking.com", "Spotify", "LIDL" or
         // "NETTO" instead of the whole noisy bank statement line.
@@ -111,7 +140,7 @@ class TransactionCategorizer(
             }
         }
 
-        // 4) Some banks already provide coarse category hints, e.g. N26
+        // 5) Some banks already provide coarse category hints, e.g. N26
         // "Mastercard • Bars & Restaurants". Use that after merchant-specific
         // lookup so a known merchant can still be more precise.
         signals.categoryHint?.let { hint ->
@@ -123,7 +152,7 @@ class TransactionCategorizer(
             )
         }
 
-        // 5) Keyword fallback for categories not covered by extracted merchant.
+        // 6) Keyword fallback for categories not covered by extracted merchant.
         val keywordCategory = TransactionCategory.categorize(
             description = signals.normalizedSearchText,
             counterparty = null
@@ -138,7 +167,7 @@ class TransactionCategorizer(
             )
         }
 
-        // 6) Final amount fallback for incoming money only. This is deliberately
+        // 7) Final amount fallback for incoming money only. This is deliberately
         // last so salary/rent/keyword signals can win over a naive threshold.
         if (transaction.amount > 0) {
             return if (transaction.amount > SALARY_THRESHOLD) {
@@ -163,6 +192,32 @@ class TransactionCategorizer(
             confidence = 0.0,
             source = CategorizationSource.UNKNOWN
         )
+    }
+
+    private fun strongTextRule(
+        transaction: ParsedTransaction,
+        signals: TransactionSignals
+    ): CategorizationResult? {
+        val text = listOfNotNull(
+            signals.effectiveMerchant,
+            signals.normalizedSearchText,
+            transaction.description,
+            transaction.counterpartyName,
+            transaction.remittanceInfo,
+            transaction.rawText
+        ).joinToString(" ").lowercase()
+
+        for ((category, patterns) in STRONG_TEXT_RULES) {
+            val pattern = patterns.firstOrNull { text.contains(it) } ?: continue
+            return CategorizationResult(
+                category = category,
+                confidence = 0.88,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = pattern
+            )
+        }
+
+        return null
     }
 
     private fun strongSignalRule(
