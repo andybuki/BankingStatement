@@ -1,0 +1,230 @@
+category,keyword
+RENT,miete
+RENT,rent
+RENT,wohnung
+RENT,wohnungsbau
+RENT,hausverwaltung
+RENT,gehag
+RENT,vermieter
+RENT,nebenkosten
+RENT,heizung
+RENT,strom
+RENT,gas
+RENT,wasser
+RENT,vattenfall
+RENT,eon
+RENT,e.on
+RENT,energie
+RENT,stadtwerke
+RENT,telekom
+RENT,vodafone
+RENT,1und1
+RENT,1&1
+RENT,internet
+RENT,wlan
+RENT,wohnungsgesellschaft
+TRANSPORT,bvg
+TRANSPORT,berliner verkehrsbetriebe
+TRANSPORT,db
+TRANSPORT,deutsche bahn
+TRANSPORT,bahn
+TRANSPORT,s bahn
+TRANSPORT,s-bahn
+TRANSPORT,u bahn
+TRANSPORT,u-bahn
+TRANSPORT,ticket
+TRANSPORT,fahrkarte
+TRANSPORT,uber
+TRANSPORT,taxi
+TRANSPORT,miles
+TRANSPORT,share now
+TRANSPORT,bolt
+TRANSPORT,clever shuttle
+TRANSPORT,flinkster
+TRANSPORT,sixt share
+TRANSPORT,tankstelle
+TRANSPORT,aral
+TRANSPORT,shell
+TRANSPORT,esso
+TRANSPORT,total
+TRANSPORT,jet
+TRANSPORT,avia
+SUPERMARKET,supermarkt
+SUPERMARKET,lebensmittel
+SUPERMARKET,rewe
+SUPERMARKET,lidl
+SUPERMARKET,aldi
+SUPERMARKET,edeka
+SUPERMARKET,kaufland
+SUPERMARKET,netto
+SUPERMARKET,penny
+SUPERMARKET,alnatura
+SUPERMARKET,denns
+SUPERMARKET,bio company
+SUPERMARKET,biocompany
+SUPERMARKET,tegut
+SUPERMARKET,real
+SUPERMARKET,nahkauf
+SUPERMARKET,konsum
+SUPERMARKET,kaufland
+SUPERMARKET,marktkauf
+RESTAURANT,restaurant
+RESTAURANT,cafe
+RESTAURANT,café
+RESTAURANT,bistro
+RESTAURANT,imbiss
+RESTAURANT,pizza
+RESTAURANT,sushi
+RESTAURANT,burger
+RESTAURANT,kebab
+RESTAURANT,döner
+RESTAURANT,doener
+RESTAURANT,wolt
+RESTAURANT,lieferando
+RESTAURANT,ubereats
+RESTAURANT,uber eats
+RESTAURANT,mcdonald
+RESTAURANT,mcdonalds
+RESTAURANT,bürger king
+RESTAURANT,burger king
+RESTAURANT,subway
+RESTAURANT,kfc
+RESTAURANT,starbucks
+RESTAURANT,backerei
+RESTAURANT,bäckerei
+RESTAURANT,backwerk
+RESTAURANT,back factory
+RESTAURANT,baeckerei
+SHOPPING,shopping
+SHOPPING,amazon
+SHOPPING,ebay
+SHOPPING,etsy
+SHOPPING,zalando
+SHOPPING,otto
+SHOPPING,ikea
+SHOPPING,h&m
+SHOPPING,hm
+SHOPPING,zara
+SHOPPING,uniqlo
+SHOPPING,bershka
+SHOPPING,pull bear
+SHOPPING,pull&bear
+SHOPPING,decathlon
+SHOPPING,mediamarkt
+SHOPPING,media markt
+SHOPPING,saturn
+SHOPPING,apple
+SHOPPING,google store
+SHOPPING,dm
+SHOPPING,rossmann
+SHOPPING,drogerie
+SHOPPING,müller
+SHOPPING,mueller
+SHOPPING,douglas
+SHOPPING,manufactum
+HEALTH,apotheke
+HEALTH,arzt
+HEALTH,zahnarzt
+HEALTH,clinic
+HEALTH,klinik
+HEALTH,krankenhaus
+HEALTH,medical
+HEALTH,gesundheit
+HEALTH,docmorris
+HEALTH,shop apotheke
+HEALTH,physio
+HEALTH,therapie
+INSURANCE,versicherung
+INSURANCE,allianz
+INSURANCE,huk
+INSURANCE,axa
+INSURANCE,ergo
+INSURANCE,signal iduna
+INSURANCE,haftpflicht
+INSURANCE,krankenversicherung
+INSURANCE,kfz versicherung
+ENTERTAINMENT,kino
+ENTERTAINMENT,cinema
+ENTERTAINMENT,theater
+ENTERTAINMENT,concert
+ENTERTAINMENT,konzert
+ENTERTAINMENT,museum
+ENTERTAINMENT,netflix
+ENTERTAINMENT,spotify
+ENTERTAINMENT,disney
+ENTERTAINMENT,prime video
+ENTERTAINMENT,steam
+ENTERTAINMENT,playstation
+ENTERTAINMENT,xbox
+SUBSCRIPTIONS,subscription
+SUBSCRIPTIONS,abo
+SUBSCRIPTIONS,abonnement
+SUBSCRIPTIONS,fitness
+SUBSCRIPTIONS,gym
+SUBSCRIPTIONS,mcfit
+SUBSCRIPTIONS,fitx
+SUBSCRIPTIONS,urban sports
+SUBSCRIPTIONS,claude
+SUBSCRIPTIONS,openai
+SUBSCRIPTIONS,chatgpt
+SUBSCRIPTIONS,anthropic
+SUBSCRIPTIONS,google one
+SUBSCRIPTIONS,icloud
+SUBSCRIPTIONS,dropbox
+SUBSCRIPTIONS,notion
+INVESTMENT,investment
+INVESTMENT,depot
+INVESTMENT,broker
+INVESTMENT,trade republic
+INVESTMENT,scalable
+INVESTMENT,etf
+INVESTMENT,aktien
+INVESTMENT,fonds
+TRAVEL,hotel
+TRAVEL,booking
+TRAVEL,airbnb
+TRAVEL,flug
+TRAVEL,flight
+TRAVEL,lufthansa
+TRAVEL,ryanair
+TRAVEL,easyjet
+TRAVEL,bahnreise
+TRAVEL,reise
+TRAVEL,travel
+TRAVEL,hostel
+SALARY,gehalt
+SALARY,lohn
+SALARY,salary
+SALARY,bezuege
+SALARY,bezüge
+SALARY,bundeskasse
+REFUND,erstattung
+REFUND,rückerstattung
+REFUND,rueckerstattung
+REFUND,gutschrift
+REFUND,refund
+REFUND,retoure
+REFUND,chargeback
+TRANSFER,paypal
+TRANSFER,überweisung
+TRANSFER,ueberweisung
+TRANSFER,transfer
+TRANSFER,revolut
+TRANSFER,wise
+TRANSFER,n26
+TRANSFER,bank transfer
+EDUCATION,schule
+EDUCATION,universität
+EDUCATION,universitaet
+EDUCATION,udemy
+EDUCATION,coursera
+EDUCATION,edx
+EDUCATION,duolingo
+EDUCATION,kurs
+EDUCATION,course
+EDUCATION,bildung
+TAXES,steuer
+TAXES,finanzamt
+TAXES,tax
+TAXES,lohnsteuer
+TAXES,einkommensteuer
