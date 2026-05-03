@@ -58,11 +58,13 @@ class TransactionCategorizer(
 
         private val STRONG_TEXT_RULES: List<Pair<TransactionCategory, List<String>>> = listOf(
             TransactionCategory.SUBSCRIPTIONS to listOf(
-                "apple services", "apple service", "youtube premium", "google youtube",
+                "google *youtubepremium", "google youtubepremium", "youtube premium",
+                "youtube super", "google youtube", "apple services", "apple service",
                 "google one", "netflix", "spotify", "drillisch", "winsim", "lagoa yoga"
             ),
             TransactionCategory.TRANSPORT to listOf(
-                "bvg", "berliner verkehrsbetriebe", "s-bahn", "s bahn", "db vertrieb",
+                "db vertrieb", "db vertr ieb", "deutsche bahn", "bahn.de",
+                "bvg", "berliner verkehrsbetriebe", "s-bahn", "s bahn",
                 "logpay financial services", "flix se", "gmsa guaguas"
             ),
             TransactionCategory.RENT to listOf(
@@ -77,8 +79,9 @@ class TransactionCategorizer(
                 "ikea", "bauhaus", "obi", "hornbach", "toom", "hobbyshop", "hobby shop",
                 "dm drogerie", "dm-drogerie", "dm drogerie markt", "drogerie markt",
                 "rossmann", "butlers", "amazon payments", "amzn mktp", "ebay", "alipay",
-                "otrium", "ic group", "tantal", "breuninger", "schuhhandelsgesellschaft",
-                "google play", "google payment", "el corte ingles", "wdfg", "cos berlin", "muji"
+                "deutsche post", "post ag", "otrium", "ic group", "tantal", "breuninger",
+                "schuhhandelsgesellschaft", "google play", "google payment", "el corte ingles",
+                "wdfg", "cos berlin", "muji"
             ),
             TransactionCategory.ENTERTAINMENT to listOf(
                 "fienta", "ticket messe"
