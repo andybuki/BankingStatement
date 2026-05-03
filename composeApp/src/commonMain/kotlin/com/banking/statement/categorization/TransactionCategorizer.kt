@@ -15,12 +15,17 @@ enum class CategorizationSource {
 
 /**
  * Categorization result with confidence and optional diagnostics.
+ *
+ * If [category] is OTHER but [suggestedCategory] is set, the system found a
+ * plausible category but did not trust it enough for automatic assignment.
  */
 data class CategorizationResult(
     val category: TransactionCategory,
     val confidence: Double,
     val source: CategorizationSource,
-    val matchedValue: String? = null
+    val matchedValue: String? = null,
+    val suggestedCategory: TransactionCategory? = null,
+    val suggestedConfidence: Double? = null
 )
 
 /**
@@ -44,19 +49,25 @@ class TransactionCategorizer(
         /** Threshold for categorizing income as SALARY vs REFUND fallback */
         const val SALARY_THRESHOLD = 300.0
 
+        /**
+         * Minimum confidence required for automatic categorization.
+         * Below this value, categorizeWithDetails() returns OTHER with a
+         * suggestedCategory. This trades coverage for fewer wrong categories.
+         */
+        const val AUTO_CATEGORIZATION_THRESHOLD = 0.80
+
         private val STRONG_TEXT_RULES: List<Pair<TransactionCategory, List<String>>> = listOf(
+            TransactionCategory.SUBSCRIPTIONS to listOf(
+                "youtube premium", "google youtube", "google one", "netflix", "spotify"
+            ),
             TransactionCategory.SHOPPING to listOf(
                 "bauhaus", "obi", "hornbach", "toom", "hobbyshop", "hobby shop",
                 "dm drogerie", "dm-drogerie", "dm drogerie markt", "drogerie markt",
-                "google youtube", "youtube", "google play", "google payment", "google one",
-                "paypal payment", "paypal *", "paypalzahlung"
+                "google play", "google payment"
             ),
             TransactionCategory.TRANSFER to listOf(
                 "money transfer", "paypal payment", "paypal transfer", "db verti eb",
                 "ueberweisung", "überweisung", "umbuchung", "transfer"
-            ),
-            TransactionCategory.SUBSCRIPTIONS to listOf(
-                "youtube premium", "google youtube", "google one", "netflix", "spotify"
             ),
             TransactionCategory.HEALTH to listOf(
                 "apotheke", "krankenversicherung", "krankenkasse", "bkk", "aok", "tk ", "barmer"
@@ -99,11 +110,11 @@ class TransactionCategorizer(
         // positives. These run before generic merchant/keyword matching to
         // prevent weak restaurant matches from winning for merchants like
         // Bauhaus, DM Drogerie, YouTube/Google or generic PayPal transfers.
-        strongTextRule(transaction, signals)?.let { return it }
+        strongTextRule(transaction, signals)?.let { return finalizeAutoCategory(it) }
 
         // 3) Strong signal rules. These are based on transaction type, not on
         // generic amount-only assumptions.
-        strongSignalRule(transaction, signals)?.let { return it }
+        strongSignalRule(transaction, signals)?.let { return finalizeAutoCategory(it) }
 
         // 4) Merchant/keyword lookup against the extracted effective merchant.
         // This is the critical improvement for PayPal, VISA, girocard and
@@ -117,11 +128,13 @@ class TransactionCategorizer(
                     counterparty = null
                 )
                 if (merchantCategory != null) {
-                    return CategorizationResult(
-                        category = merchantCategory,
-                        confidence = 0.90,
-                        source = CategorizationSource.MERCHANT,
-                        matchedValue = merchantText
+                    return finalizeAutoCategory(
+                        CategorizationResult(
+                            category = merchantCategory,
+                            confidence = 0.90,
+                            source = CategorizationSource.MERCHANT,
+                            matchedValue = merchantText
+                        )
                     )
                 }
             }
@@ -131,11 +144,13 @@ class TransactionCategorizer(
                 counterparty = null
             )
             if (merchantKeywordCategory != TransactionCategory.OTHER) {
-                return CategorizationResult(
-                    category = merchantKeywordCategory,
-                    confidence = 0.82,
-                    source = CategorizationSource.KEYWORD,
-                    matchedValue = merchantText
+                return finalizeAutoCategory(
+                    CategorizationResult(
+                        category = merchantKeywordCategory,
+                        confidence = 0.82,
+                        source = CategorizationSource.KEYWORD,
+                        matchedValue = merchantText
+                    )
                 )
             }
         }
@@ -144,11 +159,13 @@ class TransactionCategorizer(
         // "Mastercard • Bars & Restaurants". Use that after merchant-specific
         // lookup so a known merchant can still be more precise.
         signals.categoryHint?.let { hint ->
-            return CategorizationResult(
-                category = hint,
-                confidence = 0.78,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.normalizedSearchText
+            return finalizeAutoCategory(
+                CategorizationResult(
+                    category = hint,
+                    confidence = 0.78,
+                    source = CategorizationSource.SIGNAL_RULE,
+                    matchedValue = signals.normalizedSearchText
+                )
             )
         }
 
@@ -159,11 +176,13 @@ class TransactionCategorizer(
         )
 
         if (keywordCategory != TransactionCategory.OTHER) {
-            return CategorizationResult(
-                category = keywordCategory,
-                confidence = 0.75,
-                source = CategorizationSource.KEYWORD,
-                matchedValue = signals.normalizedSearchText
+            return finalizeAutoCategory(
+                CategorizationResult(
+                    category = keywordCategory,
+                    confidence = 0.75,
+                    source = CategorizationSource.KEYWORD,
+                    matchedValue = signals.normalizedSearchText
+                )
             )
         }
 
@@ -171,18 +190,22 @@ class TransactionCategorizer(
         // last so salary/rent/keyword signals can win over a naive threshold.
         if (transaction.amount > 0) {
             return if (transaction.amount > SALARY_THRESHOLD) {
-                CategorizationResult(
-                    category = TransactionCategory.SALARY,
-                    confidence = 0.55,
-                    source = CategorizationSource.SIGNAL_RULE,
-                    matchedValue = "> $SALARY_THRESHOLD fallback"
+                finalizeAutoCategory(
+                    CategorizationResult(
+                        category = TransactionCategory.SALARY,
+                        confidence = 0.55,
+                        source = CategorizationSource.SIGNAL_RULE,
+                        matchedValue = "> $SALARY_THRESHOLD fallback"
+                    )
                 )
             } else {
-                CategorizationResult(
-                    category = TransactionCategory.REFUND,
-                    confidence = 0.65,
-                    source = CategorizationSource.SIGNAL_RULE,
-                    matchedValue = "positive amount fallback"
+                finalizeAutoCategory(
+                    CategorizationResult(
+                        category = TransactionCategory.REFUND,
+                        confidence = 0.65,
+                        source = CategorizationSource.SIGNAL_RULE,
+                        matchedValue = "positive amount fallback"
+                    )
                 )
             }
         }
@@ -191,6 +214,21 @@ class TransactionCategorizer(
             category = TransactionCategory.OTHER,
             confidence = 0.0,
             source = CategorizationSource.UNKNOWN
+        )
+    }
+
+    private fun finalizeAutoCategory(result: CategorizationResult): CategorizationResult {
+        if (result.source == CategorizationSource.USER_OVERRIDE) return result
+        if (result.category == TransactionCategory.OTHER) return result
+        if (result.confidence >= AUTO_CATEGORIZATION_THRESHOLD) return result
+
+        return CategorizationResult(
+            category = TransactionCategory.OTHER,
+            confidence = 0.0,
+            source = CategorizationSource.UNKNOWN,
+            matchedValue = result.matchedValue,
+            suggestedCategory = result.category,
+            suggestedConfidence = result.confidence
         )
     }
 
