@@ -29,7 +29,7 @@ data class CategorizationResult(
  * Priority order:
  * 1) User overrides (manual corrections)
  * 2) Amount-based rules for positive amounts (salary/refund)
- * 3) Merchant database (specific shops/restaurants/services)
+ * 3) Merchant database for card-like payments or explicit counterparties
  * 4) Keyword matching from TransactionCategory
  * 5) OTHER fallback
  */
@@ -41,6 +41,18 @@ class TransactionCategorizer(
     companion object {
         /** Threshold for categorizing income as SALARY vs REFUND */
         const val SALARY_THRESHOLD = 300.0
+
+        private val CARD_LIKE_MARKERS = listOf(
+            "visa",
+            "mastercard",
+            "maestro",
+            "girocard",
+            "kartenzahlung",
+            "kaufumsatz",
+            "debitk",
+            "credit card",
+            "debit card"
+        )
     }
 
     /**
@@ -90,10 +102,12 @@ class TransactionCategorizer(
             }
         }
 
-        // 3) For expenses, prefer merchant database over generic keywords.
-        // Merchant names are more specific than keyword hits such as "cafe",
-        // "miete" or "paypal".
-        if (transaction.amount < 0) {
+        // 3) For expenses, prefer merchant database over generic keywords —
+        // but only when the transaction looks like a card payment or the bank
+        // parsed an explicit counterparty. Long SEPA/Lastschrift descriptions
+        // often contain unrelated person names such as "Müller"; matching the
+        // whole raw text against merchants would create false positives.
+        if (transaction.amount < 0 && shouldUseMerchantDatabase(transaction)) {
             merchantDatabase?.let { db ->
                 val merchantCategory = db.findCategory(
                     description = transaction.description,
@@ -102,7 +116,7 @@ class TransactionCategorizer(
                 if (merchantCategory != null) {
                     return CategorizationResult(
                         category = merchantCategory,
-                        confidence = 0.95,
+                        confidence = 0.90,
                         source = CategorizationSource.MERCHANT
                     )
                 }
@@ -128,6 +142,19 @@ class TransactionCategorizer(
             confidence = 0.0,
             source = CategorizationSource.UNKNOWN
         )
+    }
+
+    /**
+     * Merchant database is strongest for card payments and explicit bank-
+     * parsed counterparties. For generic SEPA/Lastschrift text with no
+     * counterparty, prefer keywords/amount rules to avoid matching incidental
+     * names inside long remittance/legal descriptions.
+     */
+    private fun shouldUseMerchantDatabase(transaction: ParsedTransaction): Boolean {
+        if (!transaction.counterpartyName.isNullOrBlank()) return true
+
+        val text = transaction.description.lowercase()
+        return CARD_LIKE_MARKERS.any { marker -> text.contains(marker) }
     }
 
     /**
