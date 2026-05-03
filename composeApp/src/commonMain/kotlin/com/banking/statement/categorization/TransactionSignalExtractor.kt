@@ -17,6 +17,7 @@ enum class TransactionSignalType {
     TRANSFER,
     DIRECT_DEBIT,
     BANK_FEE,
+    REFUND,
     UNKNOWN
 }
 
@@ -30,6 +31,7 @@ data class TransactionSignals(
     val categoryHint: TransactionCategory? = null,
     val isSalaryLike: Boolean,
     val isRentLike: Boolean,
+    val isRefundLike: Boolean,
     val isCashWithdrawal: Boolean,
     val isCashDeposit: Boolean,
     val isInvestmentLike: Boolean,
@@ -42,6 +44,7 @@ data class TransactionSignals(
  *
  * Key examples:
  * - "PayPal ... Wolt, Ihr Einkauf bei Wolt" -> effectiveMerchant = "Wolt"
+ * - "PayPal ... Apple Se rvices, Ihr Einkauf bei Apple Servi ces" -> "Apple Services"
  * - "VISA LIDL SAGT DANKE NR XXXX ..." -> effectiveMerchant = "LIDL SAGT DANKE"
  * - "NETTO MARKEN-DISCOU//DUEREN/DE ... Debitk." -> effectiveMerchant = "NETTO MARKEN-DISCOU"
  * - "Lieferando.de Mastercard • Bars & Restaurants" -> merchant + RESTAURANT hint
@@ -67,12 +70,12 @@ object TransactionSignalExtractor {
         option = RegexOption.IGNORE_CASE
     )
     private val paypalPurchaseRegexes = listOf(
-        Regex("ihr\\s+einkauf\\s+bei\\s+(.+?)(?:\\s+mandat:|\\s+referenz:|/abbuchung|\\s+awv-meldepflicht|\\s+mref\\+|\\s+eref\\+|$)", RegexOption.IGNORE_CASE),
-        Regex("/\\.?\\s*([^/]+?),\\s*ihr\\s+einkauf", RegexOption.IGNORE_CASE),
-        Regex("svwz\\+.*?\\.\\s*([^,]+?),\\s*ihr\\s+einkauf", RegexOption.IGNORE_CASE)
+        Regex("i\\s*hr\\s+einkauf\\s+b\\s*ei\\s+(.+?)(?:\\s+mandat:|\\s+referenz:|/abbuchung|\\s+awv-meldepflicht|\\s+mref\\+|\\s+eref\\+|$)", RegexOption.IGNORE_CASE),
+        Regex("/\\.?\\s*([^/]+?),\\s*i\\s*hr\\s+einkauf", RegexOption.IGNORE_CASE),
+        Regex("svwz\\+.*?\\.\\s*([^,]+?),\\s*i\\s*hr\\s+einkauf", RegexOption.IGNORE_CASE)
     )
     private val paypalLegalSuffixRegex = Regex(
-        pattern = "\\b(gmbh|ag|ab|se|s\\.?a\\.?r\\.?l\\.?|s\\.?c\\.?a\\.?|unipessoal\\s+lda|inc\\.?|ltd\\.?|bv)\\b",
+        pattern = "\\b(gmbh|ag|ab|se|s\\.?a\\.?r\\.?l\\.?|s\\.?c\\.?a\\.?|unipessoal\\s+lda|inc\\.?|ltd\\.?|bv|a/s|as|co\\.?\\s*kg)\\b",
         option = RegexOption.IGNORE_CASE
     )
     private val cardNoiseRegex = Regex(
@@ -87,11 +90,12 @@ object TransactionSignalExtractor {
             transaction.remittanceInfo,
             transaction.rawText
         ).joinToString(" ")
-        val normalizedRaw = normalizeSpaces(rawText)
+        val normalizedRaw = normalizeBrokenWords(normalizeSpaces(rawText))
         val lower = normalizedRaw.lowercase()
 
         val salaryLike = isSalaryLike(lower)
         val rentLike = isRentLike(lower)
+        val refundLike = isRefundLike(lower)
         val cashWithdrawal = isCashWithdrawal(lower)
         val cashDeposit = isCashDeposit(lower)
         val investmentLike = isInvestmentLike(lower)
@@ -103,6 +107,7 @@ object TransactionSignalExtractor {
             cashWithdrawal -> TransactionSignalType.CASH_WITHDRAWAL
             cashDeposit -> TransactionSignalType.CASH_DEPOSIT
             salaryLike -> TransactionSignalType.SALARY
+            refundLike -> TransactionSignalType.REFUND
             investmentLike -> TransactionSignalType.INVESTMENT
             lower.contains("paypal") -> TransactionSignalType.PAYPAL
             lower.contains("visa") -> TransactionSignalType.VISA_CARD
@@ -117,7 +122,7 @@ object TransactionSignalExtractor {
         }
 
         val effectiveMerchant = when (type) {
-            TransactionSignalType.PAYPAL -> extractPaypalMerchant(normalizedRaw)
+            TransactionSignalType.PAYPAL, TransactionSignalType.REFUND -> extractPaypalMerchant(normalizedRaw)
             TransactionSignalType.VISA_CARD -> extractVisaMerchant(normalizedRaw) ?: extractCardMerchant(normalizedRaw)
             TransactionSignalType.CARD_PAYMENT -> extractMastercardBulletMerchant(normalizedRaw) ?: extractCardMerchant(normalizedRaw)
             else -> transaction.counterpartyName?.takeIf { it.isNotBlank() }
@@ -133,6 +138,7 @@ object TransactionSignalExtractor {
             categoryHint = categoryHint,
             isSalaryLike = salaryLike,
             isRentLike = rentLike,
+            isRefundLike = refundLike,
             isCashWithdrawal = cashWithdrawal,
             isCashDeposit = cashDeposit,
             isInvestmentLike = investmentLike,
@@ -189,11 +195,21 @@ object TransactionSignalExtractor {
     }
 
     private fun cleanupMerchant(value: String): String {
-        return value
+        return normalizeBrokenWords(value)
             .replace(cardNoiseRegex, " ")
             .replace(paypalLegalSuffixRegex, " ")
             .replace(Regex("[.,;:_]+"), " ")
             .let(::normalizeSpaces)
+    }
+
+    private fun normalizeBrokenWords(value: String): String {
+        return value
+            .replace(Regex("(?i)se\\s+rvices"), "services")
+            .replace(Regex("(?i)servi\\s+ces"), "services")
+            .replace(Regex("(?i)vertr\\s+ieb"), "vertrieb")
+            .replace(Regex("(?i)koc\\s+he"), "koche")
+            .replace(Regex("(?i)b\\s+ei"), "bei")
+            .replace(Regex("(?i)i\\s+hr"), "ihr")
     }
 
     private fun normalizeSpaces(value: String): String {
@@ -215,6 +231,8 @@ object TransactionSignalExtractor {
     private fun isRentLike(lower: String): Boolean {
         return listOf(
             "miete",
+            "kaution tiefgarage",
+            "tiefgarage miete",
             "hausgeld",
             "wohngeld",
             "vorschuss hausgeld",
@@ -226,8 +244,22 @@ object TransactionSignalExtractor {
             "energie",
             "e.on",
             "wasserverband",
-            "gehag"
+            "gehag",
+            "tilgung",
+            "zinsen"
         ).any { lower.contains(it) }
+    }
+
+    private fun isRefundLike(lower: String): Boolean {
+        return lower.contains("gutschrift") ||
+            lower.contains("gutschriftsbeleg") ||
+            lower.contains("erstattung") ||
+            lower.contains("rueckerstattung") ||
+            lower.contains("rückerstattung") ||
+            lower.contains("abbuchung vom paypal-konto") ||
+            lower.contains("familienkasse") ||
+            lower.contains("ueberschuss") ||
+            lower.contains("überschuss")
     }
 
     private fun isCashWithdrawal(lower: String): Boolean {
