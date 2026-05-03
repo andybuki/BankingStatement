@@ -7,7 +7,7 @@ import com.banking.statement.parser.ParsedTransaction
  */
 enum class CategorizationSource {
     USER_OVERRIDE,
-    AMOUNT_RULE,
+    SIGNAL_RULE,
     MERCHANT,
     KEYWORD,
     UNKNOWN
@@ -28,9 +28,9 @@ data class CategorizationResult(
  *
  * Priority order:
  * 1) User overrides (manual corrections)
- * 2) Amount-based rules for positive amounts (salary/refund)
- * 3) Merchant database for card-like payments or explicit counterparties
- * 4) Keyword matching from TransactionCategory
+ * 2) Strong transaction signals (salary, transfers, cash withdrawal)
+ * 3) Merchant database / keywords against extracted effective merchant
+ * 4) Keyword matching against normalized transaction text
  * 5) OTHER fallback
  */
 class TransactionCategorizer(
@@ -39,20 +39,8 @@ class TransactionCategorizer(
 ) {
 
     companion object {
-        /** Threshold for categorizing income as SALARY vs REFUND */
+        /** Threshold for categorizing income as SALARY vs REFUND fallback */
         const val SALARY_THRESHOLD = 300.0
-
-        private val CARD_LIKE_MARKERS = listOf(
-            "visa",
-            "mastercard",
-            "maestro",
-            "girocard",
-            "kartenzahlung",
-            "kaufumsatz",
-            "debitk",
-            "credit card",
-            "debit card"
-        )
     }
 
     /**
@@ -66,7 +54,7 @@ class TransactionCategorizer(
      * Categorize a single transaction with confidence and source metadata.
      */
     fun categorizeWithDetails(transaction: ParsedTransaction): CategorizationResult {
-        // 1) Check user overrides first (highest priority)
+        // 1) User overrides first (highest priority)
         categoryOverrideManager?.let { manager ->
             val override = manager.findOverride(
                 description = transaction.description,
@@ -81,60 +69,80 @@ class TransactionCategorizer(
             }
         }
 
-        // 2) For positive amounts (income), apply amount-based rules before
-        // merchant/keyword matching. This prevents words like "miete" in an
-        // incoming transfer from overriding refund/salary logic.
-        if (transaction.amount > 0) {
-            return if (transaction.amount > SALARY_THRESHOLD) {
-                CategorizationResult(
-                    category = TransactionCategory.SALARY,
-                    confidence = 0.90,
-                    source = CategorizationSource.AMOUNT_RULE,
-                    matchedValue = "> $SALARY_THRESHOLD"
-                )
-            } else {
-                CategorizationResult(
-                    category = TransactionCategory.REFUND,
-                    confidence = 0.80,
-                    source = CategorizationSource.AMOUNT_RULE,
-                    matchedValue = "<= $SALARY_THRESHOLD"
-                )
-            }
-        }
+        val signals = TransactionSignalExtractor.extract(transaction)
 
-        // 3) For expenses, prefer merchant database over generic keywords —
-        // but only when the transaction looks like a card payment or the bank
-        // parsed an explicit counterparty. Long SEPA/Lastschrift descriptions
-        // often contain unrelated person names such as "Müller"; matching the
-        // whole raw text against merchants would create false positives.
-        if (transaction.amount < 0 && shouldUseMerchantDatabase(transaction)) {
+        // 2) Strong signal rules. These are based on transaction type, not on
+        // generic amount-only assumptions.
+        strongSignalRule(transaction, signals)?.let { return it }
+
+        // 3) Merchant/keyword lookup against the extracted effective merchant.
+        // This is the critical improvement for PayPal and VISA rows: classify
+        // "Wolt", "Booking.com", "Spotify" or "LIDL" instead of the whole
+        // noisy bank statement line.
+        val merchantText = signals.effectiveMerchant
+        if (!merchantText.isNullOrBlank()) {
             merchantDatabase?.let { db ->
                 val merchantCategory = db.findCategory(
-                    description = transaction.description,
-                    counterparty = transaction.counterpartyName
+                    description = merchantText,
+                    counterparty = null
                 )
                 if (merchantCategory != null) {
                     return CategorizationResult(
                         category = merchantCategory,
                         confidence = 0.90,
-                        source = CategorizationSource.MERCHANT
+                        source = CategorizationSource.MERCHANT,
+                        matchedValue = merchantText
                     )
                 }
             }
+
+            val merchantKeywordCategory = TransactionCategory.categorize(
+                description = merchantText,
+                counterparty = null
+            )
+            if (merchantKeywordCategory != TransactionCategory.OTHER) {
+                return CategorizationResult(
+                    category = merchantKeywordCategory,
+                    confidence = 0.82,
+                    source = CategorizationSource.KEYWORD,
+                    matchedValue = merchantText
+                )
+            }
         }
 
-        // 4) Keyword fallback for categories not covered by merchant data.
+        // 4) Keyword fallback for categories not covered by extracted merchant.
         val keywordCategory = TransactionCategory.categorize(
-            description = transaction.description,
-            counterparty = transaction.counterpartyName
+            description = signals.normalizedSearchText,
+            counterparty = null
         )
 
         if (keywordCategory != TransactionCategory.OTHER) {
             return CategorizationResult(
                 category = keywordCategory,
                 confidence = 0.75,
-                source = CategorizationSource.KEYWORD
+                source = CategorizationSource.KEYWORD,
+                matchedValue = signals.normalizedSearchText
             )
+        }
+
+        // 5) Final amount fallback for incoming money only. This is deliberately
+        // last so salary/rent/keyword signals can win over a naive threshold.
+        if (transaction.amount > 0) {
+            return if (transaction.amount > SALARY_THRESHOLD) {
+                CategorizationResult(
+                    category = TransactionCategory.SALARY,
+                    confidence = 0.55,
+                    source = CategorizationSource.SIGNAL_RULE,
+                    matchedValue = "> $SALARY_THRESHOLD fallback"
+                )
+            } else {
+                CategorizationResult(
+                    category = TransactionCategory.REFUND,
+                    confidence = 0.65,
+                    source = CategorizationSource.SIGNAL_RULE,
+                    matchedValue = "positive amount fallback"
+                )
+            }
         }
 
         return CategorizationResult(
@@ -144,17 +152,56 @@ class TransactionCategorizer(
         )
     }
 
-    /**
-     * Merchant database is strongest for card payments and explicit bank-
-     * parsed counterparties. For generic SEPA/Lastschrift text with no
-     * counterparty, prefer keywords/amount rules to avoid matching incidental
-     * names inside long remittance/legal descriptions.
-     */
-    private fun shouldUseMerchantDatabase(transaction: ParsedTransaction): Boolean {
-        if (!transaction.counterpartyName.isNullOrBlank()) return true
+    private fun strongSignalRule(
+        transaction: ParsedTransaction,
+        signals: TransactionSignals
+    ): CategorizationResult? {
+        if (signals.isSalaryLike) {
+            return CategorizationResult(
+                category = TransactionCategory.SALARY,
+                confidence = 0.95,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = signals.normalizedSearchText
+            )
+        }
 
-        val text = transaction.description.lowercase()
-        return CARD_LIKE_MARKERS.any { marker -> text.contains(marker) }
+        if (signals.isCashWithdrawal) {
+            return CategorizationResult(
+                category = TransactionCategory.TRANSFER,
+                confidence = 0.85,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = "cash withdrawal"
+            )
+        }
+
+        if (transaction.amount < 0 && signals.isTransferLike) {
+            return CategorizationResult(
+                category = TransactionCategory.TRANSFER,
+                confidence = 0.85,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = signals.normalizedSearchText
+            )
+        }
+
+        if (transaction.amount < 0 && signals.isRentLike) {
+            return CategorizationResult(
+                category = TransactionCategory.RENT,
+                confidence = 0.88,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = signals.normalizedSearchText
+            )
+        }
+
+        if (transaction.amount > 0 && signals.isRentLike) {
+            return CategorizationResult(
+                category = TransactionCategory.REFUND,
+                confidence = 0.80,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = signals.normalizedSearchText
+            )
+        }
+
+        return null
     }
 
     /**
