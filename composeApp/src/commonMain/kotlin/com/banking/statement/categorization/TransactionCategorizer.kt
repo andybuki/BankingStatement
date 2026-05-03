@@ -30,8 +30,9 @@ data class CategorizationResult(
  * 1) User overrides (manual corrections)
  * 2) Strong transaction signals (salary, transfers, cash withdrawal)
  * 3) Merchant database / keywords against extracted effective merchant
- * 4) Keyword matching against normalized transaction text
- * 5) OTHER fallback
+ * 4) Bank-provided category hint, if available
+ * 5) Keyword matching against normalized transaction text
+ * 6) OTHER fallback
  */
 class TransactionCategorizer(
     private val merchantDatabase: MerchantDatabase? = null,
@@ -76,9 +77,9 @@ class TransactionCategorizer(
         strongSignalRule(transaction, signals)?.let { return it }
 
         // 3) Merchant/keyword lookup against the extracted effective merchant.
-        // This is the critical improvement for PayPal and VISA rows: classify
-        // "Wolt", "Booking.com", "Spotify" or "LIDL" instead of the whole
-        // noisy bank statement line.
+        // This is the critical improvement for PayPal, VISA, girocard and
+        // bank-app rows: classify "Wolt", "Booking.com", "Spotify", "LIDL" or
+        // "NETTO" instead of the whole noisy bank statement line.
         val merchantText = signals.effectiveMerchant
         if (!merchantText.isNullOrBlank()) {
             merchantDatabase?.let { db ->
@@ -110,7 +111,19 @@ class TransactionCategorizer(
             }
         }
 
-        // 4) Keyword fallback for categories not covered by extracted merchant.
+        // 4) Some banks already provide coarse category hints, e.g. N26
+        // "Mastercard • Bars & Restaurants". Use that after merchant-specific
+        // lookup so a known merchant can still be more precise.
+        signals.categoryHint?.let { hint ->
+            return CategorizationResult(
+                category = hint,
+                confidence = 0.78,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = signals.normalizedSearchText
+            )
+        }
+
+        // 5) Keyword fallback for categories not covered by extracted merchant.
         val keywordCategory = TransactionCategory.categorize(
             description = signals.normalizedSearchText,
             counterparty = null
@@ -125,7 +138,7 @@ class TransactionCategorizer(
             )
         }
 
-        // 5) Final amount fallback for incoming money only. This is deliberately
+        // 6) Final amount fallback for incoming money only. This is deliberately
         // last so salary/rent/keyword signals can win over a naive threshold.
         if (transaction.amount > 0) {
             return if (transaction.amount > SALARY_THRESHOLD) {
@@ -165,12 +178,39 @@ class TransactionCategorizer(
             )
         }
 
+        if (signals.isInvestmentLike) {
+            return CategorizationResult(
+                category = TransactionCategory.INVESTMENT,
+                confidence = 0.90,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = signals.normalizedSearchText
+            )
+        }
+
         if (signals.isCashWithdrawal) {
             return CategorizationResult(
                 category = TransactionCategory.TRANSFER,
                 confidence = 0.85,
                 source = CategorizationSource.SIGNAL_RULE,
                 matchedValue = "cash withdrawal"
+            )
+        }
+
+        if (signals.isCashDeposit) {
+            return CategorizationResult(
+                category = TransactionCategory.TRANSFER,
+                confidence = 0.85,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = "cash deposit"
+            )
+        }
+
+        if (signals.isBankFeeLike) {
+            return CategorizationResult(
+                category = TransactionCategory.OTHER,
+                confidence = 0.70,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = signals.normalizedSearchText
             )
         }
 
