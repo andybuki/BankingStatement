@@ -84,13 +84,27 @@ object TransactionSignalExtractor {
     )
 
     fun extract(transaction: ParsedTransaction): TransactionSignals {
-        val rawText = listOfNotNull(
-            transaction.description,
-            transaction.counterpartyName,
-            transaction.remittanceInfo,
-            transaction.rawText
+        return extract(
+            description = transaction.description,
+            counterpartyName = transaction.counterpartyName,
+            remittanceInfo = transaction.remittanceInfo,
+            rawText = transaction.rawText
+        )
+    }
+
+    fun extract(
+        description: String,
+        counterpartyName: String? = null,
+        remittanceInfo: String? = null,
+        rawText: String? = null
+    ): TransactionSignals {
+        val rawTextCombined = listOfNotNull(
+            description,
+            counterpartyName,
+            remittanceInfo,
+            rawText
         ).joinToString(" ")
-        val normalizedRaw = normalizeBrokenWords(normalizeSpaces(rawText))
+        val normalizedRaw = normalizeBrokenWords(normalizeSpaces(rawTextCombined))
         val lower = normalizedRaw.lowercase()
 
         val salaryLike = isSalaryLike(lower)
@@ -125,7 +139,7 @@ object TransactionSignalExtractor {
             TransactionSignalType.PAYPAL, TransactionSignalType.REFUND -> extractPaypalMerchant(normalizedRaw)
             TransactionSignalType.VISA_CARD -> extractVisaMerchant(normalizedRaw) ?: extractCardMerchant(normalizedRaw)
             TransactionSignalType.CARD_PAYMENT -> extractMastercardBulletMerchant(normalizedRaw) ?: extractCardMerchant(normalizedRaw)
-            else -> transaction.counterpartyName?.takeIf { it.isNotBlank() }
+            else -> counterpartyName?.takeIf { it.isNotBlank() }
         }?.let { cleanupMerchant(it) }
             ?.takeIf { it.length >= 2 }
 
@@ -207,7 +221,10 @@ object TransactionSignalExtractor {
             .replace(Regex("(?i)se\\s+rvices"), "services")
             .replace(Regex("(?i)servi\\s+ces"), "services")
             .replace(Regex("(?i)vertr\\s+ieb"), "vertrieb")
+            .replace(Regex("(?i)vertri\\s+eb"), "vertrieb")
             .replace(Regex("(?i)koc\\s+he"), "koche")
+            .replace(Regex("(?i)otr\\s+ium"), "otrium")
+            .replace(Regex("(?i)al\\s+ipay"), "alipay")
             .replace(Regex("(?i)b\\s+ei"), "bei")
             .replace(Regex("(?i)i\\s+hr"), "ihr")
     }
