@@ -2,19 +2,24 @@ package com.banking.statement.categorization
 
 import com.banking.statement.parser.ParsedTransaction
 import kotlinx.datetime.LocalDate
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 /**
  * Tests for TransactionCategorizer service.
  * Validates the priority-based categorization logic:
  * 1) User overrides
- * 2) Keyword matching
- * 3) Amount-based rules for income
- * 4) Merchant database
+ * 2) Amount-based rules for income
+ * 3) Merchant database for expenses
+ * 4) Keyword matching fallback
  */
 class TransactionCategorizerTest {
+
+    @AfterTest
+    fun tearDown() {
+        TransactionCategory.setKeywordDatabase(null)
+    }
 
     private fun createTransaction(
         description: String,
@@ -40,6 +45,18 @@ class TransactionCategorizerTest {
     }
 
     @Test
+    fun testCategorizeWithDetails_WithNoKeywords_ReturnsUnknownSource() {
+        val categorizer = TransactionCategorizer()
+        val transaction = createTransaction("Random Payment XYZ", -50.0)
+
+        val result = categorizer.categorizeWithDetails(transaction)
+
+        assertEquals(TransactionCategory.OTHER, result.category)
+        assertEquals(CategorizationSource.UNKNOWN, result.source)
+        assertEquals(0.0, result.confidence)
+    }
+
+    @Test
     fun testCategorize_PositiveAmount_LargeIncome_ReturnsSalary() {
         val categorizer = TransactionCategorizer()
         val transaction = createTransaction("Monthly Payment", 3500.0)
@@ -50,6 +67,18 @@ class TransactionCategorizerTest {
     }
 
     @Test
+    fun testCategorizeWithDetails_PositiveAmount_LargeIncome_ReturnsSalaryAmountRule() {
+        val categorizer = TransactionCategorizer()
+        val transaction = createTransaction("Monthly Payment", 3500.0)
+
+        val result = categorizer.categorizeWithDetails(transaction)
+
+        assertEquals(TransactionCategory.SALARY, result.category)
+        assertEquals(CategorizationSource.AMOUNT_RULE, result.source)
+        assertEquals(0.90, result.confidence)
+    }
+
+    @Test
     fun testCategorize_PositiveAmount_SmallIncome_ReturnsRefund() {
         val categorizer = TransactionCategorizer()
         val transaction = createTransaction("Refund from Amazon", 25.0)
@@ -57,6 +86,18 @@ class TransactionCategorizerTest {
         val result = categorizer.categorize(transaction)
 
         assertEquals(TransactionCategory.REFUND, result)
+    }
+
+    @Test
+    fun testCategorizeWithDetails_PositiveAmount_SmallIncome_ReturnsRefundAmountRule() {
+        val categorizer = TransactionCategorizer()
+        val transaction = createTransaction("Refund from Amazon", 25.0)
+
+        val result = categorizer.categorizeWithDetails(transaction)
+
+        assertEquals(TransactionCategory.REFUND, result.category)
+        assertEquals(CategorizationSource.AMOUNT_RULE, result.source)
+        assertEquals(0.80, result.confidence)
     }
 
     @Test
@@ -80,6 +121,39 @@ class TransactionCategorizerTest {
         val result = categorizer.categorize(transaction)
 
         assertEquals(TransactionCategory.OTHER, result)
+    }
+
+    @Test
+    fun testKeywordFallback_ExpenseWithoutMerchant_UsesKeywordSource() {
+        val keywordDatabase = KeywordDatabaseOptimized().apply {
+            loadFromCsv("category,keyword\nINSURANCE,versicherung", "de")
+        }
+        TransactionCategory.setKeywordDatabase(keywordDatabase)
+
+        val categorizer = TransactionCategorizer()
+        val transaction = createTransaction("Allianz Versicherung Beitrag", -42.0)
+
+        val result = categorizer.categorizeWithDetails(transaction)
+
+        assertEquals(TransactionCategory.INSURANCE, result.category)
+        assertEquals(CategorizationSource.KEYWORD, result.source)
+        assertEquals(0.75, result.confidence)
+    }
+
+    @Test
+    fun testPositiveAmountRule_PrecedesKeywordFallback() {
+        val keywordDatabase = KeywordDatabaseOptimized().apply {
+            loadFromCsv("category,keyword\nRENT,miete", "de")
+        }
+        TransactionCategory.setKeywordDatabase(keywordDatabase)
+
+        val categorizer = TransactionCategorizer()
+        val transaction = createTransaction("Gutschrift Miete Berliner Allee", 100.0)
+
+        val result = categorizer.categorizeWithDetails(transaction)
+
+        assertEquals(TransactionCategory.REFUND, result.category)
+        assertEquals(CategorizationSource.AMOUNT_RULE, result.source)
     }
 
     // ===== CategoryStats tests =====
@@ -168,6 +242,23 @@ class TransactionCategorizerTest {
         assertEquals(2, results.size)
         assertEquals(TransactionCategory.SALARY, results[0].second)
         assertEquals(TransactionCategory.REFUND, results[1].second)
+    }
+
+    @Test
+    fun testCategorizeAllWithDetails_ReturnsDetailedResults() {
+        val categorizer = TransactionCategorizer()
+        val transactions = listOf(
+            createTransaction("Big Income", 1000.0),
+            createTransaction("Unknown Expense", -50.0)
+        )
+
+        val results = categorizer.categorizeAllWithDetails(transactions)
+
+        assertEquals(2, results.size)
+        assertEquals(TransactionCategory.SALARY, results[0].second.category)
+        assertEquals(CategorizationSource.AMOUNT_RULE, results[0].second.source)
+        assertEquals(TransactionCategory.OTHER, results[1].second.category)
+        assertEquals(CategorizationSource.UNKNOWN, results[1].second.source)
     }
 
     @Test
