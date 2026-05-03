@@ -49,7 +49,7 @@ object TransactionSignalExtractor {
         Regex("/\\.?\\s*([^/]+?),\\s*ihr\\s+einkauf", RegexOption.IGNORE_CASE)
     )
     private val paypalLegalSuffixRegex = Regex(
-        pattern = "\\b(gmbh|ag|se|s\\.?a\\.?r\\.?l\\.?|s\\.?c\\.?a\\.?|unipessoal\\s+lda|inc\\.?|ltd\\.?|bv)\\b",
+        pattern = "\\b(gmbh|ag|ab|se|s\\.?a\\.?r\\.?l\\.?|s\\.?c\\.?a\\.?|unipessoal\\s+lda|inc\\.?|ltd\\.?|bv)\\b",
         option = RegexOption.IGNORE_CASE
     )
     private val cardNoiseRegex = Regex(
@@ -121,7 +121,7 @@ object TransactionSignalExtractor {
         return value
             .replace(cardNoiseRegex, " ")
             .replace(paypalLegalSuffixRegex, " ")
-            .replace(Regex("[,;:_]+"), " ")
+            .replace(Regex("[.,;:_]+"), " ")
             .let(::normalizeSpaces)
     }
 
