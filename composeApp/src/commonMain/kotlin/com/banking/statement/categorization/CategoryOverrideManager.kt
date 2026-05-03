@@ -36,16 +36,30 @@ class CategoryOverrideManager(
     }
 
     /**
-     * Extract primary pattern - prefer counterparty for stability.
-     * For PayPal transactions, uses extracted merchant name instead of generic PayPal name.
+     * Extract primary pattern - prefer extracted effective merchant, then counterparty.
+     *
+     * This is important for PayPal and card statements: one visible counterparty may be
+     * "PayPal Europe" while the real merchant is "Apple Services", "DB Vertrieb" or
+     * "Takeaway". A manual correction should apply to that real merchant, not all PayPal.
      */
     private fun extractPrimaryPattern(description: String, counterparty: String?): String? {
+        val signals = TransactionSignalExtractor.extract(
+            description = description,
+            counterpartyName = counterparty
+        )
+
+        signals.effectiveMerchant?.let { merchant ->
+            val normalized = normalizePattern(merchant)
+            if (normalized.isNotBlank()) return normalized
+        }
+
         if (counterparty.isNullOrBlank() && !description.lowercase().contains("paypal")) return null
 
         val counterpartyLower = counterparty?.lowercase() ?: ""
         val descriptionLower = description.lowercase()
 
-        // For PayPal, use the smart display name (e.g., "PayPal · Wolt")
+        // For PayPal, use the smart display name (e.g., "PayPal · Wolt") as fallback
+        // if the signal extractor could not identify an effective merchant.
         val effectiveCounterparty = if (counterpartyLower.contains("paypal") || descriptionLower.contains("paypal")) {
             TransactionDisplay.extractDisplayName(counterparty, description)
         } else {
@@ -74,8 +88,12 @@ class CategoryOverrideManager(
      * Returns null if no meaningful merchant token can be extracted.
      */
     private fun extractTokenPattern(description: String, counterparty: String?): String? {
-        // Prefer counterparty for token extraction (more stable than description)
+        val signals = TransactionSignalExtractor.extract(
+            description = description,
+            counterpartyName = counterparty
+        )
         val source = when {
+            !signals.effectiveMerchant.isNullOrBlank() -> signals.effectiveMerchant
             !counterparty.isNullOrBlank() -> counterparty
             description.isNotBlank() -> description
             else -> return null
@@ -94,7 +112,7 @@ class CategoryOverrideManager(
      * in future imports — see [extractTokenPattern].
      */
     fun saveOverride(description: String, counterparty: String?, category: TransactionCategory) {
-        // Try to save counterparty-only pattern first (more stable)
+        // Try to save extracted merchant / counterparty pattern first (more stable)
         val primaryPattern = extractPrimaryPattern(description, counterparty)
         if (!primaryPattern.isNullOrBlank()) {
             database.bankingDatabaseQueries.insertCategoryOverride(primaryPattern, category.name)
@@ -127,7 +145,7 @@ class CategoryOverrideManager(
     fun saveCustomCategoryOverride(description: String, counterparty: String?, customCategoryId: Long) {
         val categoryValue = "$CUSTOM_PREFIX$customCategoryId"
 
-        // Try to save counterparty-only pattern first (more stable)
+        // Try to save extracted merchant / counterparty pattern first (more stable)
         val primaryPattern = extractPrimaryPattern(description, counterparty)
         if (!primaryPattern.isNullOrBlank()) {
             database.bankingDatabaseQueries.insertCategoryOverride(primaryPattern, categoryValue)
@@ -192,7 +210,7 @@ class CategoryOverrideManager(
 
     /**
      * Find a user override for a transaction.
-     * Checks counterparty-only pattern first, then falls back to full pattern.
+     * Checks extracted merchant/counterparty pattern first, then falls back to full pattern.
      */
     fun findOverride(description: String, counterparty: String?): TransactionCategory? {
         val result = findOverrideWithCustom(description, counterparty)
@@ -208,7 +226,7 @@ class CategoryOverrideManager(
      * Returns CategoryOverrideResult which can be Predefined or Custom.
      */
     fun findOverrideWithCustom(description: String, counterparty: String?): CategoryOverrideResult? {
-        // First try counterparty-only pattern (most reliable)
+        // First try extracted merchant / counterparty pattern (most reliable)
         val primaryPattern = extractPrimaryPattern(description, counterparty)
         if (!primaryPattern.isNullOrBlank()) {
             // Check custom cache first
