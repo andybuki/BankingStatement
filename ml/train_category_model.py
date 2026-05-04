@@ -77,11 +77,16 @@ CATEGORY_CANONICAL = {
 
 DOMAIN_HINTS: list[tuple[str, list[str]]] = [
     ("hint_transport", ["flix", "db vertrieb", "deutsche bahn", "bvg", "bahn", "logpay"]),
-    ("hint_supermarket", ["flaschenpost", "rewe", "lidl", "aldi", "edeka", "kaufland", "netto", "penny", "alnatura", "bio company"]),
-    ("hint_restaurant", ["backerei", "baeckerei", "coffee", "gastro", "food", "drei koche", "sironi", "burger", "pizza", "sushi", "takeaway"]),
-    ("hint_subscription", ["apple services", "youtube premium", "google one", "spotify", "netflix"]),
+    ("hint_supermarket", ["flaschenpost", "rewe", "lidl", "aldi", "edeka", "kaufland", "netto", "penny", "alnatura", "bio company", "reformhaus", "go asia"]),
+    ("hint_restaurant", ["backerei", "baeckerei", "bakery", "coffee", "cafe", "bistro", "gastro", "food", "drei koche", "sironi", "burger", "pizza", "sushi", "takeaway", "zeit fuer brot", "kame", "dashi", "ice cr"]),
+    ("hint_shopping", ["dm drogerie", "drogerie", "rossmann", "muji", "bauhaus", "ikea", "ebay", "amazon"]),
+    ("hint_subscription", ["apple services", "youtube premium", "google one", "spotify", "netflix", "lagoa yoga"]),
+    ("hint_entertainment", ["cinemaxx", "movietainment", "ticket messe", "fienta", "myjump", "therme"]),
     ("hint_travel", ["hotel", "booking", "airbnb", "flight", "flug", "lufthansa", "easyjet", "ryanair"]),
-    ("hint_transfer", ["atm", "geldautomat", "abhebung", "auszahlung", "money transfer"]),
+    ("hint_transfer", ["atm", "geldautomat", "abhebung", "auszahlung", "money transfer", "klarna"]),
+    ("hint_rent", ["miete", "hausverwaltung", "strom", "telekom", "enstroga", "gehag", "rundfunk"]),
+    ("hint_insurance", ["versicherung", "krankenversicherung", "generali", "astra"]),
+    ("hint_salary", ["gehalt", "rente", "bundeskasse", "bezuege"]),
 ]
 
 PAYPAL_PATTERNS = [
@@ -99,6 +104,9 @@ def normalize_broken_words(text: str) -> str:
         (r"(?i)servi\s+ces", "services"),
         (r"(?i)vertr\s+ieb", "vertrieb"),
         (r"(?i)vertri\s+eb", "vertrieb"),
+        (r"(?i)movietainm\s+ent", "movietainment"),
+        (r"(?i)icketing", "ticketing"),
+        (r"(?i)krankenversich\s+erung", "krankenversicherung"),
         (r"(?i)koc\s+he", "koche"),
         (r"(?i)otr\s+ium", "otrium"),
         (r"(?i)al\s+ipay", "alipay"),
@@ -152,6 +160,48 @@ def domain_hints(text: str) -> list[str]:
     return hints
 
 
+def amount_features(amount: float, text: str) -> list[str]:
+    abs_amount = abs(float(amount))
+    lowered = text.lower()
+    features: list[str] = []
+
+    features.append("amount_income" if amount > 0 else "amount_expense" if amount < 0 else "amount_zero")
+
+    if abs_amount < 5:
+        features.append("amount_micro")
+    elif abs_amount < 15:
+        features.append("amount_small")
+    elif abs_amount < 35:
+        features.append("amount_meal_range")
+    elif abs_amount < 100:
+        features.append("amount_medium")
+    elif abs_amount < 500:
+        features.append("amount_large")
+    else:
+        features.append("amount_very_large")
+
+    # Conditional amount hints. These are deliberately weak text tokens, not hard rules.
+    if any(word in lowered for word in ["restaurant", "gastro", "food", "coffee", "cafe", "bistro", "backerei", "baeckerei", "bakery"]):
+        if 5 <= abs_amount <= 80:
+            features.append("amount_restaurant_plausible")
+        elif abs_amount > 100:
+            features.append("amount_restaurant_high")
+
+    if any(word in lowered for word in ["hotel", "booking", "airbnb", "flight", "flug", "lufthansa", "easyjet", "ryanair"]):
+        if abs_amount >= 80:
+            features.append("amount_travel_plausible")
+
+    if any(word in lowered for word in ["aldi", "lidl", "rewe", "edeka", "kaufland", "netto", "penny", "flaschenpost", "reformhaus", "go asia"]):
+        if 1 <= abs_amount <= 250:
+            features.append("amount_grocery_plausible")
+
+    if any(word in lowered for word in ["strom", "telekom", "miete", "gehag", "enstroga", "rundfunk", "hausverwaltung"]):
+        if abs_amount >= 20:
+            features.append("amount_rent_utilities_plausible")
+
+    return features
+
+
 def canonical_category(value: object) -> str:
     raw = str(value).strip()
     key = raw.lower().strip()
@@ -168,11 +218,11 @@ def build_features(df: pd.DataFrame) -> pd.Series:
         combined = f"{desc} {counterparty}"
         merchant = extract_effective_merchant(combined)
         clean_desc = cleanup_text(combined, keep_noise=False)
-        hint_text = " ".join(domain_hints(" ".join([merchant or "", clean_desc])))
-        amount_sign = "expense" if amount < 0 else "income" if amount > 0 else "zero"
-        amount_bucket = "large" if abs(amount) >= 100 else "medium" if abs(amount) >= 20 else "small"
+        hint_source = " ".join([merchant or "", clean_desc])
+        hint_text = " ".join(domain_hints(hint_source))
+        amount_text = " ".join(amount_features(float(amount), hint_source))
         # Repeat extracted merchant because it is usually the strongest feature.
-        rows.append(" ".join(part for part in [merchant, merchant, hint_text, clean_desc, amount_sign, amount_bucket] if part))
+        rows.append(" ".join(part for part in [merchant, merchant, hint_text, amount_text, clean_desc] if part))
     return pd.Series(rows)
 
 
