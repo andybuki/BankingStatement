@@ -36,7 +36,8 @@ data class TransactionSignals(
     val isCashDeposit: Boolean,
     val isInvestmentLike: Boolean,
     val isTransferLike: Boolean,
-    val isBankFeeLike: Boolean
+    val isBankFeeLike: Boolean,
+    val isTravelLike: Boolean
 )
 
 /**
@@ -115,6 +116,7 @@ object TransactionSignalExtractor {
         val investmentLike = isInvestmentLike(lower)
         val transferLike = isTransferLike(lower)
         val bankFeeLike = isBankFeeLike(lower)
+        val travelLike = isTravelLike(lower)
         val categoryHint = extractCategoryHint(normalizedRaw)
 
         val type = when {
@@ -157,7 +159,8 @@ object TransactionSignalExtractor {
             isCashDeposit = cashDeposit,
             isInvestmentLike = investmentLike,
             isTransferLike = transferLike,
-            isBankFeeLike = bankFeeLike
+            isBankFeeLike = bankFeeLike,
+            isTravelLike = travelLike
         )
     }
 
@@ -283,7 +286,10 @@ object TransactionSignalExtractor {
         return lower.contains("bargeldauszahlung") ||
             lower.contains("barg.ausz") ||
             lower.contains("bargeldausz") ||
-            lower.contains("cash withdrawal")
+            lower.contains("cash withdrawal") ||
+            lower.contains("atm") ||
+            lower.contains("geldautomat") ||
+            lower.contains("automated teller")
     }
 
     private fun isCashDeposit(lower: String): Boolean {
@@ -324,6 +330,23 @@ object TransactionSignalExtractor {
             lower.contains("gebuehr") ||
             lower.contains("entgelt") ||
             lower.contains("depotentgelt") ||
-            lower.contains("grundpreis")
+            lower.contains("grundpreis") ||
+            lower.contains("auslandseinsatzentgelt")
+    }
+
+    private fun isTravelLike(lower: String): Boolean {
+        return lower.contains("hotel") ||
+            lower.contains("airbnb") ||
+            lower.contains("booking.com") ||
+            lower.contains("lufthansa") ||
+            lower.contains("easyjet") ||
+            lower.contains("ryanair") ||
+            lower.contains("eurowings") ||
+            lower.contains("condor") ||
+            lower.contains("airline") ||
+            lower.contains("airways") ||
+            lower.contains("airport") ||
+            lower.contains("flug") ||
+            lower.contains("flight")
     }
 }
