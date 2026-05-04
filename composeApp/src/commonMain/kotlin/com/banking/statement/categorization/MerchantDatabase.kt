@@ -164,7 +164,9 @@ class MerchantDatabase(
         if (words.size == 1) {
             // Single word: direct HashMap lookup
             // Keep the first category code if duplicate (longer name would have been multi-word)
-            singleWords.putIfAbsent(nameNormalized, categoryCode)
+            if (!singleWords.containsKey(nameNormalized)) {
+                singleWords[nameNormalized] = categoryCode
+            }
             // Bucket by first character for fuzzy fallback (only longer names
             // are worth fuzzy matching — short brands have too many neighbors)
             if (nameNormalized.length >= 4) {

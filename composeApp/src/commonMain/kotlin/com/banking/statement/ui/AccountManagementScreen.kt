@@ -743,7 +743,9 @@ private fun formatImportDate(epochSeconds: Long): String {
     return try {
         val instant = Instant.fromEpochSeconds(epochSeconds)
         val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-        "%02d.%02d.%d".format(local.dayOfMonth, local.monthNumber, local.year)
+        val day = local.dayOfMonth.toString().padStart(2, '0')
+        val month = local.monthNumber.toString().padStart(2, '0')
+        "$day.$month.${local.year}"
     } catch (_: Exception) {
         ""
     }
