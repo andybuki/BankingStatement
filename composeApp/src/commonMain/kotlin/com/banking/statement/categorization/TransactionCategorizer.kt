@@ -10,6 +10,7 @@ enum class CategorizationSource {
     SIGNAL_RULE,
     MERCHANT,
     KEYWORD,
+    ML,
     UNKNOWN
 }
 
@@ -38,11 +39,14 @@ data class CategorizationResult(
  * 4) Merchant database / keywords against extracted effective merchant
  * 5) Bank-provided category hint, if available
  * 6) Keyword matching against normalized transaction text
- * 7) OTHER fallback
+ * 7) Optional ML fallback if recognition mode allows it
+ * 8) OTHER fallback
  */
 class TransactionCategorizer(
     private val merchantDatabase: MerchantDatabase? = null,
-    private val categoryOverrideManager: CategoryOverrideManager? = null
+    private val categoryOverrideManager: CategoryOverrideManager? = null,
+    private val mlClassifier: TransactionMlClassifier = NoOpTransactionMlClassifier,
+    private val config: CategorizationConfig = CategorizationConfig()
 ) {
 
     companion object {
@@ -50,7 +54,7 @@ class TransactionCategorizer(
         const val SALARY_THRESHOLD = 300.0
 
         /**
-         * Minimum confidence required for automatic categorization.
+         * Minimum confidence required for deterministic automatic categorization.
          * Below this value, categorizeWithDetails() returns OTHER with a
          * suggestedCategory. This trades coverage for fewer wrong categories.
          */
@@ -118,6 +122,15 @@ class TransactionCategorizer(
      * Categorize a single transaction with confidence and source metadata.
      */
     fun categorizeWithDetails(transaction: ParsedTransaction): CategorizationResult {
+        val rulesResult = categorizeWithRules(transaction)
+        if (rulesResult.category != TransactionCategory.OTHER) {
+            return rulesResult
+        }
+
+        return mlFallback(transaction, rulesResult) ?: rulesResult
+    }
+
+    private fun categorizeWithRules(transaction: ParsedTransaction): CategorizationResult {
         // 1) User overrides first (highest priority)
         categoryOverrideManager?.let { manager ->
             val override = manager.findOverride(
@@ -233,6 +246,30 @@ class TransactionCategorizer(
             confidence = 0.0,
             source = CategorizationSource.UNKNOWN
         )
+    }
+
+    private fun mlFallback(
+        transaction: ParsedTransaction,
+        rulesResult: CategorizationResult
+    ): CategorizationResult? {
+        if (!config.mlEnabled) return null
+
+        val prediction = mlClassifier.classify(transaction) ?: return null
+        if (prediction.category == TransactionCategory.OTHER) return null
+
+        return if (prediction.confidence >= config.mlConfidenceThreshold) {
+            CategorizationResult(
+                category = prediction.category,
+                confidence = prediction.confidence,
+                source = CategorizationSource.ML,
+                matchedValue = prediction.modelVersion
+            )
+        } else {
+            rulesResult.copy(
+                suggestedCategory = prediction.category,
+                suggestedConfidence = prediction.confidence
+            )
+        }
     }
 
     private fun finalizeAutoCategory(result: CategorizationResult): CategorizationResult {
