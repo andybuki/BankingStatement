@@ -62,6 +62,10 @@ class TransactionCategorizer(
                 "youtube super", "google youtube", "apple services", "apple service",
                 "google one", "netflix", "spotify", "drillisch", "winsim", "lagoa yoga"
             ),
+            TransactionCategory.TRAVEL to listOf(
+                "hotel", "airbnb", "booking.com", "lufthansa", "easyjet", "ryanair",
+                "eurowings", "condor", "airline", "airways", "airport", "flug", "flight"
+            ),
             TransactionCategory.TRANSPORT to listOf(
                 "db vertrieb", "db vertr ieb", "deutsche bahn", "bahn.de",
                 "bvg", "berliner verkehrsbetriebe", "s-bahn", "s bahn",
@@ -298,6 +302,15 @@ class TransactionCategorizer(
             return CategorizationResult(
                 category = TransactionCategory.INVESTMENT,
                 confidence = 0.90,
+                source = CategorizationSource.SIGNAL_RULE,
+                matchedValue = signals.normalizedSearchText
+            )
+        }
+
+        if (signals.isTravelLike) {
+            return CategorizationResult(
+                category = TransactionCategory.TRAVEL,
+                confidence = 0.88,
                 source = CategorizationSource.SIGNAL_RULE,
                 matchedValue = signals.normalizedSearchText
             )
