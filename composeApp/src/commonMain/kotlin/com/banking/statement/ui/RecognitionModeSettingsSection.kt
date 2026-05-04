@@ -72,7 +72,7 @@ fun RecognitionModeSettingsSection(
             ),
             selected = selectedMode,
             onSelect = { mode ->
-                preferenceState.setMode(mode)
+                preferenceState.updateMode(mode)
                 onRecognitionModeChange(mode)
                 showRecognitionModePicker = false
             },

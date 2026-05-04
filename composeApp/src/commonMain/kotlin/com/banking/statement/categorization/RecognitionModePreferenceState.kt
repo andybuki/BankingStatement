@@ -12,7 +12,7 @@ class RecognitionModePreferenceState(
     var mode: RecognitionMode by mutableStateOf(initialMode)
         private set
 
-    fun setMode(newMode: RecognitionMode) {
+    fun updateMode(newMode: RecognitionMode) {
         mode = newMode
         persistMode(newMode)
     }
