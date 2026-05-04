@@ -22,7 +22,6 @@ import argparse
 import json
 import re
 from pathlib import Path
-from typing import Iterable
 
 import joblib
 import pandas as pd
@@ -37,15 +36,18 @@ BANK_NOISE_WORDS = {
     "lastschrift", "basislastschrift", "einzug", "ueberweisung", "überweisung",
     "sepa", "svwz", "mref", "eref", "kref", "mandat", "referenz", "iban", "bic",
     "konto", "girokonto", "kontoauszug", "buchungstag", "valuta", "wertstellung",
-    "betrag", "saldo", "neuer", "alter", "kunden", "information", "seite",
+    "betrag", "saldo", "neuer", "alter", "kunden", "information", "seite", "nummer",
     "nr", "xxxx", "arn", "visa", "mastercard", "girocard", "debitk", "kaufumsatz",
     "zahlung", "bezahlung", "rechnung", "abbuchung", "gutschrift", "entgelt",
     "gebühr", "gebuehr", "kundennummer", "kartenzahlung", "sagt", "danke",
+    "paypal", "europe", "cie", "pp", "uhr", "kurs", "de", "nrxxxx",
+    "januar", "februar", "maerz", "märz", "april", "mai", "juni", "juli", "august",
+    "september", "oktober", "november", "dezember",
 }
 
 LEGAL_SUFFIXES = {
     "gmbh", "ag", "kg", "ohg", "ug", "se", "inc", "ltd", "llc", "bv", "ab", "as",
-    "sarl", "sca", "co",
+    "sarl", "sca", "co", "et",
 }
 
 CATEGORY_CANONICAL = {
@@ -72,6 +74,15 @@ CATEGORY_CANONICAL = {
     "tax": "TAXES",
     "other": "OTHER",
 }
+
+DOMAIN_HINTS: list[tuple[str, list[str]]] = [
+    ("hint_transport", ["flix", "db vertrieb", "deutsche bahn", "bvg", "bahn", "logpay"]),
+    ("hint_supermarket", ["flaschenpost", "rewe", "lidl", "aldi", "edeka", "kaufland", "netto", "penny", "alnatura", "bio company"]),
+    ("hint_restaurant", ["backerei", "baeckerei", "coffee", "gastro", "food", "drei koche", "sironi", "burger", "pizza", "sushi", "takeaway"]),
+    ("hint_subscription", ["apple services", "youtube premium", "google one", "spotify", "netflix"]),
+    ("hint_travel", ["hotel", "booking", "airbnb", "flight", "flug", "lufthansa", "easyjet", "ryanair"]),
+    ("hint_transfer", ["atm", "geldautomat", "abhebung", "auszahlung", "money transfer"]),
+]
 
 PAYPAL_PATTERNS = [
     re.compile(r"i\s*hr\s+einkauf\s+b\s*ei\s+(.+?)(?:\s+mandat:|\s+referenz:|/abbuchung|\s+awv-meldepflicht|\s+mref\+|\s+eref\+|$)", re.I),
@@ -120,6 +131,8 @@ def cleanup_text(text: object, keep_noise: bool = False) -> str:
         return ""
     text = normalize_broken_words(str(text)).lower()
     text = text.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss")
+    text = re.sub(r"arn\w+", " ", text, flags=re.I)
+    text = re.sub(r"\b\w*gkka\w*\b", " ", text, flags=re.I)
     text = re.sub(r"\b\d{1,2}\.\d{1,2}(?:\.\d{2,4})?\b", " ", text)
     text = re.sub(r"\b\d+[,.]\d+\b", " ", text)
     text = re.sub(r"\b\d{3,}\b", " ", text)
@@ -128,6 +141,15 @@ def cleanup_text(text: object, keep_noise: bool = False) -> str:
     if not keep_noise:
         words = [w for w in words if w not in BANK_NOISE_WORDS and w not in LEGAL_SUFFIXES and len(w) > 1]
     return " ".join(words).strip()
+
+
+def domain_hints(text: str) -> list[str]:
+    lowered = text.lower()
+    hints: list[str] = []
+    for hint, patterns in DOMAIN_HINTS:
+        if any(pattern in lowered for pattern in patterns):
+            hints.append(hint)
+    return hints
 
 
 def canonical_category(value: object) -> str:
@@ -146,9 +168,11 @@ def build_features(df: pd.DataFrame) -> pd.Series:
         combined = f"{desc} {counterparty}"
         merchant = extract_effective_merchant(combined)
         clean_desc = cleanup_text(combined, keep_noise=False)
+        hint_text = " ".join(domain_hints(" ".join([merchant or "", clean_desc])))
         amount_sign = "expense" if amount < 0 else "income" if amount > 0 else "zero"
         amount_bucket = "large" if abs(amount) >= 100 else "medium" if abs(amount) >= 20 else "small"
-        rows.append(" ".join(part for part in [merchant, clean_desc, amount_sign, amount_bucket] if part))
+        # Repeat extracted merchant because it is usually the strongest feature.
+        rows.append(" ".join(part for part in [merchant, merchant, hint_text, clean_desc, amount_sign, amount_bucket] if part))
     return pd.Series(rows)
 
 
