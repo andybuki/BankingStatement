@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import com.banking.statement.LocalStrings
+import com.banking.statement.categorization.RecognitionMode
 import com.banking.statement.ui.components.EyebrowLabel
 import com.banking.statement.ui.components.MLSetGroup
 import com.banking.statement.ui.components.MLSetRow
@@ -63,9 +64,6 @@ data class StatementDisplayItem(
     val sourceType: String
 )
 
-/**
- * Data class for account display in management screen
- */
 data class AccountManagementItem(
     val id: Long,
     val name: String,
@@ -78,9 +76,6 @@ data class AccountManagementItem(
     val statements: List<StatementDisplayItem> = emptyList()
 )
 
-/**
- * Account Management Screen for viewing, editing, and deleting accounts
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountManagementScreen(
@@ -96,6 +91,8 @@ fun AccountManagementScreen(
     onStatementSortOrderChange: (Long, StatementSortOrder) -> Unit = { _, _ -> },
     currentThemeMode: ThemeMode = ThemeMode.SYSTEM,
     onThemeModeChange: (ThemeMode) -> Unit = {},
+    currentRecognitionMode: RecognitionMode = RecognitionMode.SAFE,
+    onRecognitionModeChange: (RecognitionMode) -> Unit = {},
     biometricLockEnabled: Boolean = false,
     biometricAvailable: Boolean = false,
     onBiometricLockChange: (Boolean) -> Unit = {},
@@ -112,9 +109,6 @@ fun AccountManagementScreen(
     var showEditDialog by remember { mutableStateOf<AccountManagementItem?>(null) }
     var showThemePicker by remember { mutableStateOf(false) }
 
-    // Settings tab: navy header is rendered by App.kt; this pane sits on
-    // SurfaceTint like every other tab, with eyebrow-grouped sections that
-    // mirror ui_kits/mobile/ScreensB.MLSettingsScreen.
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -154,7 +148,6 @@ fun AccountManagementScreen(
                 }
             }
         } else {
-            // Accounts section
             item(key = "accounts-eyebrow") {
                 AccountsSectionHeader(
                     accountCount = accounts.size,
@@ -175,7 +168,13 @@ fun AccountManagementScreen(
             }
         }
 
-        // Appearance section — Theme + Reminders as MLSetRows
+        item(key = "recognition") {
+            RecognitionModeSettingsSection(
+                currentRecognitionMode = currentRecognitionMode,
+                onRecognitionModeChange = onRecognitionModeChange
+            )
+        }
+
         item(key = "appearance") {
             MLSetGroup(eyebrow = "Appearance") {
                 MLSetRow(
@@ -230,8 +229,6 @@ fun AccountManagementScreen(
             }
         }
 
-        // Security section — biometric + PDF retention live here together
-        // since both control how sensitive statement data is kept on-device.
         item(key = "security") {
             MLSetGroup(eyebrow = strings.security) {
                 if (biometricAvailable) {
@@ -280,7 +277,6 @@ fun AccountManagementScreen(
             }
         }
 
-        // About section
         item(key = "about") {
             MLSetGroup(eyebrow = strings.contactTitle) {
                 MLSetRow(
@@ -303,7 +299,6 @@ fun AccountManagementScreen(
             }
         }
 
-        // Danger Zone
         if (accounts.isNotEmpty()) {
             item(key = "danger-eyebrow") {
                 EyebrowLabel(
@@ -346,7 +341,6 @@ fun AccountManagementScreen(
             }
         }
 
-        // Version footer
         item(key = "footer") {
             Column(
                 modifier = Modifier
@@ -369,7 +363,6 @@ fun AccountManagementScreen(
         }
     }
 
-    // Delete account confirmation dialog
     showDeleteDialog?.let { account ->
         DeleteAccountDialog(
             accountName = account.name,
@@ -381,7 +374,6 @@ fun AccountManagementScreen(
         )
     }
 
-    // Clear all data confirmation dialog
     if (showClearAllDialog) {
         ClearAllDataDialog(
             onConfirm = {
@@ -392,7 +384,6 @@ fun AccountManagementScreen(
         )
     }
 
-    // Edit account dialog
     showEditDialog?.let { account ->
         EditAccountDialog(
             accountName = account.name,
@@ -404,7 +395,6 @@ fun AccountManagementScreen(
         )
     }
 
-    // Theme picker dialog
     if (showThemePicker) {
         MoneyLupeChoiceDialog(
             eyebrow = "Appearance",
@@ -478,13 +468,10 @@ private fun AccountManagementCard(
                 .fillMaxWidth()
                 .padding(AppSpacing.s4)
         ) {
-            // Top row: Icon, Name, and Action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Brand-style avatar — squircle (10.dp radius) tinted with the
-                // account color, mirroring MLSetRow icons in the kit.
                 Box(
                     modifier = Modifier
                         .size(40.dp)
@@ -502,7 +489,6 @@ private fun AccountManagementCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Account name + IBAN preview as supporting line.
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = account.bankName,
@@ -524,7 +510,6 @@ private fun AccountManagementCard(
                     }
                 }
 
-                // Compact icon actions instead of bulky tonal buttons
                 AccountActionIcon(
                     icon = Icons.Filled.Edit,
                     contentDescription = strings.edit,
@@ -542,13 +527,11 @@ private fun AccountManagementCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Stats row: Transactions, Statements, Balance
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Transactions count
                 Column {
                     Text(
                         text = strings.transactions,
@@ -562,7 +545,6 @@ private fun AccountManagementCard(
                     )
                 }
 
-                // Statements count
                 Column {
                     Text(
                         text = strings.statements,
@@ -576,7 +558,6 @@ private fun AccountManagementCard(
                     )
                 }
 
-                // Balance
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = strings.netBalance,
@@ -598,7 +579,6 @@ private fun AccountManagementCard(
                 }
             }
 
-            // Expand/collapse button for statements list
             if (account.statements.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider(color = AppColors.Divider)
@@ -629,7 +609,6 @@ private fun AccountManagementCard(
                     Column {
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Sort chips
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -658,7 +637,6 @@ private fun AccountManagementCard(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Statement rows
                         sortedStatements.forEach { statement ->
                             StatementRow(
                                 statement = statement,
@@ -767,7 +745,6 @@ private fun StatementRow(
     }
 }
 
-// Helper functions
 private fun formatImportDate(epochSeconds: Long): String {
     return try {
         val instant = Instant.fromEpochSeconds(epochSeconds)
@@ -799,11 +776,6 @@ private fun formatIbanShort(iban: String): String {
         iban
     }
 }
-
-/*private fun formatBalance(amount: Double): String {
-    val formatted = "%.2f".format(kotlin.math.abs(amount)).replace(".", ",")
-    return if (amount >= 0) "+$formatted €" else "-$formatted €"
-}*/
 
 private fun formatBalance(amount: Double): String {
     val absAmount = kotlin.math.abs(amount)
