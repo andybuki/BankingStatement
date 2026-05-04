@@ -301,4 +301,16 @@
     <string name="imported_on">Imported</string>
     <string name="delete_statement">Delete Statement</string>
     <string name="delete_statement_confirm">Delete \"%s\" and all its transactions? This cannot be undone.</string>
+
+    <string name="recognition_eyebrow">Automation</string>
+    <string name="recognition_title">Category recognition</string>
+    <string name="recognition_label_safe">Safe</string>
+    <string name="recognition_label_balanced">Balanced</string>
+    <string name="recognition_label_experimental">Experimental</string>
+    <string name="recognition_option_safe">Safe — rules only</string>
+    <string name="recognition_option_balanced">Balanced — rules + ML fallback</string>
+    <string name="recognition_option_experimental">Experimental — more ML suggestions</string>
+    <string name="recognition_description_safe">Rules and manual corrections only. Unknown stays Other.</string>
+    <string name="recognition_description_balanced">Rules first, then ML fallback when confidence is at least {threshold}.</string>
+    <string name="recognition_description_experimental">Rules first, then lower-threshold ML fallback at {threshold}.</string>
 </resources>

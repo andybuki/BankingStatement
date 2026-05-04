@@ -301,4 +301,16 @@
     <string name="imported_on">Importé le</string>
     <string name="delete_statement">Supprimer le relevé</string>
     <string name="delete_statement_confirm">Supprimer \"%s\" et toutes ses transactions ? Cette action est irréversible.</string>
+
+    <string name="recognition_eyebrow">Automatisation</string>
+    <string name="recognition_title">Reconnaissance de catégories</string>
+    <string name="recognition_label_safe">Sûr</string>
+    <string name="recognition_label_balanced">Équilibré</string>
+    <string name="recognition_label_experimental">Expérimental</string>
+    <string name="recognition_option_safe">Sûr — règles uniquement</string>
+    <string name="recognition_option_balanced">Équilibré — règles + IA de secours</string>
+    <string name="recognition_option_experimental">Expérimental — plus de suggestions IA</string>
+    <string name="recognition_description_safe">Règles et corrections manuelles uniquement. Inconnu reste Autre.</string>
+    <string name="recognition_description_balanced">D\'abord les règles, puis IA de secours à partir d\'une confiance de {threshold}.</string>
+    <string name="recognition_description_experimental">D\'abord les règles, puis IA de secours avec seuil réduit à {threshold}.</string>
 </resources>

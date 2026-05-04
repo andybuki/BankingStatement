@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.banking.statement.AppStrings
+import com.banking.statement.LocalStrings
 import com.banking.statement.categorization.RecognitionMode
 import com.banking.statement.categorization.rememberRecognitionModePreferenceState
 import com.banking.statement.ui.components.MLSetGroup
@@ -27,16 +29,17 @@ import com.banking.statement.ui.theme.AppColors
 
 @Composable
 fun RecognitionModeSettingsSection() {
+    val strings = LocalStrings.current
     val preferenceState = rememberRecognitionModePreferenceState()
     val selectedMode = preferenceState.mode
     var showRecognitionModePicker by remember { mutableStateOf(false) }
 
-    MLSetGroup(eyebrow = "Automation") {
+    MLSetGroup(eyebrow = strings.recognitionEyebrow) {
         MLSetRow(
             icon = Icons.Filled.AutoAwesome,
             iconTint = Color(0xFF8B5CF6),
-            title = "Category recognition",
-            subtitle = recognitionModeDescription(selectedMode),
+            title = strings.recognitionTitle,
+            subtitle = recognitionModeDescription(strings, selectedMode),
             onClick = { showRecognitionModePicker = true },
             showChevron = true,
             isFirst = true,
@@ -48,7 +51,7 @@ fun RecognitionModeSettingsSection() {
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = recognitionModeLabel(selectedMode),
+                        text = recognitionModeLabel(strings, selectedMode),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextSecondary
@@ -60,14 +63,14 @@ fun RecognitionModeSettingsSection() {
 
     if (showRecognitionModePicker) {
         MoneyLupeChoiceDialog(
-            eyebrow = "Automation",
-            title = "Category recognition",
+            eyebrow = strings.recognitionEyebrow,
+            title = strings.recognitionTitle,
             options = RecognitionMode.entries.map { mode ->
-                mode to recognitionModeOptionLabel(mode)
+                mode to recognitionModeOptionLabel(strings, mode)
             },
             selected = selectedMode,
             onSelect = { mode ->
-                preferenceState.setMode(mode)
+                preferenceState.update(mode)
                 showRecognitionModePicker = false
             },
             onDismiss = { showRecognitionModePicker = false }
@@ -75,32 +78,36 @@ fun RecognitionModeSettingsSection() {
     }
 }
 
-private fun recognitionModeLabel(mode: RecognitionMode): String {
+private fun recognitionModeLabel(strings: AppStrings, mode: RecognitionMode): String {
     return when (mode) {
-        RecognitionMode.SAFE -> "Safe"
-        RecognitionMode.BALANCED -> "Balanced"
-        RecognitionMode.EXPERIMENTAL -> "Experimental"
+        RecognitionMode.SAFE -> strings.recognitionLabelSafe
+        RecognitionMode.BALANCED -> strings.recognitionLabelBalanced
+        RecognitionMode.EXPERIMENTAL -> strings.recognitionLabelExperimental
     }
 }
 
-private fun recognitionModeOptionLabel(mode: RecognitionMode): String {
+private fun recognitionModeOptionLabel(strings: AppStrings, mode: RecognitionMode): String {
     return when (mode) {
-        RecognitionMode.SAFE -> "Safe — rules only"
-        RecognitionMode.BALANCED -> "Balanced — rules + ML fallback"
-        RecognitionMode.EXPERIMENTAL -> "Experimental — more ML suggestions"
+        RecognitionMode.SAFE -> strings.recognitionOptionSafe
+        RecognitionMode.BALANCED -> strings.recognitionOptionBalanced
+        RecognitionMode.EXPERIMENTAL -> strings.recognitionOptionExperimental
     }
 }
 
-private fun recognitionModeDescription(mode: RecognitionMode): String {
+private fun recognitionModeDescription(strings: AppStrings, mode: RecognitionMode): String {
     val threshold = mode.mlConfidenceThreshold
     return when (mode) {
-        RecognitionMode.SAFE -> "Rules and manual corrections only. Unknown stays Other."
+        RecognitionMode.SAFE -> strings.recognitionDescriptionSafe
         RecognitionMode.BALANCED ->
-            "Rules first, then ML fallback when confidence is at least " +
-                formatThreshold(threshold ?: 0.0) + "."
+            strings.recognitionDescriptionBalanced.replace(
+                THRESHOLD_PLACEHOLDER,
+                formatThreshold(threshold ?: 0.0)
+            )
         RecognitionMode.EXPERIMENTAL ->
-            "Rules first, then lower-threshold ML fallback at " +
-                formatThreshold(threshold ?: 0.0) + "."
+            strings.recognitionDescriptionExperimental.replace(
+                THRESHOLD_PLACEHOLDER,
+                formatThreshold(threshold ?: 0.0)
+            )
     }
 }
 
@@ -110,3 +117,5 @@ private fun formatThreshold(value: Double): String {
     val frac = scaled % 100
     return whole.toString() + "." + (if (frac < 10) "0$frac" else frac.toString())
 }
+
+private const val THRESHOLD_PLACEHOLDER = "{threshold}"

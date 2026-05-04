@@ -6,6 +6,7 @@ import com.banking.statement.categorization.CategorizationConfig
 import com.banking.statement.categorization.KeywordDatabaseOptimized
 import com.banking.statement.categorization.MerchantDatabase
 import com.banking.statement.categorization.TransactionCategorizer
+import com.banking.statement.categorization.provideMlClassifier
 import com.banking.statement.categorization.recognitionModeFromName
 import com.banking.statement.db.TransactionRepository
 import org.koin.dsl.module
@@ -34,6 +35,7 @@ val commonModule = module {
         TransactionCategorizer(
             merchantDatabase = get(),
             categoryOverrideManager = get(),
+            mlClassifier = provideMlClassifier(),
             configProvider = {
                 val prefs = get<AppPreferences>()
                 CategorizationConfig(recognitionModeFromName(prefs.getRecognitionModeName()))

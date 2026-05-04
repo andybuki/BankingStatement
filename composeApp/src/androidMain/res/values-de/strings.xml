@@ -301,4 +301,16 @@
     <string name="imported_on">Importiert</string>
     <string name="delete_statement">Kontoauszug löschen</string>
     <string name="delete_statement_confirm">\"%s\" und alle zugehörigen Transaktionen löschen? Dies kann nicht rückgängig gemacht werden.</string>
+
+    <string name="recognition_eyebrow">Automatisierung</string>
+    <string name="recognition_title">Kategorienerkennung</string>
+    <string name="recognition_label_safe">Sicher</string>
+    <string name="recognition_label_balanced">Ausgewogen</string>
+    <string name="recognition_label_experimental">Experimentell</string>
+    <string name="recognition_option_safe">Sicher — nur Regeln</string>
+    <string name="recognition_option_balanced">Ausgewogen — Regeln + ML-Fallback</string>
+    <string name="recognition_option_experimental">Experimentell — mehr ML-Vorschläge</string>
+    <string name="recognition_description_safe">Nur Regeln und manuelle Korrekturen. Unbekannt bleibt Sonstiges.</string>
+    <string name="recognition_description_balanced">Erst Regeln, dann ML-Fallback ab Konfidenz {threshold}.</string>
+    <string name="recognition_description_experimental">Erst Regeln, dann ML-Fallback mit niedrigerer Schwelle bei {threshold}.</string>
 </resources>
