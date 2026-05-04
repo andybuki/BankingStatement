@@ -26,7 +26,8 @@ data class CategorizationResult(
     val source: CategorizationSource,
     val matchedValue: String? = null,
     val suggestedCategory: TransactionCategory? = null,
-    val suggestedConfidence: Double? = null
+    val suggestedConfidence: Double? = null,
+    val modelVersion: String? = null
 )
 
 /**
@@ -256,12 +257,13 @@ class TransactionCategorizer(
                 category = prediction.category,
                 confidence = prediction.confidence,
                 source = CategorizationSource.ML,
-                matchedValue = prediction.modelVersion
+                modelVersion = prediction.modelVersion
             )
         } else {
             rulesResult.copy(
                 suggestedCategory = prediction.category,
-                suggestedConfidence = prediction.confidence
+                suggestedConfidence = prediction.confidence,
+                modelVersion = prediction.modelVersion
             )
         }
     }

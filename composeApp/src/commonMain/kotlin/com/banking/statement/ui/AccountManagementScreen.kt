@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.sp
 import bankingstatement.composeapp.generated.resources.Res
 import bankingstatement.composeapp.generated.resources.back
 import com.banking.statement.LocalStrings
-import com.banking.statement.categorization.RecognitionMode
 import com.banking.statement.ui.components.EyebrowLabel
 import com.banking.statement.ui.components.MLSetGroup
 import com.banking.statement.ui.components.MLSetRow
@@ -91,8 +90,6 @@ fun AccountManagementScreen(
     onStatementSortOrderChange: (Long, StatementSortOrder) -> Unit = { _, _ -> },
     currentThemeMode: ThemeMode = ThemeMode.SYSTEM,
     onThemeModeChange: (ThemeMode) -> Unit = {},
-    currentRecognitionMode: RecognitionMode = RecognitionMode.SAFE,
-    onRecognitionModeChange: (RecognitionMode) -> Unit = {},
     biometricLockEnabled: Boolean = false,
     biometricAvailable: Boolean = false,
     onBiometricLockChange: (Boolean) -> Unit = {},
@@ -169,10 +166,7 @@ fun AccountManagementScreen(
         }
 
         item(key = "recognition") {
-            RecognitionModeSettingsSection(
-                currentRecognitionMode = currentRecognitionMode,
-                onRecognitionModeChange = onRecognitionModeChange
-            )
+            RecognitionModeSettingsSection()
         }
 
         item(key = "appearance") {

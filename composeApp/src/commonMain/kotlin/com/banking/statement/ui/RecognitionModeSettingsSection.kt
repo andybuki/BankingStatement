@@ -26,10 +26,7 @@ import com.banking.statement.ui.components.MoneyLupeChoiceDialog
 import com.banking.statement.ui.theme.AppColors
 
 @Composable
-fun RecognitionModeSettingsSection(
-    currentRecognitionMode: RecognitionMode = RecognitionMode.SAFE,
-    onRecognitionModeChange: (RecognitionMode) -> Unit = {}
-) {
+fun RecognitionModeSettingsSection() {
     val preferenceState = rememberRecognitionModePreferenceState()
     val selectedMode = preferenceState.mode
     var showRecognitionModePicker by remember { mutableStateOf(false) }
@@ -65,15 +62,12 @@ fun RecognitionModeSettingsSection(
         MoneyLupeChoiceDialog(
             eyebrow = "Automation",
             title = "Category recognition",
-            options = listOf(
-                RecognitionMode.SAFE to "Safe — rules only",
-                RecognitionMode.BALANCED to "Balanced — rules + ML fallback",
-                RecognitionMode.EXPERIMENTAL to "Experimental — more ML suggestions"
-            ),
+            options = RecognitionMode.entries.map { mode ->
+                mode to recognitionModeOptionLabel(mode)
+            },
             selected = selectedMode,
             onSelect = { mode ->
                 preferenceState.setMode(mode)
-                onRecognitionModeChange(mode)
                 showRecognitionModePicker = false
             },
             onDismiss = { showRecognitionModePicker = false }
@@ -89,10 +83,29 @@ private fun recognitionModeLabel(mode: RecognitionMode): String {
     }
 }
 
+private fun recognitionModeOptionLabel(mode: RecognitionMode): String {
+    return when (mode) {
+        RecognitionMode.SAFE -> "Safe — rules only"
+        RecognitionMode.BALANCED -> "Balanced — rules + ML fallback"
+        RecognitionMode.EXPERIMENTAL -> "Experimental — more ML suggestions"
+    }
+}
+
 private fun recognitionModeDescription(mode: RecognitionMode): String {
     return when (mode) {
         RecognitionMode.SAFE -> "Rules and manual corrections only. Unknown stays Other."
-        RecognitionMode.BALANCED -> "Rules first, then ML fallback when confidence is at least 0.30."
-        RecognitionMode.EXPERIMENTAL -> "Rules first, then lower-threshold ML fallback at 0.20."
+        RecognitionMode.BALANCED ->
+            "Rules first, then ML fallback when confidence is at least " +
+                formatThreshold(mode.mlConfidenceThreshold) + "."
+        RecognitionMode.EXPERIMENTAL ->
+            "Rules first, then lower-threshold ML fallback at " +
+                formatThreshold(mode.mlConfidenceThreshold) + "."
     }
+}
+
+private fun formatThreshold(value: Double): String {
+    val scaled = (value * 100).toInt()
+    val whole = scaled / 100
+    val frac = scaled % 100
+    return whole.toString() + "." + (if (frac < 10) "0$frac" else frac.toString())
 }
