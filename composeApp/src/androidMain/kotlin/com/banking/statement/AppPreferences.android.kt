@@ -81,6 +81,14 @@ actual class AppPreferences(private val context: Context) {
         prefs.edit().putBoolean(KEY_RATING_PROMPT_DISMISSED, dismissed).apply()
     }
 
+    actual fun getRecognitionModeName(): String {
+        return prefs.getString(KEY_RECOGNITION_MODE, DEFAULT_RECOGNITION_MODE) ?: DEFAULT_RECOGNITION_MODE
+    }
+
+    actual fun setRecognitionModeName(modeName: String) {
+        prefs.edit().putString(KEY_RECOGNITION_MODE, modeName).apply()
+    }
+
     actual fun isPdfAccessEnabled(): Boolean {
         return prefs.getBoolean(KEY_PDF_ACCESS_ENABLED, true)
     }
@@ -98,6 +106,8 @@ actual class AppPreferences(private val context: Context) {
         private const val KEY_LAST_APP_OPEN = "last_app_open_time"
         private const val KEY_SUCCESSFUL_IMPORT_COUNT = "successful_import_count"
         private const val KEY_RATING_PROMPT_DISMISSED = "rating_prompt_dismissed"
+        private const val KEY_RECOGNITION_MODE = "recognition_mode"
+        private const val DEFAULT_RECOGNITION_MODE = "SAFE"
         private const val KEY_PDF_ACCESS_ENABLED = "pdf_access_enabled"
     }
 }
