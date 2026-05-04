@@ -9,8 +9,11 @@ RENT,vermieter
 RENT,nebenkosten
 RENT,heizung
 RENT,strom
+RENT,stromanbieter
 RENT,gas
+RENT,gasag
 RENT,wasser
+RENT,abwasser
 RENT,vattenfall
 RENT,eon
 RENT,e.on
@@ -18,16 +21,27 @@ RENT,energie
 RENT,stadtwerke
 RENT,telekom
 RENT,vodafone
+RENT,kabel
+RENT,kabel deutschland
 RENT,1und1
 RENT,1&1
 RENT,internet
+RENT,dsl
 RENT,wlan
+RENT,rundfunkbeitrag
+RENT,gez
 RENT,wohnungsgesellschaft
 TRANSPORT,bvg
 TRANSPORT,berliner verkehrsbetriebe
+TRANSPORT,mvv
+TRANSPORT,vvs
+TRANSPORT,vgn
+TRANSPORT,oepnv
+TRANSPORT,öpnv
 TRANSPORT,db
 TRANSPORT,deutsche bahn
 TRANSPORT,bahn
+TRANSPORT,zug
 TRANSPORT,s bahn
 TRANSPORT,s-bahn
 TRANSPORT,u bahn
@@ -36,21 +50,29 @@ TRANSPORT,ticket
 TRANSPORT,fahrkarte
 TRANSPORT,uber
 TRANSPORT,taxi
+TRANSPORT,bolt
 TRANSPORT,miles
 TRANSPORT,share now
-TRANSPORT,bolt
 TRANSPORT,clever shuttle
 TRANSPORT,flinkster
 TRANSPORT,sixt share
 TRANSPORT,tankstelle
+TRANSPORT,tanken
 TRANSPORT,aral
 TRANSPORT,shell
 TRANSPORT,esso
 TRANSPORT,total
 TRANSPORT,jet
 TRANSPORT,avia
+TRANSPORT,parken
+TRANSPORT,parkhaus
+TRANSPORT,parkschein
+TRANSPORT,kfz steuer
+TRANSPORT,kfz-steuer
+TRANSPORT,autoversicherung
 SUPERMARKET,supermarkt
 SUPERMARKET,lebensmittel
+SUPERMARKET,discounter
 SUPERMARKET,rewe
 SUPERMARKET,lidl
 SUPERMARKET,aldi
@@ -58,19 +80,22 @@ SUPERMARKET,edeka
 SUPERMARKET,kaufland
 SUPERMARKET,netto
 SUPERMARKET,penny
+SUPERMARKET,norma
 SUPERMARKET,alnatura
 SUPERMARKET,denns
+SUPERMARKET,bio markt
+SUPERMARKET,biomarkt
 SUPERMARKET,bio company
 SUPERMARKET,biocompany
 SUPERMARKET,tegut
 SUPERMARKET,real
 SUPERMARKET,nahkauf
 SUPERMARKET,konsum
-SUPERMARKET,kaufland
 SUPERMARKET,marktkauf
 RESTAURANT,restaurant
 RESTAURANT,cafe
 RESTAURANT,café
+RESTAURANT,bar
 RESTAURANT,bistro
 RESTAURANT,imbiss
 RESTAURANT,pizza
@@ -92,9 +117,11 @@ RESTAURANT,kfc
 RESTAURANT,starbucks
 RESTAURANT,backerei
 RESTAURANT,bäckerei
+RESTAURANT,baeckerei
+RESTAURANT,bäcker
+RESTAURANT,baecker
 RESTAURANT,backwerk
 RESTAURANT,back factory
-RESTAURANT,baeckerei
 SHOPPING,shopping
 SHOPPING,amazon
 SHOPPING,ebay
@@ -123,6 +150,7 @@ SHOPPING,mueller
 SHOPPING,douglas
 SHOPPING,manufactum
 HEALTH,apotheke
+HEALTH,pharmacy
 HEALTH,arzt
 HEALTH,zahnarzt
 HEALTH,clinic
@@ -135,14 +163,19 @@ HEALTH,shop apotheke
 HEALTH,physio
 HEALTH,therapie
 INSURANCE,versicherung
+INSURANCE,haftpflicht
 INSURANCE,allianz
 INSURANCE,huk
 INSURANCE,axa
 INSURANCE,ergo
 INSURANCE,signal iduna
-INSURANCE,haftpflicht
 INSURANCE,krankenversicherung
 INSURANCE,kfz versicherung
+INSURANCE,kfz-versicherung
+INSURANCE,aok
+INSURANCE,tk
+INSURANCE,barmer
+INSURANCE,krankenkasse
 ENTERTAINMENT,kino
 ENTERTAINMENT,cinema
 ENTERTAINMENT,theater
@@ -169,6 +202,8 @@ SUBSCRIPTIONS,openai
 SUBSCRIPTIONS,chatgpt
 SUBSCRIPTIONS,anthropic
 SUBSCRIPTIONS,google one
+SUBSCRIPTIONS,google youtube
+SUBSCRIPTIONS,youtube premium
 SUBSCRIPTIONS,icloud
 SUBSCRIPTIONS,dropbox
 SUBSCRIPTIONS,notion
@@ -182,18 +217,26 @@ INVESTMENT,aktien
 INVESTMENT,fonds
 TRAVEL,hotel
 TRAVEL,booking
+TRAVEL,booking.com
 TRAVEL,airbnb
 TRAVEL,flug
 TRAVEL,flight
+TRAVEL,airline
+TRAVEL,airways
+TRAVEL,airport
 TRAVEL,lufthansa
 TRAVEL,ryanair
 TRAVEL,easyjet
+TRAVEL,eurowings
+TRAVEL,condor
 TRAVEL,bahnreise
 TRAVEL,reise
 TRAVEL,travel
 TRAVEL,hostel
 SALARY,gehalt
 SALARY,lohn
+SALARY,vergütung
+SALARY,verguetung
 SALARY,salary
 SALARY,bezuege
 SALARY,bezüge
@@ -209,6 +252,12 @@ TRANSFER,paypal
 TRANSFER,überweisung
 TRANSFER,ueberweisung
 TRANSFER,transfer
+TRANSFER,dauerauftrag
+TRANSFER,einzahlung
+TRANSFER,auszahlung
+TRANSFER,abhebung
+TRANSFER,geldautomat
+TRANSFER,atm
 TRANSFER,revolut
 TRANSFER,wise
 TRANSFER,n26
