@@ -32,12 +32,19 @@ object MerchantNormalizer {
     /** Words that decorate a merchant token but are not part of the brand. */
     private val noiseWords: Set<String> = setOf(
         // Transaction type / processor prefixes
-        "kartenzahlung", "lastschrift", "ueberweisung", "überweisung", "sepa",
+        "kartenzahlung", "lastschrift", "basislastschrift", "einzug", "ueberweisung", "überweisung",
+        "sepa", "svwz", "mref", "eref", "kref", "endtoend", "mandat", "referenz",
         "girocard", "ec", "vpay", "v-pay", "visa", "mastercard", "maestro",
-        "debit", "credit", "kreditkarte", "ec-kartenzahlung",
+        "debit", "debitkarte", "credit", "kreditkarte", "ec-karte", "ec-kartenzahlung",
         "paypal", "applepay", "googlepay", "klarna", "sofort", "stripe",
-        "bargeldauszahlung", "bargeldeinzahlung", "auszahlung", "einzahlung",
-        "gutschrift", "abbuchung", "entgelt",
+        "bargeldauszahlung", "bargeldauszahlung", "bargeldeinzahlung", "auszahlung", "abhebung", "einzahlung",
+        "geldautomat", "atm", "gutschrift", "abbuchung", "entgelt", "gebühr", "gebuehr",
+        "kommission", "zinsen", "dauerauftrag", "zahlung", "bezahlung", "rechnung",
+        // Generic banking document words that should not become merchant tokens or ML features
+        "konto", "girokonto", "kredit", "darlehen", "iban", "bic", "betrag", "saldo",
+        "neuer", "alter", "buchung", "buchungstag", "valuta", "wertstellung", "kunden",
+        "information", "kontoauszug", "auszug", "seite", "nummer", "auftrag", "auftraggeber",
+        "empfaenger", "empfänger", "zahlungspflichtiger", "zahlungsempfaenger", "zahlungsempfänger",
         // Generic suffixes
         "gmbh", "ag", "kg", "ohg", "co", "gbr", "ug", "se", "inc", "ltd", "llc",
         "filiale", "filiali", "fil", "nr", "no", "store", "shop", "markt",
@@ -46,7 +53,7 @@ object MerchantNormalizer {
         "de", "at", "ch", "fr", "nl", "es", "it", "uk", "us", "deu", "deutschland",
         "germany", "austria", "switzerland",
         // Generic words that often appear after the brand
-        "sagt", "danke", "ihren", "einkauf", "shopping"
+        "sagt", "danke", "ihren", "ihr", "einkauf", "shopping"
     )
 
     /** Common DE/EU city names that frequently get appended to merchant tokens. */
