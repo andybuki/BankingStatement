@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.banking.statement.categorization.RecognitionMode
+import com.banking.statement.categorization.rememberRecognitionModePreferenceState
 import com.banking.statement.ui.components.MLSetGroup
 import com.banking.statement.ui.components.MLSetRow
 import com.banking.statement.ui.components.MoneyLupeChoiceDialog
@@ -26,9 +27,11 @@ import com.banking.statement.ui.theme.AppColors
 
 @Composable
 fun RecognitionModeSettingsSection(
-    currentRecognitionMode: RecognitionMode,
-    onRecognitionModeChange: (RecognitionMode) -> Unit
+    currentRecognitionMode: RecognitionMode = RecognitionMode.SAFE,
+    onRecognitionModeChange: (RecognitionMode) -> Unit = {}
 ) {
+    val preferenceState = rememberRecognitionModePreferenceState()
+    val selectedMode = preferenceState.mode
     var showRecognitionModePicker by remember { mutableStateOf(false) }
 
     MLSetGroup(eyebrow = "Automation") {
@@ -36,7 +39,7 @@ fun RecognitionModeSettingsSection(
             icon = Icons.Filled.AutoAwesome,
             iconTint = Color(0xFF8B5CF6),
             title = "Category recognition",
-            subtitle = recognitionModeDescription(currentRecognitionMode),
+            subtitle = recognitionModeDescription(selectedMode),
             onClick = { showRecognitionModePicker = true },
             showChevron = true,
             isFirst = true,
@@ -48,7 +51,7 @@ fun RecognitionModeSettingsSection(
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = recognitionModeLabel(currentRecognitionMode),
+                        text = recognitionModeLabel(selectedMode),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.TextSecondary
@@ -67,8 +70,9 @@ fun RecognitionModeSettingsSection(
                 RecognitionMode.BALANCED to "Balanced — rules + ML fallback",
                 RecognitionMode.EXPERIMENTAL to "Experimental — more ML suggestions"
             ),
-            selected = currentRecognitionMode,
+            selected = selectedMode,
             onSelect = { mode ->
+                preferenceState.setMode(mode)
                 onRecognitionModeChange(mode)
                 showRecognitionModePicker = false
             },
