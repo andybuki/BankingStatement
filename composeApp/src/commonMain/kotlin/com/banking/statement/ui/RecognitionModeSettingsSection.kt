@@ -92,14 +92,15 @@ private fun recognitionModeOptionLabel(mode: RecognitionMode): String {
 }
 
 private fun recognitionModeDescription(mode: RecognitionMode): String {
+    val threshold = mode.mlConfidenceThreshold
     return when (mode) {
         RecognitionMode.SAFE -> "Rules and manual corrections only. Unknown stays Other."
         RecognitionMode.BALANCED ->
             "Rules first, then ML fallback when confidence is at least " +
-                formatThreshold(mode.mlConfidenceThreshold) + "."
+                formatThreshold(threshold ?: 0.0) + "."
         RecognitionMode.EXPERIMENTAL ->
             "Rules first, then lower-threshold ML fallback at " +
-                formatThreshold(mode.mlConfidenceThreshold) + "."
+                formatThreshold(threshold ?: 0.0) + "."
     }
 }
 

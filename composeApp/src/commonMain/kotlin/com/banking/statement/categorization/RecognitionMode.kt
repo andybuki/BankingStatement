@@ -16,21 +16,13 @@ package com.banking.statement.categorization
  * - ML fallback with lower threshold and higher coverage
  */
 enum class RecognitionMode(
-    val mlEnabled: Boolean,
-    val mlConfidenceThreshold: Double
+    val mlConfidenceThreshold: Double?
 ) {
-    SAFE(
-        mlEnabled = false,
-        mlConfidenceThreshold = 1.0
-    ),
-    BALANCED(
-        mlEnabled = true,
-        mlConfidenceThreshold = 0.30
-    ),
-    EXPERIMENTAL(
-        mlEnabled = true,
-        mlConfidenceThreshold = 0.20
-    )
+    SAFE(mlConfidenceThreshold = null),
+    BALANCED(mlConfidenceThreshold = 0.30),
+    EXPERIMENTAL(mlConfidenceThreshold = 0.20);
+
+    val mlEnabled: Boolean get() = mlConfidenceThreshold != null
 }
 
 /**
@@ -40,5 +32,5 @@ data class CategorizationConfig(
     val recognitionMode: RecognitionMode = RecognitionMode.SAFE
 ) {
     val mlEnabled: Boolean get() = recognitionMode.mlEnabled
-    val mlConfidenceThreshold: Double get() = recognitionMode.mlConfidenceThreshold
+    val mlConfidenceThreshold: Double? get() = recognitionMode.mlConfidenceThreshold
 }
