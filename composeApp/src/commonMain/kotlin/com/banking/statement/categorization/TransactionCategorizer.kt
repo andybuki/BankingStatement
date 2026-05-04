@@ -46,7 +46,7 @@ class TransactionCategorizer(
     private val merchantDatabase: MerchantDatabase? = null,
     private val categoryOverrideManager: CategoryOverrideManager? = null,
     private val mlClassifier: TransactionMlClassifier = NoOpTransactionMlClassifier,
-    private val config: CategorizationConfig = CategorizationConfig()
+    private val configProvider: () -> CategorizationConfig = { CategorizationConfig() }
 ) {
 
     companion object {
@@ -131,7 +131,6 @@ class TransactionCategorizer(
     }
 
     private fun categorizeWithRules(transaction: ParsedTransaction): CategorizationResult {
-        // 1) User overrides first (highest priority)
         categoryOverrideManager?.let { manager ->
             val override = manager.findOverride(
                 description = transaction.description,
@@ -148,15 +147,9 @@ class TransactionCategorizer(
 
         val signals = TransactionSignalExtractor.extract(transaction)
 
-        // 2) Strong explicit category rules for repeatedly observed false
-        // positives. These run before generic merchant/keyword matching.
         strongTextRule(transaction, signals)?.let { return finalizeAutoCategory(it) }
-
-        // 3) Strong signal rules. These are based on transaction type, not on
-        // generic amount-only assumptions.
         strongSignalRule(transaction, signals)?.let { return finalizeAutoCategory(it) }
 
-        // 4) Merchant/keyword lookup against the extracted effective merchant.
         val merchantText = signals.effectiveMerchant
         if (!merchantText.isNullOrBlank()) {
             merchantDatabase?.let { db ->
@@ -252,6 +245,7 @@ class TransactionCategorizer(
         transaction: ParsedTransaction,
         rulesResult: CategorizationResult
     ): CategorizationResult? {
+        val config = configProvider()
         if (!config.mlEnabled) return null
 
         val prediction = mlClassifier.classify(transaction) ?: return null
@@ -318,95 +312,35 @@ class TransactionCategorizer(
         signals: TransactionSignals
     ): CategorizationResult? {
         if (signals.isSalaryLike) {
-            return CategorizationResult(
-                category = TransactionCategory.SALARY,
-                confidence = 0.95,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.normalizedSearchText
-            )
+            return CategorizationResult(TransactionCategory.SALARY, 0.95, CategorizationSource.SIGNAL_RULE, signals.normalizedSearchText)
         }
-
         if (signals.isRefundLike) {
-            return CategorizationResult(
-                category = TransactionCategory.REFUND,
-                confidence = 0.88,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.effectiveMerchant ?: signals.normalizedSearchText
-            )
+            return CategorizationResult(TransactionCategory.REFUND, 0.88, CategorizationSource.SIGNAL_RULE, signals.effectiveMerchant ?: signals.normalizedSearchText)
         }
-
         if (signals.isInvestmentLike) {
-            return CategorizationResult(
-                category = TransactionCategory.INVESTMENT,
-                confidence = 0.90,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.normalizedSearchText
-            )
+            return CategorizationResult(TransactionCategory.INVESTMENT, 0.90, CategorizationSource.SIGNAL_RULE, signals.normalizedSearchText)
         }
-
         if (signals.isTravelLike) {
-            return CategorizationResult(
-                category = TransactionCategory.TRAVEL,
-                confidence = 0.88,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.normalizedSearchText
-            )
+            return CategorizationResult(TransactionCategory.TRAVEL, 0.88, CategorizationSource.SIGNAL_RULE, signals.normalizedSearchText)
         }
-
         if (signals.isCashWithdrawal) {
-            return CategorizationResult(
-                category = TransactionCategory.TRANSFER,
-                confidence = 0.85,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = "cash withdrawal"
-            )
+            return CategorizationResult(TransactionCategory.TRANSFER, 0.85, CategorizationSource.SIGNAL_RULE, "cash withdrawal")
         }
-
         if (signals.isCashDeposit) {
-            return CategorizationResult(
-                category = TransactionCategory.TRANSFER,
-                confidence = 0.85,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = "cash deposit"
-            )
+            return CategorizationResult(TransactionCategory.TRANSFER, 0.85, CategorizationSource.SIGNAL_RULE, "cash deposit")
         }
-
         if (signals.isBankFeeLike) {
-            return CategorizationResult(
-                category = TransactionCategory.OTHER,
-                confidence = 0.70,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.normalizedSearchText
-            )
+            return CategorizationResult(TransactionCategory.OTHER, 0.70, CategorizationSource.SIGNAL_RULE, signals.normalizedSearchText)
         }
-
         if (transaction.amount < 0 && signals.isTransferLike) {
-            return CategorizationResult(
-                category = TransactionCategory.TRANSFER,
-                confidence = 0.85,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.normalizedSearchText
-            )
+            return CategorizationResult(TransactionCategory.TRANSFER, 0.85, CategorizationSource.SIGNAL_RULE, signals.normalizedSearchText)
         }
-
         if (transaction.amount < 0 && signals.isRentLike) {
-            return CategorizationResult(
-                category = TransactionCategory.RENT,
-                confidence = 0.88,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.normalizedSearchText
-            )
+            return CategorizationResult(TransactionCategory.RENT, 0.88, CategorizationSource.SIGNAL_RULE, signals.normalizedSearchText)
         }
-
         if (transaction.amount > 0 && signals.isRentLike) {
-            return CategorizationResult(
-                category = TransactionCategory.REFUND,
-                confidence = 0.80,
-                source = CategorizationSource.SIGNAL_RULE,
-                matchedValue = signals.normalizedSearchText
-            )
+            return CategorizationResult(TransactionCategory.REFUND, 0.80, CategorizationSource.SIGNAL_RULE, signals.normalizedSearchText)
         }
-
         return null
     }
 
