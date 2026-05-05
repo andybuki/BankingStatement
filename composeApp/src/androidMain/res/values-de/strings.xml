@@ -313,4 +313,6 @@
     <string name="recognition_description_safe">Nur Regeln und manuelle Korrekturen. Unbekannt bleibt Sonstiges.</string>
     <string name="recognition_description_balanced">Erst Regeln, dann ML-Fallback ab Konfidenz {threshold}.</string>
     <string name="recognition_description_experimental">Erst Regeln, dann ML-Fallback mit niedrigerer Schwelle bei {threshold}.</string>
+    <string name="recognition_model_loaded">On-Device-Modell: {version}</string>
+    <string name="recognition_model_missing">Kein On-Device-Modell verfügbar — Ausgewogen und Experimentell verwenden nur Regeln.</string>
 </resources>

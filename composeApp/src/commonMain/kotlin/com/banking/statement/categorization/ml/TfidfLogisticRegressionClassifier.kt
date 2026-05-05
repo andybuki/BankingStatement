@@ -30,6 +30,8 @@ internal class TfidfLogisticRegressionClassifier(
     private val model: MlModelData
 ) : TransactionMlClassifier {
 
+    override val modelVersion: String = model.model_version
+
     private val categoryByLabelIndex: Array<TransactionCategory?> =
         Array(model.labels.size) { idx -> findCategory(model.labels[idx]) }
 

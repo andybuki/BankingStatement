@@ -272,5 +272,7 @@ actual fun provideStrings(): AppStrings = AppStrings(
     recognitionOptionExperimental = stringResource(R.string.recognition_option_experimental),
     recognitionDescriptionSafe = stringResource(R.string.recognition_description_safe),
     recognitionDescriptionBalanced = stringResource(R.string.recognition_description_balanced),
-    recognitionDescriptionExperimental = stringResource(R.string.recognition_description_experimental)
+    recognitionDescriptionExperimental = stringResource(R.string.recognition_description_experimental),
+    recognitionModelLoaded = stringResource(R.string.recognition_model_loaded),
+    recognitionModelMissing = stringResource(R.string.recognition_model_missing)
 )

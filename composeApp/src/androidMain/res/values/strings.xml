@@ -313,4 +313,6 @@
     <string name="recognition_description_safe">Rules and manual corrections only. Unknown stays Other.</string>
     <string name="recognition_description_balanced">Rules first, then ML fallback when confidence is at least {threshold}.</string>
     <string name="recognition_description_experimental">Rules first, then lower-threshold ML fallback at {threshold}.</string>
+    <string name="recognition_model_loaded">On-device model: {version}</string>
+    <string name="recognition_model_missing">No on-device model bundled — Balanced and Experimental fall back to rules.</string>
 </resources>

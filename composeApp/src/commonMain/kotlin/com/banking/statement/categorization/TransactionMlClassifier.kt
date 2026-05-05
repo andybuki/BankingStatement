@@ -10,6 +10,13 @@ import com.banking.statement.parser.ParsedTransaction
  */
 interface TransactionMlClassifier {
     fun classify(transaction: ParsedTransaction): MlCategoryPrediction?
+
+    /**
+     * Free-form version string identifying the loaded model, or null if no
+     * on-device model is bundled (NoOp). Surfaced in the settings UI so the
+     * user can confirm whether predictions are actually wired up.
+     */
+    val modelVersion: String? get() = null
 }
 
 data class MlCategoryPrediction(

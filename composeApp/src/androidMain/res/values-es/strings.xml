@@ -313,4 +313,6 @@
     <string name="recognition_description_safe">Solo reglas y correcciones manuales. Lo desconocido queda como Otro.</string>
     <string name="recognition_description_balanced">Primero reglas, luego IA de respaldo cuando la confianza es al menos {threshold}.</string>
     <string name="recognition_description_experimental">Primero reglas, luego IA de respaldo con umbral más bajo en {threshold}.</string>
+    <string name="recognition_model_loaded">Modelo en el dispositivo: {version}</string>
+    <string name="recognition_model_missing">Sin modelo en el dispositivo — Equilibrado y Experimental usan solo reglas.</string>
 </resources>

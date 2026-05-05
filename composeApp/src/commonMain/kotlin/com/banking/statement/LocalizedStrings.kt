@@ -292,7 +292,9 @@ data class AppStrings(
     val recognitionOptionExperimental: String,
     val recognitionDescriptionSafe: String,
     val recognitionDescriptionBalanced: String,
-    val recognitionDescriptionExperimental: String
+    val recognitionDescriptionExperimental: String,
+    val recognitionModelLoaded: String,
+    val recognitionModelMissing: String
 )
 
 /**
@@ -572,5 +574,7 @@ fun defaultEnglishStrings() = AppStrings(
     recognitionOptionExperimental = "Experimental — more ML suggestions",
     recognitionDescriptionSafe = "Rules and manual corrections only. Unknown stays Other.",
     recognitionDescriptionBalanced = "Rules first, then ML fallback when confidence is at least {threshold}.",
-    recognitionDescriptionExperimental = "Rules first, then lower-threshold ML fallback at {threshold}."
+    recognitionDescriptionExperimental = "Rules first, then lower-threshold ML fallback at {threshold}.",
+    recognitionModelLoaded = "On-device model: {version}",
+    recognitionModelMissing = "No on-device model bundled — Balanced and Experimental fall back to rules."
 )
