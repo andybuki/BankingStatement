@@ -145,3 +145,27 @@ rules + ml fallback
 ```
 
 Only ship on-device ML if `rules + ml fallback` improves automatic accuracy and does not create too many confident mistakes.
+
+## On-device export
+
+After training, export the joblib pipeline to JSON for the Kotlin Multiplatform classifier:
+
+```bash
+python ml/export_for_app.py \
+  --model ml/model/transaction_category_model.joblib \
+  --output composeApp/src/commonMain/composeResources/files/category_model.json \
+  --model-version v1
+```
+
+The exporter writes a flat JSON document containing the TF-IDF vocabulary and IDF weights, the LogisticRegression coefficient matrix and intercepts, and the n-gram / sublinear_tf settings. It refuses to export non-default sklearn settings (e.g. `norm != 'l2'`) because the on-device implementation only supports the defaults the training script uses.
+
+To enable the model in the app:
+
+- **Android** — the file is bundled automatically via Compose Resources and read from `assets/files/category_model.json` at startup.
+- **iOS** — add `category_model.json` as a resource in the `iosApp` Xcode project (Build Phases → Copy Bundle Resources).
+
+If the file is missing or fails to parse, the app silently falls back to `NoOpTransactionMlClassifier` so the UI's `Balanced` / `Experimental` modes degrade gracefully.
+
+## Preprocessing parity
+
+The Kotlin classifier reproduces `cleanup_text`, `extract_effective_merchant`, `domain_hints`, and `amount_features` from `train_category_model.py`. Any change to the Python preprocessor must be mirrored in `MlFeatureExtractor.kt` or predictions will silently drift. `MlFeatureExtractorTest` pins golden inputs and should fail loudly on drift.

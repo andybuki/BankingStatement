@@ -24,9 +24,3 @@ data class MlCategoryPrediction(
 object NoOpTransactionMlClassifier : TransactionMlClassifier {
     override fun classify(transaction: ParsedTransaction): MlCategoryPrediction? = null
 }
-
-/**
- * Platform-provided ML classifier. Each platform returns the on-device model
- * implementation if one is bundled, or [NoOpTransactionMlClassifier] otherwise.
- */
-expect fun provideMlClassifier(): TransactionMlClassifier
