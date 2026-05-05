@@ -4,6 +4,8 @@ import com.banking.statement.AppPreferences
 import com.banking.statement.BiometricLockManager
 import com.banking.statement.FileImportProcessor
 import com.banking.statement.MainViewModel
+import com.banking.statement.categorization.TransactionMlClassifier
+import com.banking.statement.categorization.ml.MlClassifierFactory
 import com.banking.statement.db.DatabaseDriverFactory
 import com.banking.statement.export.FileExporter
 import com.banking.statement.export.PdfGenerator
@@ -29,6 +31,19 @@ val androidModule = module {
 
     // Security (Android-specific, needs Context)
     single { BiometricLockManager(androidContext()) }
+
+    // ML classifier: load the optional model from assets/files/category_model.json.
+    // Missing or corrupt file falls back to NoOp without throwing.
+    single<TransactionMlClassifier> {
+        val payload = try {
+            androidContext().assets.open("files/category_model.json")
+                .bufferedReader(Charsets.UTF_8)
+                .use { it.readText() }
+        } catch (_: Throwable) {
+            null
+        }
+        MlClassifierFactory.fromJsonOrNoOp(payload)
+    }
 
     // ViewModel with all dependencies injected
     viewModel {

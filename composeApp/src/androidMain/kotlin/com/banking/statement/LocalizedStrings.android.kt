@@ -260,5 +260,19 @@ actual fun provideStrings(): AppStrings = AppStrings(
     sortByName = stringResource(R.string.sort_by_name),
     importedOn = stringResource(R.string.imported_on),
     deleteStatement = stringResource(R.string.delete_statement),
-    deleteStatementConfirm = stringResource(R.string.delete_statement_confirm)
+    deleteStatementConfirm = stringResource(R.string.delete_statement_confirm),
+
+    recognitionEyebrow = stringResource(R.string.recognition_eyebrow),
+    recognitionTitle = stringResource(R.string.recognition_title),
+    recognitionLabelSafe = stringResource(R.string.recognition_label_safe),
+    recognitionLabelBalanced = stringResource(R.string.recognition_label_balanced),
+    recognitionLabelExperimental = stringResource(R.string.recognition_label_experimental),
+    recognitionOptionSafe = stringResource(R.string.recognition_option_safe),
+    recognitionOptionBalanced = stringResource(R.string.recognition_option_balanced),
+    recognitionOptionExperimental = stringResource(R.string.recognition_option_experimental),
+    recognitionDescriptionSafe = stringResource(R.string.recognition_description_safe),
+    recognitionDescriptionBalanced = stringResource(R.string.recognition_description_balanced),
+    recognitionDescriptionExperimental = stringResource(R.string.recognition_description_experimental),
+    recognitionModelLoaded = stringResource(R.string.recognition_model_loaded),
+    recognitionModelMissing = stringResource(R.string.recognition_model_missing)
 )

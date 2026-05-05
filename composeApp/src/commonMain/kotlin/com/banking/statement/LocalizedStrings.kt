@@ -279,7 +279,22 @@ data class AppStrings(
     val sortByName: String,
     val importedOn: String,
     val deleteStatement: String,
-    val deleteStatementConfirm: String
+    val deleteStatementConfirm: String,
+
+    // Recognition mode (Automation section)
+    val recognitionEyebrow: String,
+    val recognitionTitle: String,
+    val recognitionLabelSafe: String,
+    val recognitionLabelBalanced: String,
+    val recognitionLabelExperimental: String,
+    val recognitionOptionSafe: String,
+    val recognitionOptionBalanced: String,
+    val recognitionOptionExperimental: String,
+    val recognitionDescriptionSafe: String,
+    val recognitionDescriptionBalanced: String,
+    val recognitionDescriptionExperimental: String,
+    val recognitionModelLoaded: String,
+    val recognitionModelMissing: String
 )
 
 /**
@@ -547,5 +562,19 @@ fun defaultEnglishStrings() = AppStrings(
     sortByName = "By name",
     importedOn = "Imported",
     deleteStatement = "Delete Statement",
-    deleteStatementConfirm = "Delete \"%s\" and all its transactions? This cannot be undone."
+    deleteStatementConfirm = "Delete \"%s\" and all its transactions? This cannot be undone.",
+
+    recognitionEyebrow = "Automation",
+    recognitionTitle = "Category recognition",
+    recognitionLabelSafe = "Safe",
+    recognitionLabelBalanced = "Balanced",
+    recognitionLabelExperimental = "Experimental",
+    recognitionOptionSafe = "Safe — rules only",
+    recognitionOptionBalanced = "Balanced — rules + ML fallback",
+    recognitionOptionExperimental = "Experimental — more ML suggestions",
+    recognitionDescriptionSafe = "Rules and manual corrections only. Unknown stays Other.",
+    recognitionDescriptionBalanced = "Rules first, then ML fallback when confidence is at least {threshold}.",
+    recognitionDescriptionExperimental = "Rules first, then lower-threshold ML fallback at {threshold}.",
+    recognitionModelLoaded = "On-device model: {version}",
+    recognitionModelMissing = "No on-device model bundled — Balanced and Experimental fall back to rules."
 )

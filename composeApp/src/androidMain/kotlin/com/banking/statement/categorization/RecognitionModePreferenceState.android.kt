@@ -2,14 +2,13 @@ package com.banking.statement.categorization
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import com.banking.statement.AppPreferences
+import org.koin.mp.KoinPlatform
 
 @Composable
 actual fun rememberRecognitionModePreferenceState(): RecognitionModePreferenceState {
-    val context = LocalContext.current
-    return remember(context) {
-        val preferences = AppPreferences(context)
+    return remember {
+        val preferences = KoinPlatform.getKoin().get<AppPreferences>()
         RecognitionModePreferenceState(
             initialMode = recognitionModeFromName(preferences.getRecognitionModeName()),
             persistMode = { mode -> preferences.setRecognitionModeName(mode.name) }

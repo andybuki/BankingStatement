@@ -2,7 +2,10 @@ package com.banking.statement.parser.banks
 
 import com.banking.statement.parser.ParseResult
 import com.banking.statement.parser.ParsedTransaction
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Parser for Norisbank statements
@@ -158,7 +161,8 @@ class NorisbankParser : GermanBankParser() {
     private fun extractYearFromPeriod(text: String): Int {
         val periodPattern = Regex("""Kontoauszug\s+vom\s+\d{2}\.\d{2}\.(\d{4})""", RegexOption.IGNORE_CASE)
         val match = periodPattern.find(text)
-        return match?.groupValues?.get(1)?.toIntOrNull() ?: java.time.LocalDate.now().year
+        return match?.groupValues?.get(1)?.toIntOrNull()
+            ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
     }
 
     /**

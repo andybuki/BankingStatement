@@ -301,4 +301,18 @@
     <string name="imported_on">Importado</string>
     <string name="delete_statement">Eliminar extracto</string>
     <string name="delete_statement_confirm">¿Eliminar \"%s\" y todas sus transacciones? Esto no se puede deshacer.</string>
+
+    <string name="recognition_eyebrow">Automatización</string>
+    <string name="recognition_title">Reconocimiento de categorías</string>
+    <string name="recognition_label_safe">Seguro</string>
+    <string name="recognition_label_balanced">Equilibrado</string>
+    <string name="recognition_label_experimental">Experimental</string>
+    <string name="recognition_option_safe">Seguro — solo reglas</string>
+    <string name="recognition_option_balanced">Equilibrado — reglas + IA de respaldo</string>
+    <string name="recognition_option_experimental">Experimental — más sugerencias de IA</string>
+    <string name="recognition_description_safe">Solo reglas y correcciones manuales. Lo desconocido queda como Otro.</string>
+    <string name="recognition_description_balanced">Primero reglas, luego IA de respaldo cuando la confianza es al menos {threshold}.</string>
+    <string name="recognition_description_experimental">Primero reglas, luego IA de respaldo con umbral más bajo en {threshold}.</string>
+    <string name="recognition_model_loaded">Modelo en el dispositivo: {version}</string>
+    <string name="recognition_model_missing">Sin modelo en el dispositivo — Equilibrado y Experimental usan solo reglas.</string>
 </resources>

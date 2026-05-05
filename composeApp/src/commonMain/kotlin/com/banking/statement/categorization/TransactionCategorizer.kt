@@ -26,7 +26,8 @@ data class CategorizationResult(
     val source: CategorizationSource,
     val matchedValue: String? = null,
     val suggestedCategory: TransactionCategory? = null,
-    val suggestedConfidence: Double? = null
+    val suggestedConfidence: Double? = null,
+    val modelVersion: String? = null
 )
 
 /**
@@ -122,12 +123,19 @@ class TransactionCategorizer(
      * Categorize a single transaction with confidence and source metadata.
      */
     fun categorizeWithDetails(transaction: ParsedTransaction): CategorizationResult {
+        return categorizeWithDetails(transaction, configProvider())
+    }
+
+    private fun categorizeWithDetails(
+        transaction: ParsedTransaction,
+        config: CategorizationConfig
+    ): CategorizationResult {
         val rulesResult = categorizeWithRules(transaction)
         if (rulesResult.category != TransactionCategory.OTHER) {
             return rulesResult
         }
 
-        return mlFallback(transaction, rulesResult) ?: rulesResult
+        return mlFallback(transaction, rulesResult, config) ?: rulesResult
     }
 
     private fun categorizeWithRules(transaction: ParsedTransaction): CategorizationResult {
@@ -243,25 +251,26 @@ class TransactionCategorizer(
 
     private fun mlFallback(
         transaction: ParsedTransaction,
-        rulesResult: CategorizationResult
+        rulesResult: CategorizationResult,
+        config: CategorizationConfig
     ): CategorizationResult? {
-        val config = configProvider()
-        if (!config.mlEnabled) return null
+        val threshold = config.mlConfidenceThreshold ?: return null
 
         val prediction = mlClassifier.classify(transaction) ?: return null
         if (prediction.category == TransactionCategory.OTHER) return null
 
-        return if (prediction.confidence >= config.mlConfidenceThreshold) {
+        return if (prediction.confidence >= threshold) {
             CategorizationResult(
                 category = prediction.category,
                 confidence = prediction.confidence,
                 source = CategorizationSource.ML,
-                matchedValue = prediction.modelVersion
+                modelVersion = prediction.modelVersion
             )
         } else {
             rulesResult.copy(
                 suggestedCategory = prediction.category,
-                suggestedConfidence = prediction.confidence
+                suggestedConfidence = prediction.confidence,
+                modelVersion = prediction.modelVersion
             )
         }
     }
@@ -345,11 +354,13 @@ class TransactionCategorizer(
     }
 
     fun categorizeAll(transactions: List<ParsedTransaction>): List<Pair<ParsedTransaction, TransactionCategory>> {
-        return transactions.map { it to categorize(it) }
+        val config = configProvider()
+        return transactions.map { it to categorizeWithDetails(it, config).category }
     }
 
     fun categorizeAllWithDetails(transactions: List<ParsedTransaction>): List<Pair<ParsedTransaction, CategorizationResult>> {
-        return transactions.map { it to categorizeWithDetails(it) }
+        val config = configProvider()
+        return transactions.map { it to categorizeWithDetails(it, config) }
     }
 
     fun getCategoryStats(transactions: List<ParsedTransaction>): Map<TransactionCategory, CategoryStats> {
